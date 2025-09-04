@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(d:\\civic-main\\server\\models/**)",
+      "Bash(node:*)",
+      "Bash(npm start)",
+      "Bash(curl:*)",
+      "Read(d:\\civic-main\\server\\controllers/**)",
+      "Read(d:\\civic-main\\server\\routes/**)",
+      "Bash(find:*)",
+      "Bash(dir:*)",
+      "Bash(tasklist:*)",
+      "Bash(taskkill:*)",
+      "Bash(wmic process where name=\"node.exe\":*)",
+      "Bash(netstat:*)",
+      "Bash(cmd //c:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "Bash(sed:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,290 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@100;200;300;400;500;600;700;800;900&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: linear-gradient(to bottom, #FF9933 0%, #FFFFFF 50%, #138808 100%);
+  }
+
+  /* Utility classes for tricolor backgrounds */
+  .bg-saffron {
+    background-color: #FF9933;
+  }
+  .bg-white {
+    background-color: #FFFFFF;
+  }
+  .bg-green {
+    background-color: #138808;
+  }
+  .text-chakra {
+    color: #000080;
+  }
+
+  /* Custom keyframes for India flag theme */
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+      monospace;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition-all duration-200 font-medium shadow-sm hover:shadow-md;
+  }
+  
+  .btn-secondary {
+    @apply bg-white text-primary-600 border border-primary-600 px-6 py-2 rounded-lg hover:bg-primary-50 transition-all duration-200 font-medium;
+  }
+
+  /* Custom animations for India flag theme */
+  /* Modern Shadow System */
+  .shadow-soft {
+    box-shadow: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
+  }
+  
+  .shadow-strong {
+    box-shadow: 0 10px 40px -12px rgba(0, 0, 0, 0.15), 0 4px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .shadow-saffron {
+    box-shadow: 0 4px 20px -2px rgba(255, 153, 51, 0.3);
+  }
+  
+  .shadow-green {
+    box-shadow: 0 4px 20px -2px rgba(19, 136, 8, 0.3);
+  }
+  
+  .shadow-chakra {
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 128, 0.3);
+  }
+  
+  /* Text Shadow Utilities */
+  .text-shadow-strong {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Radial Gradient Utilities */
+  .bg-gradient-radial {
+    background: radial-gradient(circle, var(--tw-gradient-stops));
+  }
+
+  /* Responsive container utilities */
+  .container-custom {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .container-custom {
+      max-width: 640px;
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .container-custom {
+      max-width: 768px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container-custom {
+      max-width: 1024px;
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .container-custom {
+      max-width: 1280px;
+    }
+  }
+
+  @media (min-width: 1536px) {
+    .container-custom {
+      max-width: 1400px;
+    }
+  }
+
+  /* Gradient utilities for India flag theme */
+  .bg-flag-gradient {
+    background: linear-gradient(to bottom, #FF9933 0%, #FFFFFF 50%, #138808 100%);
+  }
+
+  .bg-saffron-gradient {
+    background: linear-gradient(135deg, #FF9933 0%, #FF7A00 100%);
+  }
+
+  .bg-green-gradient {
+    background: linear-gradient(135deg, #138808 0%, #0F6B06 100%);
+  }
+  
+  /* Chakra hover effects */
+  .chakra-rotate:hover {
+    transform: rotate(15deg);
+    transition: transform 0.3s ease;
+  }
+}
+  
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200;
+  }
+  
+  .stat-card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all duration-200 cursor-pointer;
+  }
+  
+  .hindi-text {
+    font-family: 'Noto Sans Devanagari', system-ui, sans-serif;
+  }
+  
+  .glass-effect {
+    @apply backdrop-blur-sm bg-white/90 border border-white/20;
+  }
+  
+  .gradient-bg {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  
+  .civic-gradient {
+    background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 50%, #8b5cf6 100%);
+  }
+
+  /* Chakra hover effects */
+  .chakra-rotate:hover {
+    transform: rotate(15deg);
+    transition: transform 0.3s ease;
+  }
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+  
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  .animate-pulse-slow {
+    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .animate-bounce-gentle {
+    animation: bounceGentle 2s infinite;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounceGentle {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-5px);
+  }
+  60% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
+
+/* Loading animation */
+.loading-spinner {
+  border: 2px solid #f3f4f6;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Custom Material-UI overrides */
+.MuiPaper-root {
+  @apply !shadow-sm;
+}
+
+.MuiButton-root {
+  @apply !normal-case !font-medium;
+}
+
+.MuiCard-root {
+  @apply !shadow-sm hover:!shadow-md !transition-shadow !duration-200;
+}

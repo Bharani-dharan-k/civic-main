@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test - SEVA TRACK</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+        .section h3 { color: #333; margin-top: 0; }
+        button { padding: 8px 16px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .admin-btn { background: #ff6600; }
+        .admin-btn:hover { background: #cc5200; }
+        textarea, input { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; }
+        .result { background: #f8f9fa; padding: 10px; border-radius: 4px; white-space: pre-wrap; font-family: monospace; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 SEVA TRACK API Test Page</h1>
+    <p>Test the authentication endpoints before using the main application.</p>
+
+    <!-- Server Status -->
+    <div class="section">
+        <h3>🌐 Server Status</h3>
+        <button onclick="testServer()">Check Server</button>
+        <div id="serverResult" class="result"></div>
+    </div>
+
+    <!-- Citizen Registration -->
+    <div class="section">
+        <h3>👤 Citizen Registration</h3>
+        <input type="text" id="citizenName" placeholder="Full Name" value="Test User">
+        <input type="email" id="citizenEmail" placeholder="Email" value="test@example.com">
+        <input type="tel" id="citizenPhone" placeholder="Phone" value="+91-9876543210">
+        <input type="password" id="citizenPassword" placeholder="Password" value="password123">
+        <button onclick="registerCitizen()">Register Citizen</button>
+        <div id="citizenRegResult" class="result"></div>
+    </div>
+
+    <!-- Citizen Login -->
+    <div class="section">
+        <h3>🔐 Citizen Login</h3>
+        <input type="email" id="citizenLoginEmail" placeholder="Email" value="test@example.com">
+        <input type="password" id="citizenLoginPassword" placeholder="Password" value="password123">
+        <button onclick="loginCitizen()">Login Citizen</button>
+        <div id="citizenLoginResult" class="result"></div>
+    </div>
+
+    <!-- Admin Login -->
+    <div class="section">
+        <h3>🛡️ Admin Login</h3>
+        <input type="email" id="adminEmail" placeholder="Admin Email" value="bharani@gmail.com">
+        <input type="password" id="adminPassword" placeholder="Admin Password" value="bharani5544">
+        <button class="admin-btn" onclick="loginAdmin()">Login Admin</button>
+        <div id="adminLoginResult" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+
+        async function testServer() {
+            const result = document.getElementById('serverResult');
+            result.textContent = 'Testing server connection...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.text();
+                result.textContent = `✅ Server Status: ${response.status}\nResponse: ${data}`;
+            } catch (error) {
+                result.textContent = `❌ Server Error: ${error.message}`;
+            }
+        }
+
+        async function registerCitizen() {
+            const result = document.getElementById('citizenRegResult');
+            result.textContent = 'Registering citizen...';
+
+            const data = {
+                name: document.getElementById('citizenName').value,
+                email: document.getElementById('citizenEmail').value,
+                phone: document.getElementById('citizenPhone').value,
+                password: document.getElementById('citizenPassword').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/citizen/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const responseData = await response.json();
+                result.textContent = `Status: ${response.status}\n${JSON.stringify(responseData, null, 2)}`;
+            } catch (error) {
+                result.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+
+        async function loginCitizen() {
+            const result = document.getElementById('citizenLoginResult');
+            result.textContent = 'Logging in citizen...';
+
+            const data = {
+                email: document.getElementById('citizenLoginEmail').value,
+                password: document.getElementById('citizenLoginPassword').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/citizen/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const responseData = await response.json();
+                result.textContent = `Status: ${response.status}\n${JSON.stringify(responseData, null, 2)}`;
+                
+                if (responseData.success) {
+                    localStorage.setItem('citizenToken', responseData.token);
+                }
+            } catch (error) {
+                result.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+
+        async function loginAdmin() {
+            const result = document.getElementById('adminLoginResult');
+            result.textContent = 'Logging in admin...';
+
+            const data = {
+                email: document.getElementById('adminEmail').value,
+                password: document.getElementById('adminPassword').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/admin/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const responseData = await response.json();
+                result.textContent = `Status: ${response.status}\n${JSON.stringify(responseData, null, 2)}`;
+                
+                if (responseData.success) {
+                    localStorage.setItem('adminToken', responseData.token);
+                }
+            } catch (error) {
+                result.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+
+        // Test server on page load
+        window.onload = () => {
+            testServer();
+        };
+    </script>
+</body>
+</html>
