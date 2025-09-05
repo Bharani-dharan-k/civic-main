@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const NotificationService = require('../utils/notificationService');
 require('dotenv').config();
 
 // Predefined admin credentials (in production, use proper admin management)
@@ -145,31 +146,60 @@ exports.getLeaderboard = async (req, res) => {
 // @desc    Get user notifications
 exports.getNotifications = async (req, res) => {
     try {
-        // For now, return mock notifications
-        // In a real app, you'd have a Notification model
-        const notifications = [
-            {
-                id: 1,
-                message: 'Your report has been acknowledged',
-                type: 'report_update',
-                read: false,
-                createdAt: new Date()
-            },
-            {
-                id: 2,
-                message: 'You earned 10 points!',
-                type: 'points',
-                read: false,
-                createdAt: new Date()
-            }
-        ];
+        const notifications = await NotificationService.getUserNotifications(req.user.id);
+        const unreadCount = await NotificationService.getUnreadCount(req.user.id);
         
         res.json({
             success: true,
-            notifications
+            notifications,
+            unreadCount
         });
     } catch (err) {
         console.error('Notifications fetch error:', err.message);
+        res.status(500).json({ 
+            success: false,
+            msg: 'Server Error' 
+        });
+    }
+};
+
+// @desc    Mark notification as read
+exports.markNotificationAsRead = async (req, res) => {
+    try {
+        const notificationId = req.params.id;
+        const notification = await NotificationService.markAsRead(notificationId, req.user.id);
+        
+        if (!notification) {
+            return res.status(404).json({
+                success: false,
+                msg: 'Notification not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Notification marked as read'
+        });
+    } catch (err) {
+        console.error('Mark notification read error:', err.message);
+        res.status(500).json({ 
+            success: false,
+            msg: 'Server Error' 
+        });
+    }
+};
+
+// @desc    Mark all notifications as read
+exports.markAllNotificationsAsRead = async (req, res) => {
+    try {
+        await NotificationService.markAllAsRead(req.user.id);
+        
+        res.json({
+            success: true,
+            message: 'All notifications marked as read'
+        });
+    } catch (err) {
+        console.error('Mark all notifications read error:', err.message);
         res.status(500).json({ 
             success: false,
             msg: 'Server Error' 
@@ -236,26 +266,41 @@ exports.registerCitizen = async (req, res) => {
 
 // @desc    Login citizen
 exports.loginCitizen = async (req, res) => {
+    console.log('🔑 Citizen login attempt:', req.body);
     const { email, password } = req.body;
+    
+    if (!email || !password) {
+        console.log('❌ Missing credentials:', { email: !!email, password: !!password });
+        return res.status(400).json({ 
+            success: false,
+            msg: 'Email and password are required' 
+        });
+    }
+    
     try {
+        console.log('🔍 Looking for citizen with email:', email);
         // Find citizen user
         let user = await User.findOne({ email, role: 'citizen' });
         if (!user) {
+            console.log('❌ Citizen not found');
             return res.status(400).json({ 
                 success: false,
                 msg: 'Invalid credentials - citizen not found' 
             });
         }
 
+        console.log('👤 Found citizen:', user.name);
         // Check password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
+            console.log('❌ Password incorrect');
             return res.status(400).json({ 
                 success: false,
                 msg: 'Invalid credentials - password incorrect' 
             });
         }
 
+        console.log('✅ Password correct, generating token...');
         // Create JWT token
         const payload = { 
             user: {
@@ -267,6 +312,7 @@ exports.loginCitizen = async (req, res) => {
         };
         const token = jwt.sign(payload, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '24h' });
 
+        console.log('🎯 Login successful for:', user.name);
         res.json({ 
             success: true,
             token,
@@ -274,11 +320,12 @@ exports.loginCitizen = async (req, res) => {
                 id: user.id,
                 name: user.name,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                points: user.points || 0
             }
         });
     } catch (err) {
-        console.error('Citizen login error:', err.message);
+        console.error('❌ Citizen login error:', err.message);
         res.status(500).json({ 
             success: false,
             msg: 'Server Error during login' 
@@ -293,11 +340,50 @@ exports.loginAdmin = async (req, res) => {
     try {
         console.log('Admin login attempt:', { email, password });
         
-        // Find admin credentials by email
+        // First, try to find admin user in database
+        const dbAdmin = await User.findOne({ email: email, role: 'admin' });
+        
+        if (dbAdmin) {
+            console.log('Database admin found:', dbAdmin.email);
+            
+            // Check password using the User model method
+            const isMatch = await dbAdmin.comparePassword(password);
+            console.log('Password match:', isMatch);
+            
+            if (isMatch) {
+                // Update last login
+                dbAdmin.lastLogin = new Date();
+                await dbAdmin.save();
+                
+                // Create JWT token for database admin
+                const payload = { 
+                    user: {
+                        id: dbAdmin._id.toString(), 
+                        role: 'admin',
+                        email: dbAdmin.email,
+                        name: dbAdmin.name
+                    }
+                };
+                const token = jwt.sign(payload, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '24h' });
+
+                return res.json({ 
+                    success: true,
+                    token,
+                    user: {
+                        id: dbAdmin._id.toString(),
+                        name: dbAdmin.name,
+                        email: dbAdmin.email,
+                        role: 'admin'
+                    }
+                });
+            }
+        }
+        
+        // Fallback to hardcoded admin credentials for compatibility
         const adminCredential = ADMIN_CREDENTIALS.find(admin => admin.email === email);
         
         if (adminCredential) {
-            console.log('Admin found:', adminCredential.email);
+            console.log('Hardcoded admin found:', adminCredential.email);
             let isMatch = false;
             
             // Check if password is hashed or plaintext
@@ -312,7 +398,7 @@ exports.loginAdmin = async (req, res) => {
             console.log('Password match:', isMatch);
             
             if (isMatch) {
-                // Create JWT token for admin
+                // Create JWT token for hardcoded admin
                 const payload = { 
                     user: {
                         id: `admin_${adminCredential.email.split('@')[0]}`, 
@@ -606,3 +692,6 @@ exports.getActiveWorkers = async (req, res) => {
         });
     }
 };
+
+// Export worker credentials for use in other controllers
+module.exports.WORKER_CREDENTIALS = WORKER_CREDENTIALS;

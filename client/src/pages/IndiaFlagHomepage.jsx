@@ -120,7 +120,7 @@ const IndiaFlagHomepage = () => {
                     className="w-10 h-10 rounded-lg shadow-sm" 
                   />
                   <span className="text-2xl font-bold tracking-tight text-white drop-shadow-lg">
-                    SEVA TRACK
+                    SevaTrack
                   </span>
                 </div>
 
@@ -357,7 +357,7 @@ const IndiaFlagHomepage = () => {
             <div className="text-center md:text-left">
               <div className="flex items-center justify-center md:justify-start space-x-3 mb-6">
                 <AshokaChakra size={40} className="filter brightness-0 invert opacity-90" />
-                <h3 className="text-2xl font-bold">Civic Connect</h3>
+                <h3 className="text-2xl font-bold">SevaTrack</h3>
               </div>
               <p className="text-green-100 leading-relaxed text-lg">
                 Empowering citizens and strengthening communities through 

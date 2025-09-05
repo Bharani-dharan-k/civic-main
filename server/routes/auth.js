@@ -10,7 +10,9 @@ const {
     getProfile,
     updateProfile,
     getLeaderboard,
-    getNotifications
+    getNotifications,
+    markNotificationAsRead,
+    markAllNotificationsAsRead
 } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -22,7 +24,15 @@ router.use((req, res, next) => {
 
 // Citizen routes
 router.post('/citizen/register', registerCitizen);
-router.post('/citizen/login', loginCitizen);
+router.post('/citizen/login', (req, res, next) => {
+    console.log('*** CITIZEN LOGIN ROUTE HIT ***', req.body);
+    next();
+}, loginCitizen);
+
+// Test endpoint
+router.get('/test', (req, res) => {
+    res.json({ success: true, message: 'Auth routes working!' });
+});
 
 // Admin routes
 router.post('/admin/login', (req, res, next) => {
@@ -47,6 +57,8 @@ router.put('/profile', protect, updateProfile);
 // Leaderboard and notifications
 router.get('/leaderboard', getLeaderboard);
 router.get('/notifications', protect, getNotifications);
+router.put('/notifications/:id/read', protect, markNotificationAsRead);
+router.put('/notifications/mark-all-read', protect, markAllNotificationsAsRead);
 
 // Legacy routes (for backward compatibility)
 router.post('/register', registerCitizen);

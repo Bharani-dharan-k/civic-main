@@ -314,7 +314,7 @@ const Homepage = () => {
           <Grid container spacing={4}>
             <Grid item xs={12} md={4}>
               <Typography variant="h6" className="font-bold mb-4">
-                🏛️ Civic Connect
+                🏛️ SevaTrack
               </Typography>
               <Typography variant="body2" className="text-gray-300">
                 Empowering citizens and strengthening communities through 

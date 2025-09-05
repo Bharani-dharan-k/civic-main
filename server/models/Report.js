@@ -25,6 +25,7 @@ const ReportSchema = new mongoose.Schema({
         type: String, // worker employee ID instead of ObjectId for simplicity
         ref: 'Worker'
     },
+    assignedDepartment: { type: String }, // Department assigned to handle the report
     assignedBy: { type: mongoose.Schema.Types.Mixed }, // admin ID (string) or user ObjectId
     assignedAt: { type: Date },
     resolutionImageUrl: { type: String }, // 'After' photo from worker

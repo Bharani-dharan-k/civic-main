@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Filter,
@@ -17,88 +17,81 @@ import {
 
 const ManageIssues = () => {
   const [selectedIssue, setSelectedIssue] = useState(null);
+  const [editingIssue, setEditingIssue] = useState(null);
   const [filters, setFilters] = useState({
     status: 'all',
     category: 'all',
     priority: 'all',
     search: ''
   });
+  const [issues, setIssues] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data
-  const issues = [
-    {
-      id: 'CIV-2025-001',
-      title: 'Broken streetlight on MG Road',
-      description: 'The streetlight pole near the bus stop has been damaged and is not working for the past 3 days. This is causing safety concerns for pedestrians during nighttime.',
-      category: 'Street Lighting',
-      location: 'MG Road, Sector 14',
-      coordinates: { lat: 28.6139, lng: 77.2090 },
-      status: 'Pending',
-      priority: 'High',
-      reportedBy: 'Rajesh Kumar',
-      reportedAt: '2025-01-15T10:30:00Z',
-      assignedTo: null,
-      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&h=200&fit=crop'
-    },
-    {
-      id: 'CIV-2025-002',
-      title: 'Water leakage in pipeline',
-      description: 'Major water leakage observed in the main supply pipeline causing waterlogging and wastage of water resources.',
-      category: 'Water Supply',
-      location: 'Vikas Nagar, Block A',
-      coordinates: { lat: 28.6145, lng: 77.2095 },
-      status: 'In Progress',
-      priority: 'Critical',
-      reportedBy: 'Priya Sharma',
-      reportedAt: '2025-01-15T08:15:00Z',
-      assignedTo: 'Water Department',
-      image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=300&h=200&fit=crop'
-    },
-    {
-      id: 'CIV-2025-003',
-      title: 'Garbage not collected for 3 days',
-      description: 'Garbage collection has been skipped for the past 3 days in our area. The bins are overflowing and causing hygiene issues.',
-      category: 'Sanitation',
-      location: 'Green Park Extension',
-      coordinates: { lat: 28.6120, lng: 77.2080 },
-      status: 'Assigned',
-      priority: 'Medium',
-      reportedBy: 'Amit Singh',
-      reportedAt: '2025-01-14T16:45:00Z',
-      assignedTo: 'Sanitation Department',
-      image: 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=300&h=200&fit=crop'
-    },
-    {
-      id: 'CIV-2025-004',
-      title: 'Pothole on main highway',
-      description: 'Large pothole on the main highway causing traffic issues and potential vehicle damage. Immediate repair needed.',
-      category: 'Road Maintenance',
-      location: 'NH-48, Mile 12',
-      coordinates: { lat: 28.6100, lng: 77.2100 },
-      status: 'Resolved',
-      priority: 'High',
-      reportedBy: 'Deepak Verma',
-      reportedAt: '2025-01-13T12:00:00Z',
-      assignedTo: 'PWD',
-      image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=200&fit=crop'
-    },
-    {
-      id: 'CIV-2025-005',
-      title: 'Broken traffic signal',
-      description: 'Traffic signal at the intersection is malfunctioning, causing traffic congestion during peak hours.',
-      category: 'Traffic Management',
-      location: 'Central Square Junction',
-      coordinates: { lat: 28.6155, lng: 77.2075 },
-      status: 'Pending',
-      priority: 'High',
-      reportedBy: 'Sunita Devi',
-      reportedAt: '2025-01-15T07:20:00Z',
-      assignedTo: null,
-      image: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=300&h=200&fit=crop'
+  // Fetch issues from backend
+  useEffect(() => {
+    loadIssues();
+  }, []);
+
+  const loadIssues = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/reports', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        }
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        // Transform backend reports to match the expected format
+        const transformedIssues = data.reports.map(report => ({
+          id: report._id,
+          title: report.title,
+          description: report.description,
+          category: report.category,
+          location: report.address || report.location,
+          coordinates: report.coordinates || { lat: 0, lng: 0 },
+          status: mapStatus(report.status),
+          priority: report.priority || 'Medium',
+          reportedBy: report.userId?.name || report.citizenName || 'Unknown Citizen',
+          reportedAt: report.createdAt,
+          assignedTo: report.assignedWorker ? getWorkerName(report.assignedWorker) : null,
+          image: report.imageUrl || null
+        }));
+        setIssues(transformedIssues);
+      } else {
+        console.error('Failed to load issues:', data.message);
+      }
+    } catch (error) {
+      console.error('Error loading issues:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const categories = ['Street Lighting', 'Water Supply', 'Sanitation', 'Road Maintenance', 'Traffic Management'];
+  // Map backend status to frontend status
+  const mapStatus = (backendStatus) => {
+    switch (backendStatus) {
+      case 'submitted': return 'Pending';
+      case 'acknowledged': return 'Assigned';
+      case 'assigned': return 'Assigned';
+      case 'in_progress': return 'In Progress';
+      case 'resolved': return 'Resolved';
+      case 'rejected': return 'Resolved'; // or create a new status
+      default: return 'Pending';
+    }
+  };
+
+  // Get worker name from worker data
+  const getWorkerName = (workerData) => {
+    if (typeof workerData === 'string') return workerData;
+    if (workerData && workerData.name) return workerData.name;
+    if (workerData && workerData.employeeId) return `Worker ${workerData.employeeId}`;
+    return 'Assigned Worker';
+  };
+
+  // Get categories and priorities from backend data
+  const categories = [...new Set(issues.map(issue => issue.category).filter(Boolean))];
   const statuses = ['Pending', 'Assigned', 'In Progress', 'Resolved'];
   const priorities = ['Low', 'Medium', 'High', 'Critical'];
 
@@ -133,15 +126,135 @@ const ManageIssues = () => {
     return matchesSearch && matchesStatus && matchesCategory && matchesPriority;
   });
 
-  const handleStatusUpdate = (issueId, newStatus) => {
-    // In a real app, this would make an API call
-    console.log(`Updating issue ${issueId} to status: ${newStatus}`);
+  const handleStatusUpdate = async (issueId, newStatus) => {
+    try {
+      const backendStatus = mapFrontendStatusToBackend(newStatus);
+      const response = await fetch(`http://localhost:5000/api/admin/reports/${issueId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify({ status: backendStatus })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        loadIssues(); // Refresh the data
+        alert('Status updated successfully!');
+      } else {
+        alert(`Failed to update status: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      alert('Network error occurred while updating status');
+    }
   };
 
-  const handleAssignDepartment = (issueId, department) => {
-    // In a real app, this would make an API call
-    console.log(`Assigning issue ${issueId} to: ${department}`);
+  const handleAssignDepartment = async (issueId, department) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/admin/reports/${issueId}/assign-department`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify({ department })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        loadIssues(); // Refresh the data
+        alert('Department assigned successfully!');
+      } else {
+        alert(`Failed to assign department: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Error assigning department:', error);
+      alert('Network error occurred while assigning department');
+    }
   };
+
+  // Map frontend status to backend status
+  const mapFrontendStatusToBackend = (frontendStatus) => {
+    switch (frontendStatus) {
+      case 'Pending': return 'submitted';
+      case 'Assigned': return 'assigned';
+      case 'In Progress': return 'in_progress';
+      case 'Resolved': return 'resolved';
+      default: return 'submitted';
+    }
+  };
+
+  const handleEditIssue = (issue) => {
+    setEditingIssue(issue);
+  };
+
+  const handleDeleteIssue = async (issueId) => {
+    if (!window.confirm('Are you sure you want to delete this issue? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/admin/reports/${issueId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        }
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        loadIssues(); // Refresh the data
+        alert('Issue deleted successfully!');
+      } else {
+        alert(`Failed to delete issue: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Error deleting issue:', error);
+      alert('Network error occurred while deleting issue');
+    }
+  };
+
+  const handleUpdateIssue = async (updatedIssue) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/admin/reports/${updatedIssue.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify({
+          title: updatedIssue.title,
+          description: updatedIssue.description,
+          category: updatedIssue.category,
+          priority: updatedIssue.priority,
+          status: mapFrontendStatusToBackend(updatedIssue.status),
+          address: updatedIssue.location
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        loadIssues(); // Refresh the data
+        setEditingIssue(null);
+        alert('Issue updated successfully!');
+      } else {
+        alert(`Failed to update issue: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Error updating issue:', error);
+      alert('Network error occurred while updating issue');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -298,12 +411,14 @@ const ManageIssues = () => {
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
+                        onClick={() => handleEditIssue(issue)}
                         className="p-1 rounded hover:bg-green-100 text-green-600"
                         title="Edit"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
+                        onClick={() => handleDeleteIssue(issue.id)}
                         className="p-1 rounded hover:bg-red-100 text-red-600"
                         title="Delete"
                       >
@@ -435,6 +550,144 @@ const ManageIssues = () => {
                     <span>Mark Resolved</span>
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Issue Modal */}
+      <AnimatePresence>
+        {editingIssue && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+            onClick={() => setEditingIssue(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold text-gray-900">Edit Issue</h3>
+                  <button
+                    onClick={() => setEditingIssue(null)}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Edit Form */}
+              <div className="p-6">
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  handleUpdateIssue(editingIssue);
+                }} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={editingIssue.title}
+                      onChange={(e) => setEditingIssue({...editingIssue, title: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={editingIssue.description}
+                      onChange={(e) => setEditingIssue({...editingIssue, description: e.target.value})}
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                      <select
+                        value={editingIssue.category}
+                        onChange={(e) => setEditingIssue({...editingIssue, category: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        required
+                      >
+                        <option value="">Select Category</option>
+                        {categories.map(category => (
+                          <option key={category} value={category}>{category}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                      <select
+                        value={editingIssue.priority}
+                        onChange={(e) => setEditingIssue({...editingIssue, priority: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        required
+                      >
+                        {priorities.map(priority => (
+                          <option key={priority} value={priority}>{priority}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                      <select
+                        value={editingIssue.status}
+                        onChange={(e) => setEditingIssue({...editingIssue, status: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        required
+                      >
+                        {statuses.map(status => (
+                          <option key={status} value={status}>{status}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                      <input
+                        type="text"
+                        value={editingIssue.location}
+                        onChange={(e) => setEditingIssue({...editingIssue, location: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setEditingIssue(null)}
+                      className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                    >
+                      Update Issue
+                    </button>
+                  </div>
+                </form>
               </div>
             </motion.div>
           </motion.div>

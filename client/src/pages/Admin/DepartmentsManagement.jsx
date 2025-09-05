@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
@@ -18,69 +18,8 @@ import {
 } from 'lucide-react';
 
 const DepartmentsManagement = () => {
-  const [departments, setDepartments] = useState([
-    {
-      id: 1,
-      name: 'Public Works Department',
-      description: 'Responsible for road maintenance, construction, and infrastructure development',
-      head: 'Rajesh Kumar',
-      contact: '+91 98765 43210',
-      email: 'pwd@civic.gov.in',
-      activeIssues: 45,
-      resolvedIssues: 234,
-      icon: Wrench,
-      color: 'blue'
-    },
-    {
-      id: 2,
-      name: 'Sanitation Department',
-      description: 'Manages waste collection, street cleaning, and public hygiene',
-      head: 'Priya Sharma',
-      contact: '+91 98765 43211',
-      email: 'sanitation@civic.gov.in',
-      activeIssues: 32,
-      resolvedIssues: 198,
-      icon: Recycle,
-      color: 'green'
-    },
-    {
-      id: 3,
-      name: 'Street Lighting Department',
-      description: 'Installation and maintenance of street lights and public illumination',
-      head: 'Amit Singh',
-      contact: '+91 98765 43212',
-      email: 'lighting@civic.gov.in',
-      activeIssues: 28,
-      resolvedIssues: 156,
-      icon: Lightbulb,
-      color: 'yellow'
-    },
-    {
-      id: 4,
-      name: 'Water Supply Department',
-      description: 'Water distribution, pipeline maintenance, and quality management',
-      head: 'Deepak Verma',
-      contact: '+91 98765 43213',
-      email: 'water@civic.gov.in',
-      activeIssues: 19,
-      resolvedIssues: 178,
-      icon: Droplets,
-      color: 'cyan'
-    },
-    {
-      id: 5,
-      name: 'Transportation Department',
-      description: 'Traffic management, public transport, and road safety',
-      head: 'Sunita Devi',
-      contact: '+91 98765 43214',
-      email: 'transport@civic.gov.in',
-      activeIssues: 15,
-      resolvedIssues: 89,
-      icon: Car,
-      color: 'purple'
-    }
-  ]);
-
+  const [departments, setDepartments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedDepartment, setSelectedDepartment] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -93,6 +32,35 @@ const DepartmentsManagement = () => {
     icon: 'Building2',
     color: 'blue'
   });
+
+  // Fetch departments from backend
+  useEffect(() => {
+    loadDepartments();
+  }, []);
+
+  const loadDepartments = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/admin/departments', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        }
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setDepartments(data.departments);
+      } else {
+        console.error('Failed to load departments:', data.message);
+        alert('Failed to load departments: ' + data.message);
+      }
+    } catch (error) {
+      console.error('Error loading departments:', error);
+      alert('Network error occurred while loading departments');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const iconOptions = [
     { name: 'Building2', component: Building2 },
@@ -107,6 +75,12 @@ const DepartmentsManagement = () => {
     'blue', 'green', 'yellow', 'cyan', 'purple', 'red', 'orange', 'pink'
   ];
 
+  // Get icon component from name
+  const getIconComponent = (iconName) => {
+    const iconOption = iconOptions.find(icon => icon.name === iconName);
+    return iconOption ? iconOption.component : Building2;
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -115,46 +89,84 @@ const DepartmentsManagement = () => {
     }));
   };
 
-  const handleAddDepartment = () => {
-    const newDepartment = {
-      id: departments.length + 1,
-      ...formData,
-      activeIssues: 0,
-      resolvedIssues: 0,
-      icon: iconOptions.find(icon => icon.name === formData.icon)?.component || Building2
-    };
-    setDepartments(prev => [...prev, newDepartment]);
-    setFormData({
-      name: '',
-      description: '',
-      head: '',
-      contact: '',
-      email: '',
-      icon: 'Building2',
-      color: 'blue'
-    });
-    setIsAddModalOpen(false);
+  const handleAddDepartment = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/admin/departments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        loadDepartments(); // Refresh the departments list
+        resetForm();
+        setIsAddModalOpen(false);
+        alert('Department created successfully!');
+      } else {
+        alert(`Failed to create department: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Error creating department:', error);
+      alert('Network error occurred while creating department');
+    }
   };
 
-  const handleEditDepartment = () => {
-    setDepartments(prev =>
-      prev.map(dept =>
-        dept.id === selectedDepartment.id
-          ? {
-              ...dept,
-              ...formData,
-              icon: iconOptions.find(icon => icon.name === formData.icon)?.component || dept.icon
-            }
-          : dept
-      )
-    );
-    setIsEditModalOpen(false);
-    setSelectedDepartment(null);
+  const handleEditDepartment = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/admin/departments/${selectedDepartment._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        loadDepartments(); // Refresh the departments list
+        setIsEditModalOpen(false);
+        setSelectedDepartment(null);
+        alert('Department updated successfully!');
+      } else {
+        alert(`Failed to update department: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Error updating department:', error);
+      alert('Network error occurred while updating department');
+    }
   };
 
-  const handleDeleteDepartment = (id) => {
-    if (window.confirm('Are you sure you want to delete this department?')) {
-      setDepartments(prev => prev.filter(dept => dept.id !== id));
+  const handleDeleteDepartment = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this department?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/admin/departments/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        }
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        loadDepartments(); // Refresh the departments list
+        alert('Department deleted successfully!');
+      } else {
+        alert(`Failed to delete department: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Error deleting department:', error);
+      alert('Network error occurred while deleting department');
     }
   };
 
@@ -166,7 +178,7 @@ const DepartmentsManagement = () => {
       head: department.head,
       contact: department.contact,
       email: department.email,
-      icon: iconOptions.find(icon => icon.component === department.icon)?.name || 'Building2',
+      icon: department.icon,
       color: department.color
     });
     setIsEditModalOpen(true);
@@ -183,6 +195,14 @@ const DepartmentsManagement = () => {
       color: 'blue'
     });
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -209,19 +229,22 @@ const DepartmentsManagement = () => {
 
       {/* Department Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {departments.map((department, index) => (
-          <motion.div
-            key={department.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
-          >
-            {/* Department Header */}
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-lg bg-${department.color}-100`}>
-                <department.icon className={`w-6 h-6 text-${department.color}-600`} />
-              </div>
+        {departments.map((department, index) => {
+          const IconComponent = getIconComponent(department.icon);
+          
+          return (
+            <motion.div
+              key={department._id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+            >
+              {/* Department Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className={`p-3 rounded-lg bg-${department.color}-100`}>
+                  <IconComponent className={`w-6 h-6 text-${department.color}-600`} />
+                </div>
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => openEditModal(department)}
@@ -231,7 +254,7 @@ const DepartmentsManagement = () => {
                   <Edit className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => handleDeleteDepartment(department.id)}
+                  onClick={() => handleDeleteDepartment(department._id)}
                   className="p-1 rounded hover:bg-red-100 text-red-600"
                   title="Delete Department"
                 >
@@ -272,7 +295,8 @@ const DepartmentsManagement = () => {
               </div>
             </div>
           </motion.div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Add Department Modal */}

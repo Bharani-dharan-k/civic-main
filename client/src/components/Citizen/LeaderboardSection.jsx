@@ -1,41 +1,73 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Star, Medal, Target, TrendingUp, Users, Crown } from 'lucide-react';
+import { Trophy, Star, Medal, Target, TrendingUp, Users, Crown, Loader } from 'lucide-react';
+import { userService } from '../../services/reportService';
 
 // Leaderboard Section Component
 const LeaderboardSection = () => {
-  const topReporters = [
-    { 
-      id: 1, 
-      name: 'Rajesh Kumar', 
-      points: 2450, 
-      reports: 45, 
-      resolved: 38, 
-      rank: 1,
-      avatar: '👨',
-      badges: ['🏆', '⭐', '🎯']
-    },
-    { 
-      id: 2, 
-      name: 'Priya Sharma', 
-      points: 2120, 
-      reports: 38, 
-      resolved: 32, 
-      rank: 2,
-      avatar: '👩',
-      badges: ['🥈', '⭐', '🚀']
-    },
-    { 
-      id: 3, 
-      name: 'You', 
-      points: 1250, 
-      reports: 12, 
-      resolved: 8, 
-      rank: 15,
-      avatar: '😊',
-      badges: ['🌟', '📍']
+  const [topReporters, setTopReporters] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    loadLeaderboard();
+  }, []);
+
+  const loadLeaderboard = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Loading leaderboard...');
+      const response = await userService.getLeaderboard();
+      console.log('📊 Leaderboard API Response:', response);
+      if (response.success) {
+        // Process leaderboard data and add rank
+        const processedData = response.leaderboard.map((user, index) => ({
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          points: user.points || 0,
+          reports: user.reports?.length || 0,
+          resolved: user.reports?.filter(report => report.status === 'Resolved').length || 0,
+          rank: index + 1,
+          avatar: user.name.charAt(0).toUpperCase(),
+          badges: user.badges || [],
+          joinDate: user.createdAt
+        }));
+        console.log('✅ Processed leaderboard data:', processedData);
+        setTopReporters(processedData);
+      } else {
+        console.log('❌ API returned success: false');
+      }
+    } catch (error) {
+      console.error('❌ Error loading leaderboard:', error);
+      setError('Failed to load leaderboard data');
+      // Fallback to mock data
+      setTopReporters([
+        { 
+          id: 1, 
+          name: 'Rajesh Kumar', 
+          points: 2450, 
+          reports: 45, 
+          resolved: 38, 
+          rank: 1,
+          avatar: 'R',
+          badges: ['🏆', '⭐', '🎯']
+        },
+        { 
+          id: 2, 
+          name: 'Priya Sharma', 
+          points: 2120, 
+          reports: 38, 
+          resolved: 32, 
+          rank: 2,
+          avatar: 'P',
+          badges: ['🥈', '⭐', '�']
+        }
+      ]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const achievements = [
     {
@@ -71,6 +103,39 @@ const LeaderboardSection = () => {
       progress: 62
     }
   ];
+
+  if (loading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex items-center justify-center h-64"
+      >
+        <div className="text-center">
+          <Loader className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading leaderboard...</p>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (error) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="bg-red-50 border border-red-200 rounded-lg p-4"
+      >
+        <p className="text-red-600">{error}</p>
+        <button 
+          onClick={loadLeaderboard}
+          className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+        >
+          Retry
+        </button>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

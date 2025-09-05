@@ -54,7 +54,7 @@ const Navbar = () => {
         <AppBar position="static" elevation={1} sx={{ backgroundColor: '#FF9933', color: '#000080' }}>
             <Toolbar>
                 <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                    🏛️ Civic Connect
+                    🏛️ SevaTrack
                 </Typography>
 
                 {!user ? (

@@ -231,7 +231,7 @@ const AdminLogin = () => {
         >
           <div className="flex items-center justify-center space-x-2 text-gray-500 text-sm">
             <AshokaChakra size={16} className="text-blue-800" />
-            <span>Civic Connect Admin Portal</span>
+            <span>SevaTrack Admin Portal</span>
           </div>
         </motion.div>
       </motion.div>

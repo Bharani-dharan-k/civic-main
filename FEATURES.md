@@ -1,4 +1,4 @@
-# Civic Connect - Feature Implementation Summary
+# SevaTrack - Feature Implementation Summary
 
 ## 🏛️ Complete Civic Complaint Management System
 

@@ -1,4 +1,4 @@
-# Civic Connect - Admin Dashboard
+# SevaTrack - Admin Dashboard
 
 A modern, responsive admin dashboard for managing civic issue reporting system.
 

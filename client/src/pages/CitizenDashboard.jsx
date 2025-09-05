@@ -174,11 +174,11 @@ const CitizenDashboard = () => {
     const [recordingAudio, setRecordingAudio] = useState(false);
 
     const categories = [
-      { value: 'Pothole', label: t('pothole') },
-      { value: 'Streetlight', label: t('streetlight') },
-      { value: 'Waste', label: t('waste_management') },
-      { value: 'Drainage', label: t('drainage') },
-      { value: 'Other', label: t('other') }
+      { value: 'pothole', label: t('pothole') },
+      { value: 'streetlight', label: t('streetlight') },
+      { value: 'garbage', label: t('waste_management') },
+      { value: 'drainage', label: t('drainage') },
+      { value: 'other', label: t('other') }
     ];
 
     const handleInputChange = (e) => {
@@ -242,7 +242,7 @@ const CitizenDashboard = () => {
         submitData.append('title', formData.title);
         submitData.append('description', formData.description);
         submitData.append('category', formData.category);
-        submitData.append('location', formData.location || 'Not specified');
+        submitData.append('address', formData.location || 'Not specified');
         submitData.append('priority', formData.priority);
         
         // Send longitude and latitude as separate fields as expected by backend

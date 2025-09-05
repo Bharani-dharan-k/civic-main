@@ -16,6 +16,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import AshokaChakra from '../../components/Common/AshokaChakra';
+import NotificationDropdown from './NotificationDropdown';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -33,9 +34,29 @@ const AdminLayout = () => {
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminUser');
-    navigate('/admin/login');
+    console.log('Admin logout initiated');
+    
+    try {
+      // Clear all admin-related data
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminUser');
+      
+      // Clear any other potential admin data
+      localStorage.removeItem('token'); // Just in case there's overlap
+      
+      console.log('Admin tokens cleared');
+      
+      // Use setTimeout to ensure state cleanup before navigation
+      setTimeout(() => {
+        console.log('Navigating to homepage...');
+        navigate('/', { replace: true });
+      }, 100);
+      
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Fallback to full page redirect if there are any issues
+      window.location.href = '/';
+    }
   };
 
   const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{"name":"Admin","email":"admin@civic.gov.in"}');
@@ -57,7 +78,7 @@ const AdminLayout = () => {
               <div className="flex items-center space-x-3">
                 <AshokaChakra size={32} className="text-blue-800" />
                 <div>
-                  <h1 className="text-xl font-bold text-gray-800">Civic Connect</h1>
+                  <h1 className="text-xl font-bold text-gray-800">SevaTrack</h1>
                   <p className="text-sm text-gray-500">Admin Portal</p>
                 </div>
               </div>
@@ -125,12 +146,7 @@ const AdminLayout = () => {
 
             <div className="flex items-center space-x-4">
               {/* Notifications */}
-              <button className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                <Bell className="w-5 h-5 text-gray-600" />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  3
-                </span>
-              </button>
+              <NotificationDropdown />
 
               {/* Profile Dropdown */}
               <div className="relative">

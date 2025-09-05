@@ -15,7 +15,18 @@ exports.protect = async (req, res, next) => {
             const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
             console.log('🔓 Token decoded:', decoded);
 
-            // Handle admin users (support multiple admin accounts)
+            // Handle admin users - check if it's a database user (ObjectId) or hardcoded user (string)
+            if (decoded.user && decoded.user.role === 'admin') {
+                req.user = {
+                    id: decoded.user.id,
+                    role: decoded.user.role,
+                    email: decoded.user.email,
+                    name: decoded.user.name
+                };
+                return next();
+            }
+
+            // Handle hardcoded admin users (backward compatibility)
             if (decoded.user && decoded.user.id && decoded.user.id.startsWith('admin_')) {
                 req.user = {
                     id: decoded.user.id,

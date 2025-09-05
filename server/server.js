@@ -29,6 +29,7 @@ try {
     console.error('Error loading reports routes:', error);
 }
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/admin/departments', require('./routes/departments'));
 app.use('/api/worker', require('./routes/worker'));
 
 const PORT = process.env.PORT || 5000;

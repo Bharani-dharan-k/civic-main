@@ -1,5 +1,6 @@
 const Report = require('../models/Report');
 const User = require('../models/User');
+const NotificationService = require('../utils/notificationService');
 
 // Predefined workers from authController - keep in sync with authController.js
 const WORKER_CREDENTIALS = [
@@ -69,6 +70,14 @@ exports.createReport = async (req, res) => {
         
         // Populate the user info for response
         await report.populate('reportedBy', 'name email');
+        
+        // Send notification to user about report submission
+        await NotificationService.notifySystem(
+            req.user.id,
+            'Report Submitted Successfully',
+            `Your report "${title}" has been submitted and is being reviewed.`,
+            'medium'
+        );
         
         console.log('Report created successfully:', report._id);
         

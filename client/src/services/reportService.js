@@ -12,7 +12,8 @@ const api = axios.create({
 
 // Add auth token to requests if available
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('citizenToken');
+  // Try both token names for backward compatibility
+  const token = localStorage.getItem('citizenToken') || localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -175,9 +176,10 @@ export const notificationService = {
   getNotifications: async () => {
     try {
       const response = await api.get('/auth/notifications');
-      return response.data;
+      return response.data.notifications || [];
     } catch (error) {
-      throw error.response?.data || error;
+      console.error('Error fetching notifications:', error);
+      return [];
     }
   },
 
@@ -187,9 +189,32 @@ export const notificationService = {
       const response = await api.put(`/auth/notifications/${notificationId}/read`);
       return response.data;
     } catch (error) {
+      console.error('Error marking notification as read:', error);
       throw error.response?.data || error;
     }
   },
+
+  // Mark all notifications as read
+  markAllAsRead: async () => {
+    try {
+      const response = await api.put('/auth/notifications/mark-all-read');
+      return response.data;
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      throw error.response?.data || error;
+    }
+  },
+
+  // Get unread count
+  getUnreadCount: async () => {
+    try {
+      const response = await api.get('/auth/notifications');
+      return response.data.unreadCount || 0;
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+      return 0;
+    }
+  }
 };
 
 export default api;

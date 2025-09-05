@@ -1,29 +1,131 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Mail, Phone, MapPin, Calendar, Edit3, Save, X, Camera, Shield, Bell } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Calendar, Edit3, Save, X, Camera, Shield, Bell, Loader } from 'lucide-react';
+import { userService } from '../../services/reportService';
 
 // Profile Section Component
-const ProfileSection = ({ user }) => {
+const ProfileSection = ({ user: propUser }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [user, setUser] = useState(null);
   const [profileData, setProfileData] = useState({
-    name: user?.name || 'John Doe',
-    email: user?.email || 'john@example.com',
-    phone: '+91 9876543210',
-    address: '123 Main Street, Sector 5, Delhi',
-    joinDate: '2024-01-15',
-    bio: 'Active community member dedicated to improving local civic issues.'
+    name: '',
+    email: '',
+    phone: '',
+    bio: '',
+    location: '',
+    joinDate: ''
   });
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // Here you would typically save to backend
-    console.log('Saving profile:', profileData);
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await userService.getProfile();
+      if (response.success && response.user) {
+        setUser(response.user);
+        setProfileData({
+          name: response.user.name || '',
+          email: response.user.email || '',
+          phone: response.user.phone || '',
+          bio: response.user.bio || '',
+          location: response.user.location || '',
+          joinDate: response.user.createdAt || new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+      setError('Failed to load profile data');
+      
+      // Fallback to prop user or default
+      if (propUser) {
+        setUser(propUser);
+        setProfileData({
+          name: propUser.name || 'User',
+          email: propUser.email || 'user@example.com',
+          phone: propUser.phone || '+91 9876543210',
+          bio: propUser.bio || 'Active community member.',
+          location: propUser.location || 'Location not set',
+          joinDate: propUser.createdAt || new Date().toISOString()
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const response = await userService.updateProfile(profileData);
+      
+      if (response.success) {
+        setUser(response.user);
+        setIsEditing(false);
+        alert('Profile updated successfully!');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Failed to update profile. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
     setIsEditing(false);
     // Reset to original data
+    if (user) {
+      setProfileData({
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        bio: user.bio || '',
+        location: user.location || '',
+        joinDate: user.createdAt || new Date().toISOString()
+      });
+    }
   };
+
+  if (loading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex items-center justify-center h-64"
+      >
+        <div className="text-center">
+          <Loader className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading profile...</p>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (error && !user) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="bg-red-50 border border-red-200 rounded-lg p-4"
+      >
+        <p className="text-red-600">{error}</p>
+        <button 
+          onClick={loadProfile}
+          className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+        >
+          Retry
+        </button>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -76,10 +178,11 @@ const ProfileSection = ({ user }) => {
               <div className="flex space-x-2">
                 <button
                   onClick={handleSave}
-                  className="px-3 py-1 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition-colors flex items-center space-x-1"
+                  disabled={saving}
+                  className="px-3 py-1 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition-colors flex items-center space-x-1 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Save className="w-4 h-4" />
-                  <span>Save</span>
+                  {saving ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  <span>{saving ? 'Saving...' : 'Save'}</span>
                 </button>
                 <button
                   onClick={handleCancel}

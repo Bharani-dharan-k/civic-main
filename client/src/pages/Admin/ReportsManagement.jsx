@@ -112,7 +112,7 @@ const ReportsManagement = () => {
       console.log('Admin token available:', !!token);
       console.log('Assignment request data:', { reportId, workerEmployeeId, priority, estimatedTime, notes });
       
-      const response = await fetch(`http://localhost:5000/api/reports/${reportId}/assign`, {
+      const response = await fetch(`http://localhost:5000/api/admin/reports/${reportId}/assign`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

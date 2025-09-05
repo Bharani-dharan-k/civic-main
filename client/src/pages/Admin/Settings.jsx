@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   User,
@@ -12,22 +12,25 @@ import {
   Phone,
   MapPin,
   Clock,
-  Shield
+  Shield,
+  Loader
 } from 'lucide-react';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('profile');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [profileData, setProfileData] = useState({
-    name: 'Admin User',
-    email: 'admin@civic.gov.in',
-    phone: '+91 98765 43210',
-    designation: 'System Administrator',
-    department: 'Information Technology',
-    location: 'New Delhi'
+    name: '',
+    email: '',
+    phone: '',
+    designation: '',
+    department: '',
+    location: ''
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -57,6 +60,53 @@ const Settings = () => {
     allowedFileTypes: 'jpg,jpeg,png,pdf'
   });
 
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    setLoading(true);
+    try {
+      // Load profile data
+      const profileResponse = await fetch('http://localhost:5000/api/admin/settings/profile', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        }
+      });
+      const profileData = await profileResponse.json();
+      if (profileData.success) {
+        setProfileData(profileData.profile);
+      }
+
+      // Load notification settings
+      const notificationResponse = await fetch('http://localhost:5000/api/admin/settings/notifications', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        }
+      });
+      const notificationData = await notificationResponse.json();
+      if (notificationData.success) {
+        setNotificationSettings(notificationData.settings);
+      }
+
+      // Load system settings
+      const systemResponse = await fetch('http://localhost:5000/api/admin/settings/system', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        }
+      });
+      const systemData = await systemResponse.json();
+      if (systemData.success) {
+        setSystemSettings(systemData.settings);
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      alert('Failed to load settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'security', label: 'Security', icon: Lock },
@@ -64,30 +114,134 @@ const Settings = () => {
     { id: 'system', label: 'System', icon: SettingsIcon }
   ];
 
-  const handleProfileUpdate = () => {
-    // API call to update profile
-    console.log('Profile updated:', profileData);
+  const handleProfileUpdate = async () => {
+    setSaving(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/admin/settings/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify(profileData)
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert('Profile updated successfully!');
+      } else {
+        alert(data.message || 'Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Network error occurred');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       alert('New passwords do not match');
       return;
     }
-    // API call to change password
-    console.log('Password changed');
-    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+
+    if (passwordData.newPassword.length < 6) {
+      alert('New password must be at least 6 characters long');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/admin/settings/password', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert('Password changed successfully!');
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      } else {
+        alert(data.message || 'Failed to change password');
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
+      alert('Network error occurred');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleNotificationUpdate = () => {
-    // API call to update notifications
-    console.log('Notification settings updated:', notificationSettings);
+  const handleNotificationUpdate = async () => {
+    setSaving(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/admin/settings/notifications', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify(notificationSettings)
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert('Notification settings updated successfully!');
+      } else {
+        alert(data.message || 'Failed to update notification settings');
+      }
+    } catch (error) {
+      console.error('Error updating notification settings:', error);
+      alert('Network error occurred');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleSystemUpdate = () => {
-    // API call to update system settings
-    console.log('System settings updated:', systemSettings);
+  const handleSystemUpdate = async () => {
+    setSaving(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/admin/settings/system', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify(systemSettings)
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert('System settings updated successfully!');
+      } else {
+        alert(data.message || 'Failed to update system settings');
+      }
+    } catch (error) {
+      console.error('Error updating system settings:', error);
+      alert('Network error occurred');
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <Loader className="w-8 h-8 animate-spin text-orange-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -236,10 +390,15 @@ const Settings = () => {
                 <div className="flex justify-end mt-6 pt-6 border-t border-gray-200">
                   <button
                     onClick={handleProfileUpdate}
-                    className="flex items-center space-x-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                    disabled={saving}
+                    className="flex items-center space-x-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Save className="w-4 h-4" />
-                    <span>Save Changes</span>
+                    {saving ? (
+                      <Loader className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    <span>{saving ? 'Saving...' : 'Save Changes'}</span>
                   </button>
                 </div>
               </div>
@@ -332,10 +491,15 @@ const Settings = () => {
                 <div className="flex justify-end mt-6 pt-6 border-t border-gray-200">
                   <button
                     onClick={handlePasswordChange}
-                    className="flex items-center space-x-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    disabled={saving}
+                    className="flex items-center space-x-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Lock className="w-4 h-4" />
-                    <span>Change Password</span>
+                    {saving ? (
+                      <Loader className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Lock className="w-4 h-4" />
+                    )}
+                    <span>{saving ? 'Changing...' : 'Change Password'}</span>
                   </button>
                 </div>
               </div>
@@ -421,10 +585,15 @@ const Settings = () => {
                 <div className="flex justify-end mt-6 pt-6 border-t border-gray-200">
                   <button
                     onClick={handleNotificationUpdate}
-                    className="flex items-center space-x-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                    disabled={saving}
+                    className="flex items-center space-x-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Save className="w-4 h-4" />
-                    <span>Save Preferences</span>
+                    {saving ? (
+                      <Loader className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    <span>{saving ? 'Saving...' : 'Save Preferences'}</span>
                   </button>
                 </div>
               </div>
@@ -525,10 +694,15 @@ const Settings = () => {
                 <div className="flex justify-end mt-6 pt-6 border-t border-gray-200">
                   <button
                     onClick={handleSystemUpdate}
-                    className="flex items-center space-x-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                    disabled={saving}
+                    className="flex items-center space-x-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Save className="w-4 h-4" />
-                    <span>Save Settings</span>
+                    {saving ? (
+                      <Loader className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    <span>{saving ? 'Saving...' : 'Save Settings'}</span>
                   </button>
                 </div>
               </div>
