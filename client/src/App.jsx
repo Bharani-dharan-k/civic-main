@@ -14,6 +14,10 @@ import EnglishLogin from './pages/EnglishLogin';
 import UnifiedLogin from './pages/UnifiedLogin';
 import NewWardOfficerDashboard from './pages/NewWardOfficerDashboard';
 import CitizenDashboard from './pages/CitizenDashboard.jsx';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
 
 // Admin Components
 import AdminLogin from './pages/Admin/AdminLogin';
@@ -38,6 +42,10 @@ function App() {
             <Route path="/citizen-portal" element={<EnglishCitizenPortal />} />
             <Route path="/login" element={<UnifiedLogin />} />
             <Route path="/old-login" element={<EnglishLogin />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
             
             {/* Citizen Dashboard Route */}
             <Route path="/citizen-dashboard" element={<CitizenDashboard />} />

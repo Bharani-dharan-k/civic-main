@@ -4,8 +4,17 @@ const API = axios.create({ baseURL: 'http://localhost:5000/api' });
 
 // Add a request interceptor to include the token in headers
 API.interceptors.request.use((req) => {
-    if (localStorage.getItem('token')) {
-        req.headers.Authorization = `Bearer ${localStorage.getItem('token')}`;
+    // Check multiple possible token keys
+    const token = localStorage.getItem('token') || 
+                  localStorage.getItem('citizenToken') || 
+                  localStorage.getItem('adminToken') || 
+                  localStorage.getItem('workerToken');
+    
+    if (token) {
+        req.headers.Authorization = `Bearer ${token}`;
+        console.log('🔐 Adding token to request:', token.substring(0, 20) + '...');
+    } else {
+        console.log('❌ No token found in localStorage');
     }
     return req;
 });

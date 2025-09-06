@@ -17,16 +17,18 @@ const AdminLogin = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            const result = await login(formData);
+            // Pass userType as 'admin' to use the correct endpoint
+            const result = await login({ ...formData, userType: 'admin' });
             
-            if (result.user.role !== 'super_admin') {
+            if (result.user && result.user.role !== 'super_admin') {
                 toast.error('Access denied. Admin credentials required.');
                 return;
             }
             
-            toast.success(`Welcome Admin ${result.user.name}!`);
+            toast.success(`Welcome Admin ${result.user ? result.user.name : 'User'}!`);
             navigate('/admin-dashboard');
         } catch (error) {
+            console.error('Admin login error:', error);
             toast.error('Login failed. Please check your admin credentials.');
         } finally {
             setLoading(false);
@@ -34,7 +36,7 @@ const AdminLogin = () => {
     };
 
     const fillAdminDemo = () => {
-        setFormData({ email: 'admin@civic.com', password: 'password' });
+        setFormData({ email: 'bharani@gmail.com', password: 'bharani5544' });
     };
 
     return (

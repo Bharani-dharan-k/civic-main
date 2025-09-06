@@ -52,7 +52,16 @@ export const AuthProvider = ({ children }) => {
 	const login = async ({ email, password, userType = 'admin' }) => {
 		setLoading(true);
 		try {
-			const endpoint = userType === 'worker' ? 'auth/worker/login' : 'auth/login';
+			let endpoint;
+			if (userType === 'worker') {
+				endpoint = 'auth/worker/login';
+			} else if (userType === 'admin') {
+				endpoint = 'auth/admin/login';
+			} else {
+				endpoint = 'auth/login'; // citizen login
+			}
+			
+			console.log('🔑 Login attempt:', { email, userType, endpoint });
 			const res = await axios.post(`${API_BASE}/${endpoint}`, { email, password });
 			const { token } = res.data;
 			if (!token) throw new Error('No token returned');

@@ -85,13 +85,24 @@ console.log('🔥 Pre-loaded active workers:', Array.from(loggedInWorkers));
 // @desc    Get user profile
 exports.getProfile = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).select('-password').populate('reports');
+        console.log('🔍 Getting profile for user ID:', req.user.id);
+        const user = await User.findById(req.user.id).select('-password');
+        
+        if (!user) {
+            console.log('❌ User not found');
+            return res.status(404).json({
+                success: false,
+                msg: 'User not found'
+            });
+        }
+        
+        console.log('✅ Profile found for user:', user.name);
         res.json({
             success: true,
             user
         });
     } catch (err) {
-        console.error('Profile fetch error:', err.message);
+        console.error('❌ Profile fetch error:', err.message);
         res.status(500).json({ 
             success: false,
             msg: 'Server Error' 
@@ -125,17 +136,21 @@ exports.updateProfile = async (req, res) => {
 // @desc    Get leaderboard
 exports.getLeaderboard = async (req, res) => {
     try {
+        console.log('🏆 Fetching leaderboard data...');
         const topUsers = await User.find({ role: 'citizen' })
             .select('name email points badges createdAt')
             .sort({ points: -1 })
             .limit(10);
+        
+        console.log(`✅ Found ${topUsers.length} citizen users for leaderboard`);
+        console.log('Top users:', topUsers.map(u => ({ name: u.name, points: u.points })));
         
         res.json({
             success: true,
             leaderboard: topUsers
         });
     } catch (err) {
-        console.error('Leaderboard fetch error:', err.message);
+        console.error('❌ Leaderboard fetch error:', err.message);
         res.status(500).json({ 
             success: false,
             msg: 'Server Error' 
@@ -229,9 +244,7 @@ exports.registerCitizen = async (req, res) => {
             role: 'citizen' 
         });
 
-        // Hash password
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(password, salt);
+        // Password will be automatically hashed by the User model pre-save hook
         await user.save();
 
         // Create JWT token

@@ -36,12 +36,45 @@ export const reportService = {
     }
   },
 
+  // Submit a simple report (for chatbot)
+  submitReport: async (reportData) => {
+    try {
+      const formData = new FormData();
+      
+      // Add required fields
+      formData.append('title', reportData.title);
+      formData.append('description', reportData.description);
+      formData.append('category', reportData.category);
+      formData.append('address', reportData.address);
+      formData.append('longitude', reportData.location?.coordinates?.[0] || 0);
+      formData.append('latitude', reportData.location?.coordinates?.[1] || 0);
+      
+      // Add image if provided
+      if (reportData.imageUrl && reportData.imageUrl.startsWith('data:')) {
+        // Convert base64 to blob if needed
+        const response = await fetch(reportData.imageUrl);
+        const blob = await response.blob();
+        formData.append('image', blob, 'report-image.png');
+      }
+      
+      const response = await api.post('/reports', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
   // Get all reports
   getAllReports: async (filters = {}) => {
     try {
       const queryParams = new URLSearchParams(filters).toString();
       const response = await api.get(`/reports${queryParams ? `?${queryParams}` : ''}`);
-      return response.data;
+      // Return the reports array from the server response
+      return response.data.reports || response.data;
     } catch (error) {
       throw error.response?.data || error;
     }
@@ -163,8 +196,10 @@ export const userService = {
   getLeaderboard: async () => {
     try {
       const response = await api.get('/auth/leaderboard');
+      console.log('Leaderboard API response:', response.data);
       return response.data;
     } catch (error) {
+      console.error('Leaderboard API error:', error);
       throw error.response?.data || error;
     }
   },

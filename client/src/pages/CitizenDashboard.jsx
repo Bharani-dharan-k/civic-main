@@ -40,8 +40,14 @@ import {
   Menu,
   X,
   Globe,
-  ChevronDown
+  ChevronDown,
+  Map,
+  Bot
 } from 'lucide-react';
+
+// Import the new pages
+import InteractiveMapPage from './InteractiveMapPage';
+import AIChatbotPage from './AIChatbotPage';
 
 // Import services and utilities
 import { reportService, userService, notificationService } from '../services/reportService';
@@ -71,6 +77,8 @@ const CitizenDashboard = () => {
   const sidebarItems = [
     { id: 'submit', label: t('submit_report'), icon: PlusCircle },
     { id: 'track', label: t('track_status'), icon: MapPin },
+    { id: 'interactive_map', label: 'Interactive Map', icon: Map },
+    { id: 'ai_chatbot', label: 'AI Assistant', icon: Bot },
     { id: 'leaderboard', label: t('leaderboard'), icon: Trophy },
     { id: 'notifications', label: t('notifications'), icon: Bell, badge: unreadCount },
     { id: 'insights', label: t('insights'), icon: BarChart3 },
@@ -94,18 +102,39 @@ const CitizenDashboard = () => {
         setUser(userProfile?.user || userProfile);
       } catch (userError) {
         console.log('Failed to load user profile, using fallback data:', userError);
-        // Set fallback user data if API fails
-        setUser({
-          _id: 'fallback-user-123',
-          name: 'John Doe',
-          email: 'john.doe@civic.gov',
-          phone: '+1 234-567-8900',
-          location: 'New York, NY',
-          bio: 'A concerned citizen actively participating in community development.',
-          points: 150,
-          badges: [],
-          role: 'citizen'
-        });
+        // Try to get user from localStorage first, then use fallback
+        const storedUser = localStorage.getItem('citizenUser') || localStorage.getItem('user');
+        if (storedUser) {
+          try {
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+          } catch (parseError) {
+            console.error('Error parsing stored user:', parseError);
+            setUser({
+              _id: 'fallback-user-123',
+              name: 'Citizen User',
+              email: 'citizen@civic.gov',
+              phone: '+1 000-000-0000',
+              location: 'Location not set',
+              bio: 'A civic-minded citizen.',
+              points: 0,
+              badges: [],
+              role: 'citizen'
+            });
+          }
+        } else {
+          setUser({
+            _id: 'fallback-user-123',
+            name: 'Citizen User',
+            email: 'citizen@civic.gov',
+            phone: '+1 000-000-0000',
+            location: 'Location not set',
+            bio: 'A civic-minded citizen.',
+            points: 0,
+            badges: [],
+            role: 'citizen'
+          });
+        }
       }
       
       // Load user's reports
@@ -133,11 +162,27 @@ const CitizenDashboard = () => {
       setUnreadCount(0);
       // Ensure user object exists even on error
       if (!user) {
-        setUser({
-          name: 'Citizen User',
-          email: 'citizen@civic.gov',
-          points: 0
-        });
+        // Try to get user from localStorage first, then use fallback
+        const storedUser = localStorage.getItem('citizenUser') || localStorage.getItem('user');
+        if (storedUser) {
+          try {
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+          } catch (parseError) {
+            console.error('Error parsing stored user:', parseError);
+            setUser({
+              name: 'Citizen User',
+              email: 'citizen@civic.gov',
+              points: 0
+            });
+          }
+        } else {
+          setUser({
+            name: 'Citizen User',
+            email: 'citizen@civic.gov',
+            points: 0
+          });
+        }
       }
     } finally {
       setLoading(false);
@@ -148,6 +193,8 @@ const CitizenDashboard = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('citizenToken');
+    localStorage.removeItem('citizenUser');
     navigate('/login');
     toast.success(t('logged_out_successfully'));
   };
@@ -411,7 +458,7 @@ const CitizenDashboard = () => {
               {formData.images.length > 0 && (
                 <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
                   {formData.images.map((image, index) => (
-                    <div key={index} className="relative">
+                    <div key={`image-${index}-${image.name}-${image.size}`} className="relative">
                       <img
                         src={URL.createObjectURL(image)}
                         alt={`Upload ${index + 1}`}
@@ -631,7 +678,9 @@ const CitizenDashboard = () => {
         try {
           const data = await reportService.getLeaderboard();
           console.log('Leaderboard data received:', data);
-          setLeaderboardData(Array.isArray(data) ? data : []);
+          // Handle the response structure from server
+          const leaderboardArray = data?.leaderboard || data || [];
+          setLeaderboardData(Array.isArray(leaderboardArray) ? leaderboardArray : []);
         } catch (apiError) {
           console.log('API not available, using mock data');
           
@@ -1144,7 +1193,7 @@ const CitizenDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex border-0 rounded-none">
       {/* Mobile Sidebar Overlay */}
       {isMobileSidebarOpen && (
         <div 
@@ -1244,8 +1293,8 @@ const CitizenDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Enhanced Header with Homepage Theme */}
-        <header className="bg-gradient-to-r from-blue-600 via-blue-500 to-green-600 text-white shadow-lg">
-          <div className="px-6 py-4">
+        <header className="bg-gradient-to-r from-blue-600 via-blue-500 to-green-600 text-white shadow-lg border-0 rounded-none">
+          <div className="px-6 py-4 rounded-none border-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <button
@@ -1255,12 +1304,8 @@ const CitizenDashboard = () => {
                   <Menu className="w-6 h-6" />
                 </button>
                 <div className="flex items-center gap-6">
-                  {/* Clean Title and Welcome Message */}
                   <div>
-                    <h1 className="text-2xl font-bold text-white mb-1">
-                      {t('citizen_dashboard')}
-                    </h1>
-                    <p className="text-blue-100">
+                    <p className="text-lg text-blue-100">
                       {t('welcome_back')}, <span className="font-semibold text-white">{user?.name || 'Citizen'}</span>
                     </p>
                   </div>
@@ -1388,14 +1433,20 @@ const CitizenDashboard = () => {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 p-6 bg-gray-50 overflow-auto">
-          {activeTab === 'submit' && <SubmitComplaintSection />}
-          {activeTab === 'track' && <TrackStatusSection complaints={complaints} />}
-          {activeTab === 'leaderboard' && <LeaderboardSection />}
-          {activeTab === 'notifications' && <NotificationsSection notifications={notifications} setNotifications={setNotifications} />}
-          {activeTab === 'insights' && <InsightsSection />}
-          {activeTab === 'profile' && <ProfileSection user={user} />}
-        </main>
+        {activeTab === 'interactive_map' ? (
+          <InteractiveMapPage onBack={() => setActiveTab('submit')} />
+        ) : activeTab === 'ai_chatbot' ? (
+          <AIChatbotPage onBack={() => setActiveTab('submit')} />
+        ) : (
+          <main className="flex-1 p-6 bg-gray-50 overflow-auto">
+            {activeTab === 'submit' && <SubmitComplaintSection />}
+            {activeTab === 'track' && <TrackStatusSection complaints={complaints} />}
+            {activeTab === 'leaderboard' && <LeaderboardSection />}
+            {activeTab === 'notifications' && <NotificationsSection notifications={notifications} setNotifications={setNotifications} />}
+            {activeTab === 'insights' && <InsightsSection />}
+            {activeTab === 'profile' && <ProfileSection user={user} />}
+          </main>
+        )}
       </div>
     </div>
   );
