@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Send, 
-  ArrowLeft, 
-  Bot, 
-  User, 
-  Camera, 
-  MapPin, 
+import {
+  Send,
+  ArrowLeft,
+  Bot,
+  User,
+  Camera,
+  MapPin,
   FileText,
   Clock,
   CheckCircle,
@@ -15,10 +15,13 @@ import {
   MicOff,
   Image,
   X,
-  MessageSquare
+  MessageSquare,
+  Navigation,
+  Map
 } from 'lucide-react';
 import { reportService } from '../services/reportService';
 import { toast } from 'react-toastify';
+import LocationPicker from '../components/LocationPicker';
 
 const AIChatbotPage = ({ onBack }) => {
   const [messages, setMessages] = useState([]);
@@ -28,6 +31,8 @@ const AIChatbotPage = ({ onBack }) => {
   const [reportData, setReportData] = useState({});
   const [isListening, setIsListening] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(null);
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const [recognition, setRecognition] = useState(null);
@@ -122,6 +127,10 @@ const AIChatbotPage = ({ onBack }) => {
         handleReportFlow(message);
       } else if (currentFlow === 'status_check') {
         handleStatusCheck(message);
+      } else if (currentFlow === 'status_check_by_id') {
+        handleStatusCheckById(message);
+      } else if (currentFlow === 'status_check_by_email') {
+        handleStatusCheckByEmail(message);
       } else if (currentFlow === 'area_stats') {
         handleAreaStats(message);
       }
@@ -179,9 +188,10 @@ const AIChatbotPage = ({ onBack }) => {
     
     if (!reportData.address) {
       setReportData(prev => ({ ...prev, address: message }));
-      addMessage('bot', "Perfect! Would you like to add a photo to help us better understand the issue?", [
-        { text: "Yes, upload photo", action: "upload_photo" },
-        { text: "No, submit without photo", action: "submit_report" }
+      addMessage('bot', "Great! Now let's get the location. How would you like to provide the location?", [
+        { text: "📍 Use Current Location", action: "use_gps_location" },
+        { text: "🗺️ Select on Map", action: "select_on_map" },
+        { text: "📝 Skip Location", action: "skip_location" }
       ]);
       return;
     }
@@ -192,6 +202,17 @@ const AIChatbotPage = ({ onBack }) => {
       startReportFlow();
     } else if (action === 'check_status') {
       startStatusCheck();
+    } else if (action === 'show_all_reports') {
+      addMessage('user', '📋 Show all my reports');
+      await handleStatusCheck();
+    } else if (action === 'search_by_id') {
+      addMessage('user', '🔍 Search by Report ID');
+      setCurrentFlow('status_check_by_id');
+      addMessage('bot', "Please enter your Report ID (e.g., the 6-character code from your report):");
+    } else if (action === 'search_by_email') {
+      addMessage('user', '📧 Search by email');
+      setCurrentFlow('status_check_by_email');
+      addMessage('bot', "Please enter your email address to find reports associated with your account:");
     } else if (action === 'area_stats') {
       startAreaStats();
     } else if (action === 'help') {
@@ -208,6 +229,15 @@ const AIChatbotPage = ({ onBack }) => {
     } else if (action === 'submit_report') {
       addMessage('user', 'No, submit without photo');
       await submitReport();
+    } else if (action === 'use_gps_location') {
+      addMessage('user', '📍 Use Current Location');
+      await handleGPSLocation();
+    } else if (action === 'select_on_map') {
+      addMessage('user', '🗺️ Select on Map');
+      setShowLocationPicker(true);
+    } else if (action === 'skip_location') {
+      addMessage('user', '📝 Skip Location');
+      proceedToPhotoOptions();
     } else if (action === 'new_conversation') {
       startNewConversation();
     }
@@ -224,32 +254,14 @@ const AIChatbotPage = ({ onBack }) => {
 
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
         
-        // Get user's location if available, otherwise use default coordinates
-        const getCoordinates = () => {
-          return new Promise((resolve) => {
-            if (navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition(
-                (position) => {
-                  resolve([position.coords.longitude, position.coords.latitude]);
-                },
-                (error) => {
-                  console.log('Location access denied, using default coordinates');
-                  resolve([77.5946, 12.9716]); // Default to Bangalore coordinates
-                }
-              );
-            } else {
-              resolve([77.5946, 12.9716]); // Default coordinates
-            }
-          });
-        };
-
-        const coordinates = await getCoordinates();
+        // Use selected location if available, otherwise use default coordinates
+        const coordinates = reportData.coordinates || [77.5946, 12.9716];
         
         const reportPayload = {
           title: `${(reportData.issueType || 'civic').replace('-', ' ')} issue`,
           category: reportData.issueType || 'other',
           description: reportData.description,
-          address: reportData.address,
+          address: selectedLocation?.address || reportData.address || 'Location not specified',
           location: {
             type: 'Point',
             coordinates: coordinates
@@ -278,6 +290,7 @@ Is there anything else I can help you with?`, [
           setCurrentFlow(null);
           setReportData({});
           setSelectedImage(null);
+          setSelectedLocation(null);
         }
       } catch (error) {
         console.error('Report submission error:', error);
@@ -307,34 +320,202 @@ Is there anything else I can help you with?`, [
 
   const startStatusCheck = () => {
     setCurrentFlow('status_check');
-    addMessage('bot', "I can help you check your report status. Please provide your report ID or email address:");
+    addMessage('bot', "I can help you check your report status. How would you like to check your reports?", [
+      { text: "📋 Show all my reports", action: "show_all_reports" },
+      { text: "🔍 Search by Report ID", action: "search_by_id" },
+      { text: "📧 Search by email", action: "search_by_email" }
+    ]);
   };
 
   const handleStatusCheck = async (message) => {
     simulateTyping(async () => {
       try {
-        // Simulate checking status
-        addMessage('bot', `📊 Here are your recent reports:
+        addMessage('bot', "🔍 Fetching your reports from the system...");
 
-🔹 **Report #1234** - Pothole on Main Street
-   Status: In Progress ⏳
-   Submitted: 2 days ago
-   
-🔹 **Report #1235** - Street light not working  
-   Status: Resolved ✅
-   Submitted: 1 week ago
-   
-🔹 **Report #1236** - Garbage collection issue
-   Status: Pending 📋
-   Submitted: 3 days ago
+        // Fetch real reports from backend
+        const userReports = await reportService.getUserReports();
+        console.log('Fetched user reports for status check:', userReports);
 
-Would you like details about any specific report?`, [
+        if (!userReports || userReports.length === 0) {
+          addMessage('bot', "📭 No reports found in your account.\n\nYou haven't submitted any reports yet. Would you like to report a new issue?", [
+            { text: "Report a new issue", action: "start_report" },
+            { text: "Start new conversation", action: "new_conversation" }
+          ]);
+          setCurrentFlow(null);
+          return;
+        }
+
+        // Format the reports data
+        let reportsText = `📊 **Found ${userReports.length} report${userReports.length > 1 ? 's' : ''} in your account:**\n\n`;
+
+        userReports.slice(0, 5).forEach((report, index) => {
+          const statusIcon = getStatusIcon(report.status);
+          const timeAgo = getTimeAgo(report.createdAt);
+          const reportId = report._id ? report._id.slice(-6) : 'N/A';
+
+          reportsText += `🔹 **Report #${reportId}** - ${report.title || 'Untitled'}\n`;
+          reportsText += `   Status: ${formatStatus(report.status)} ${statusIcon}\n`;
+          reportsText += `   Category: ${report.category || 'Other'}\n`;
+          reportsText += `   Submitted: ${timeAgo}\n`;
+          if (report.address) {
+            reportsText += `   Location: ${report.address}\n`;
+          }
+          reportsText += `\n`;
+        });
+
+        if (userReports.length > 5) {
+          reportsText += `📝 *Showing latest 5 reports. You have ${userReports.length - 5} more reports.*\n\n`;
+        }
+
+        reportsText += "Would you like to see details of a specific report or perform another action?";
+
+        const actionOptions = [
+          { text: "Report another issue", action: "start_report" },
+          { text: "Refresh status", action: "check_status" },
+          { text: "Start new conversation", action: "new_conversation" }
+        ];
+
+        addMessage('bot', reportsText, actionOptions);
+        setCurrentFlow(null);
+
+      } catch (error) {
+        console.error('Error fetching reports:', error);
+        addMessage('bot', `❌ Sorry, I couldn't fetch your reports right now. This might be due to:\n\n• Network connection issues\n• Server temporarily unavailable\n• Authentication problems\n\nPlease try again in a moment or contact support if the issue persists.`, [
+          { text: "Try again", action: "check_status" },
+          { text: "Report a new issue", action: "start_report" },
+          { text: "Start new conversation", action: "new_conversation" }
+        ]);
+        setCurrentFlow(null);
+      }
+    });
+  };
+
+  const handleStatusCheckById = async (reportId) => {
+    simulateTyping(async () => {
+      try {
+        addMessage('bot', `🔍 Searching for report ID: ${reportId}...`);
+
+        // Fetch all user reports and find the specific one
+        const userReports = await reportService.getUserReports();
+
+        if (!userReports || userReports.length === 0) {
+          addMessage('bot', "📭 No reports found in your account.", [
+            { text: "Report a new issue", action: "start_report" },
+            { text: "Start new conversation", action: "new_conversation" }
+          ]);
+          setCurrentFlow(null);
+          return;
+        }
+
+        // Search for the report by ID (match last 6 characters)
+        const matchingReport = userReports.find(report =>
+          report._id && report._id.slice(-6).toLowerCase() === reportId.toLowerCase()
+        );
+
+        if (!matchingReport) {
+          addMessage('bot', `❌ Report ID "${reportId}" not found in your account.\n\nPlease check the ID and try again, or view all your reports.`, [
+            { text: "📋 Show all my reports", action: "show_all_reports" },
+            { text: "🔍 Try another ID", action: "search_by_id" },
+            { text: "Start new conversation", action: "new_conversation" }
+          ]);
+          setCurrentFlow(null);
+          return;
+        }
+
+        // Display the specific report details
+        const statusIcon = getStatusIcon(matchingReport.status);
+        const timeAgo = getTimeAgo(matchingReport.createdAt);
+        const reportIdShort = matchingReport._id.slice(-6);
+
+        let reportDetail = `✅ **Report Found!**\n\n`;
+        reportDetail += `🔹 **Report #${reportIdShort}** - ${matchingReport.title || 'Untitled'}\n`;
+        reportDetail += `   Status: ${formatStatus(matchingReport.status)} ${statusIcon}\n`;
+        reportDetail += `   Category: ${matchingReport.category || 'Other'}\n`;
+        reportDetail += `   Description: ${matchingReport.description || 'No description'}\n`;
+        reportDetail += `   Submitted: ${timeAgo}\n`;
+        if (matchingReport.address) {
+          reportDetail += `   Location: ${matchingReport.address}\n`;
+        }
+        if (matchingReport.assignedTo) {
+          reportDetail += `   Assigned to: ${matchingReport.assignedTo}\n`;
+        }
+        reportDetail += `\nWhat would you like to do next?`;
+
+        addMessage('bot', reportDetail, [
+          { text: "📋 Show all my reports", action: "show_all_reports" },
           { text: "Report another issue", action: "start_report" },
           { text: "Start new conversation", action: "new_conversation" }
         ]);
         setCurrentFlow(null);
+
       } catch (error) {
-        addMessage('bot', "I couldn't find any reports with that information. Please double-check your details.");
+        console.error('Error searching report by ID:', error);
+        addMessage('bot', "❌ Sorry, I couldn't search for that report right now. Please try again later.", [
+          { text: "Try again", action: "search_by_id" },
+          { text: "📋 Show all my reports", action: "show_all_reports" },
+          { text: "Start new conversation", action: "new_conversation" }
+        ]);
+        setCurrentFlow(null);
+      }
+    });
+  };
+
+  const handleStatusCheckByEmail = async (email) => {
+    simulateTyping(async () => {
+      try {
+        addMessage('bot', `🔍 Searching for reports associated with: ${email}...`);
+
+        // For now, just fetch user's own reports since backend handles user-specific reports
+        const userReports = await reportService.getUserReports();
+
+        if (!userReports || userReports.length === 0) {
+          addMessage('bot', `📭 No reports found for ${email}.\n\nEither no reports have been submitted with this email, or the email doesn't match your current account.`, [
+            { text: "Report a new issue", action: "start_report" },
+            { text: "Start new conversation", action: "new_conversation" }
+          ]);
+          setCurrentFlow(null);
+          return;
+        }
+
+        // Format the reports data (same as show all reports)
+        let reportsText = `📊 **Found ${userReports.length} report${userReports.length > 1 ? 's' : ''} for ${email}:**\n\n`;
+
+        userReports.slice(0, 5).forEach((report, index) => {
+          const statusIcon = getStatusIcon(report.status);
+          const timeAgo = getTimeAgo(report.createdAt);
+          const reportId = report._id ? report._id.slice(-6) : 'N/A';
+
+          reportsText += `🔹 **Report #${reportId}** - ${report.title || 'Untitled'}\n`;
+          reportsText += `   Status: ${formatStatus(report.status)} ${statusIcon}\n`;
+          reportsText += `   Category: ${report.category || 'Other'}\n`;
+          reportsText += `   Submitted: ${timeAgo}\n`;
+          if (report.address) {
+            reportsText += `   Location: ${report.address}\n`;
+          }
+          reportsText += `\n`;
+        });
+
+        if (userReports.length > 5) {
+          reportsText += `📝 *Showing latest 5 reports. You have ${userReports.length - 5} more reports.*\n\n`;
+        }
+
+        reportsText += "What would you like to do next?";
+
+        addMessage('bot', reportsText, [
+          { text: "🔍 Search by Report ID", action: "search_by_id" },
+          { text: "Report another issue", action: "start_report" },
+          { text: "Start new conversation", action: "new_conversation" }
+        ]);
+        setCurrentFlow(null);
+
+      } catch (error) {
+        console.error('Error searching reports by email:', error);
+        addMessage('bot', "❌ Sorry, I couldn't search for reports with that email right now. Please try again later.", [
+          { text: "Try again", action: "search_by_email" },
+          { text: "📋 Show all my reports", action: "show_all_reports" },
+          { text: "Start new conversation", action: "new_conversation" }
+        ]);
+        setCurrentFlow(null);
       }
     });
   };
@@ -405,10 +586,89 @@ What would you like to do next?`, [
     ]);
   };
 
+  const handleGPSLocation = async () => {
+    simulateTyping(async () => {
+      if (!navigator.geolocation) {
+        addMessage('bot', "❌ GPS location is not supported by your browser. Please select location manually.", [
+          { text: "🗺️ Select on Map", action: "select_on_map" },
+          { text: "📝 Skip Location", action: "skip_location" }
+        ]);
+        return;
+      }
+
+      addMessage('bot', "📍 Getting your current location...");
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const location = {
+            lat: latitude,
+            lng: longitude,
+            address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+          };
+
+          setSelectedLocation(location);
+          setReportData(prev => ({
+            ...prev,
+            coordinates: [longitude, latitude],
+            gpsLocation: location
+          }));
+
+          simulateTyping(() => {
+            addMessage('bot', `✅ Location captured successfully!\n📍 **Location:** ${location.address}\n\nWould you like to add a photo to help us better understand the issue?`, [
+              { text: "📷 Yes, upload photo", action: "upload_photo" },
+              { text: "📝 No, submit without photo", action: "submit_report" }
+            ]);
+          });
+        },
+        (error) => {
+          console.error('GPS error:', error);
+          simulateTyping(() => {
+            addMessage('bot', "❌ Unable to get your current location. Please try selecting the location manually or skip this step.", [
+              { text: "🗺️ Select on Map", action: "select_on_map" },
+              { text: "📝 Skip Location", action: "skip_location" }
+            ]);
+          });
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        }
+      );
+    });
+  };
+
+  const handleLocationSelect = (location) => {
+    setSelectedLocation(location);
+    setReportData(prev => ({
+      ...prev,
+      coordinates: [location.lng, location.lat],
+      gpsLocation: location
+    }));
+
+    simulateTyping(() => {
+      addMessage('bot', `✅ Location selected successfully!\n📍 **Location:** ${location.address}\n\nWould you like to add a photo to help us better understand the issue?`, [
+        { text: "📷 Yes, upload photo", action: "upload_photo" },
+        { text: "📝 No, submit without photo", action: "submit_report" }
+      ]);
+    });
+  };
+
+  const proceedToPhotoOptions = () => {
+    simulateTyping(() => {
+      addMessage('bot', "Would you like to add a photo to help us better understand the issue?", [
+        { text: "📷 Yes, upload photo", action: "upload_photo" },
+        { text: "📝 No, submit without photo", action: "submit_report" }
+      ]);
+    });
+  };
+
   const startNewConversation = () => {
     setCurrentFlow(null);
     setReportData({});
     setSelectedImage(null);
+    setSelectedLocation(null);
     const welcomeMessage = {
       id: `msg-${Date.now()}-restart`,
       type: 'bot',
@@ -438,6 +698,52 @@ What would you like to do next?`, [
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // Helper function to get status icon
+  const getStatusIcon = (status) => {
+    const icons = {
+      'submitted': '📋',
+      'acknowledged': '👁️',
+      'assigned': '👷',
+      'in_progress': '⏳',
+      'resolved': '✅',
+      'rejected': '❌'
+    };
+    return icons[status] || '📋';
+  };
+
+  // Helper function to format status text
+  const formatStatus = (status) => {
+    const statusMap = {
+      'submitted': 'Submitted',
+      'acknowledged': 'Acknowledged',
+      'assigned': 'Assigned',
+      'in_progress': 'In Progress',
+      'resolved': 'Resolved',
+      'rejected': 'Rejected'
+    };
+    return statusMap[status] || status;
+  };
+
+  // Helper function to calculate time ago
+  const getTimeAgo = (dateString) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+    const diffMinutes = Math.floor(diffTime / (1000 * 60));
+
+    if (diffDays > 0) {
+      return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    } else if (diffHours > 0) {
+      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    } else if (diffMinutes > 0) {
+      return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
+    } else {
+      return 'Just now';
+    }
   };
 
   return (
@@ -563,6 +869,36 @@ What would you like to do next?`, [
           <div ref={chatEndRef} />
         </div>
       </div>
+
+      {/* Location Picker Modal */}
+      <AnimatePresence>
+        {showLocationPicker && (
+          <LocationPicker
+            onLocationSelect={handleLocationSelect}
+            onClose={() => setShowLocationPicker(false)}
+            initialLocation={selectedLocation}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Selected Location Preview */}
+      {selectedLocation && (
+        <div className="max-w-4xl mx-auto px-4 py-2">
+          <div className="bg-white rounded-lg border p-3 flex items-center space-x-3">
+            <MapPin className="w-5 h-5 text-blue-600" />
+            <div className="flex-1">
+              <span className="text-sm font-medium text-gray-900">Location Selected</span>
+              <p className="text-xs text-gray-500">{selectedLocation.address}</p>
+            </div>
+            <button
+              onClick={() => setSelectedLocation(null)}
+              className="p-1 text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Selected Image Preview */}
       {selectedImage && (

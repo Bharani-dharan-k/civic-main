@@ -16,7 +16,8 @@
       "Bash(cmd //c:*)",
       "Bash(npm run dev:*)",
       "Bash(timeout:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "ask": []

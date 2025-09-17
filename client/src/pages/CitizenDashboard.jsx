@@ -42,7 +42,8 @@ import {
   Globe,
   ChevronDown,
   Map,
-  Bot
+  Bot,
+  RefreshCw
 } from 'lucide-react';
 
 // Import the new pages
@@ -141,6 +142,7 @@ const CitizenDashboard = () => {
       try {
         const userReports = await reportService.getUserReports();
         console.log('User reports loaded:', userReports);
+        console.log('Reports data structure:', userReports?.map(r => ({ id: r._id, title: r.title, status: r.status })));
         setComplaints(Array.isArray(userReports) ? userReports : []);
       } catch (reportsError) {
         console.error('Failed to load user reports:', reportsError);
@@ -322,7 +324,8 @@ const CitizenDashboard = () => {
         
         // Refresh complaints list
         const updatedReports = await reportService.getUserReports();
-        setComplaints(updatedReports);
+        console.log('Updated reports after submission:', updatedReports);
+        setComplaints(Array.isArray(updatedReports) ? updatedReports : []);
         
       } catch (error) {
         console.error('Submit error:', error);
@@ -520,10 +523,17 @@ const CitizenDashboard = () => {
 
     const getStatusColor = (status) => {
       const colors = {
+        'submitted': 'bg-blue-100 text-blue-800',
         'Submitted': 'bg-blue-100 text-blue-800',
+        'acknowledged': 'bg-yellow-100 text-yellow-800',
         'Acknowledged': 'bg-yellow-100 text-yellow-800',
+        'assigned': 'bg-purple-100 text-purple-800',
+        'Assigned': 'bg-purple-100 text-purple-800',
+        'in_progress': 'bg-orange-100 text-orange-800',
         'In Progress': 'bg-orange-100 text-orange-800',
+        'resolved': 'bg-green-100 text-green-800',
         'Resolved': 'bg-green-100 text-green-800',
+        'rejected': 'bg-red-100 text-red-800',
         'Rejected': 'bg-red-100 text-red-800'
       };
       return colors[status] || 'bg-gray-100 text-gray-800';
@@ -531,10 +541,17 @@ const CitizenDashboard = () => {
 
     const getStatusIcon = (status) => {
       const icons = {
+        'submitted': Clock,
         'Submitted': Clock,
+        'acknowledged': AlertCircle,
         'Acknowledged': AlertCircle,
+        'assigned': AlertCircle,
+        'Assigned': AlertCircle,
+        'in_progress': AlertCircle,
         'In Progress': AlertCircle,
+        'resolved': CheckCircle,
         'Resolved': CheckCircle,
+        'rejected': X,
         'Rejected': X
       };
       const Icon = icons[status] || Clock;
@@ -572,11 +589,12 @@ const CitizenDashboard = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">{t('all_status')}</option>
-                <option value="Submitted">{t('submitted')}</option>
-                <option value="Acknowledged">{t('acknowledged')}</option>
-                <option value="In Progress">{t('in_progress')}</option>
-                <option value="Resolved">{t('resolved')}</option>
-                <option value="Rejected">{t('rejected')}</option>
+                <option value="submitted">{t('submitted')}</option>
+                <option value="acknowledged">{t('acknowledged')}</option>
+                <option value="assigned">{t('assigned')}</option>
+                <option value="in_progress">{t('in_progress')}</option>
+                <option value="resolved">{t('resolved')}</option>
+                <option value="rejected">{t('rejected')}</option>
               </select>
             </div>
           </div>
@@ -619,7 +637,7 @@ const CitizenDashboard = () => {
                     <div className="flex flex-col items-end gap-2">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(complaint.status)}`}>
                         {getStatusIcon(complaint.status)}
-                        {t(complaint.status)}
+                        {complaint.status}
                       </span>
                       {complaint.priority && (
                         <span className={`px-2 py-1 rounded text-xs ${
@@ -1087,93 +1105,293 @@ const CitizenDashboard = () => {
   // Insights Section Component
   const InsightsSection = () => {
     const [chartData, setChartData] = useState([]);
+    const [dashboardStats, setDashboardStats] = useState(null);
+    const [categoryData, setCategoryData] = useState([]);
+    const [priorityData, setPriorityData] = useState([]);
+    const [isLoadingStats, setIsLoadingStats] = useState(false);
 
     useEffect(() => {
-      generateChartData();
-    }, [complaints]);
+      loadDashboardStats();
+    }, []);
 
-    const generateChartData = () => {
-      const submittedCount = complaints.length;
-      const resolvedCount = complaints.filter(c => c.status === 'Resolved').length;
-      const pendingCount = submittedCount - resolvedCount;
+    const loadDashboardStats = async () => {
+      try {
+        setIsLoadingStats(true);
+        console.log('Loading dashboard statistics...');
+
+        const response = await reportService.getDashboardStats();
+        console.log('Dashboard stats response:', response);
+
+        if (response.success && response.stats) {
+          setDashboardStats(response.stats);
+          generateChartDataFromStats(response.stats);
+
+          // Process category and priority data for additional charts
+          if (response.stats.categoryBreakdown) {
+            setCategoryData(response.stats.categoryBreakdown.map(item => ({
+              name: item._id || 'Other',
+              value: item.count,
+              color: getRandomColor()
+            })));
+          }
+
+          if (response.stats.priorityBreakdown) {
+            setPriorityData(response.stats.priorityBreakdown.map(item => ({
+              name: item._id || 'Unknown',
+              value: item.count,
+              color: getPriorityColor(item._id)
+            })));
+          }
+        }
+      } catch (error) {
+        console.error('Error loading dashboard stats:', error);
+        // Fallback to user reports data
+        generateChartDataFromUserReports();
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
+
+    const generateChartDataFromStats = (stats) => {
+      if (!stats) return;
 
       const data = [
-        { name: 'Submitted', value: submittedCount, color: '#3B82F6' },
-        { name: 'Resolved', value: resolvedCount, color: '#10B981' },
-        { name: 'Pending', value: pendingCount, color: '#F59E0B' }
-      ];
+        { name: 'Submitted', value: stats.submitted || 0, color: '#3B82F6' },
+        { name: 'Acknowledged', value: stats.acknowledged || 0, color: '#8B5CF6' },
+        { name: 'Assigned', value: stats.assigned || 0, color: '#F59E0B' },
+        { name: 'In Progress', value: stats.inProgress || 0, color: '#EF4444' },
+        { name: 'Resolved', value: stats.resolved || 0, color: '#10B981' },
+        { name: 'Rejected', value: stats.rejected || 0, color: '#6B7280' }
+      ].filter(item => item.value > 0); // Only show statuses that have reports
 
       setChartData(data);
     };
 
-    const COLORS = ['#3B82F6', '#10B981', '#F59E0B'];
+    const generateChartDataFromUserReports = () => {
+      // Fallback to user reports when backend stats are not available
+      const submittedCount = complaints.length;
+      const resolvedCount = complaints.filter(c => c.status === 'resolved').length;
+      const pendingCount = submittedCount - resolvedCount;
+
+      const data = [
+        { name: 'Total Reports', value: submittedCount, color: '#3B82F6' },
+        { name: 'Resolved', value: resolvedCount, color: '#10B981' },
+        { name: 'Pending', value: pendingCount, color: '#F59E0B' }
+      ].filter(item => item.value > 0);
+
+      setChartData(data);
+    };
+
+    const getRandomColor = () => {
+      const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
+      return colors[Math.floor(Math.random() * colors.length)];
+    };
+
+    const getPriorityColor = (priority) => {
+      const colorMap = {
+        'High': '#EF4444',
+        'Medium': '#F59E0B',
+        'Low': '#10B981',
+        'Critical': '#DC2626'
+      };
+      return colorMap[priority] || '#6B7280';
+    };
+
+    const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
+
+    if (isLoadingStats) {
+      return (
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('insights')}</h2>
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading real-time statistics...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('insights')}</h2>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Pie Chart */}
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Report Status Overview</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Bar Chart */}
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Report Statistics</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="value" fill="#3B82F6" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">{t('insights')}</h2>
+            <button
+              onClick={loadDashboardStats}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh Data
+            </button>
           </div>
 
-          {/* Summary Cards */}
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* System-wide Statistics Summary Cards */}
+          <div className="mb-8 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             <div className="bg-blue-50 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-blue-600">{complaints.length}</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {dashboardStats?.total || complaints.length}
+              </div>
               <div className="text-sm text-blue-800">Total Reports</div>
             </div>
-            <div className="bg-green-50 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {complaints.filter(c => c.status === 'Resolved').length}
+            <div className="bg-purple-50 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-purple-600">
+                {dashboardStats?.submitted || complaints.filter(c => c.status === 'submitted').length}
               </div>
-              <div className="text-sm text-green-800">Resolved</div>
+              <div className="text-sm text-purple-800">Submitted</div>
             </div>
             <div className="bg-yellow-50 rounded-lg p-4 text-center">
               <div className="text-2xl font-bold text-yellow-600">
-                {complaints.filter(c => c.status !== 'Resolved').length}
+                {dashboardStats?.assigned || complaints.filter(c => c.status === 'assigned').length}
               </div>
-              <div className="text-sm text-yellow-800">Pending</div>
+              <div className="text-sm text-yellow-800">Assigned</div>
             </div>
-            <div className="bg-purple-50 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-purple-600">{user?.points || 0}</div>
-              <div className="text-sm text-purple-800">Credit Points</div>
+            <div className="bg-red-50 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-red-600">
+                {dashboardStats?.inProgress || complaints.filter(c => c.status === 'in_progress').length}
+              </div>
+              <div className="text-sm text-red-800">In Progress</div>
+            </div>
+            <div className="bg-green-50 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-green-600">
+                {dashboardStats?.resolved || complaints.filter(c => c.status === 'resolved').length}
+              </div>
+              <div className="text-sm text-green-800">Resolved</div>
+            </div>
+            <div className="bg-indigo-50 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-indigo-600">
+                {dashboardStats?.recentReports || 0}
+              </div>
+              <div className="text-sm text-indigo-800">This Week</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Pie Chart - Report Status */}
+            <div className="bg-gray-50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Report Status Overview</h3>
+              {chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent, value }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value, name) => [`${value} reports`, name]} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-64">
+                  <p className="text-gray-500">No data available</p>
+                </div>
+              )}
+            </div>
+
+            {/* Bar Chart - Report Statistics */}
+            <div className="bg-gray-50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Report Statistics</h3>
+              {chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip formatter={(value, name) => [`${value} reports`, 'Count']} />
+                    <Bar dataKey="value" fill="#3B82F6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-64">
+                  <p className="text-gray-500">No data available</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Additional Charts for Category and Priority if available */}
+          {(categoryData.length > 0 || priorityData.length > 0) && (
+            <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Category Breakdown */}
+              {categoryData.length > 0 && (
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Reports by Category</h3>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={categoryData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip formatter={(value, name) => [`${value} reports`, 'Count']} />
+                      <Bar dataKey="value" fill="#10B981" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              {/* Priority Breakdown */}
+              {priorityData.length > 0 && (
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Reports by Priority</h3>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={priorityData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent, value }) => `${name}: ${value}`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {priorityData.map((entry, index) => (
+                          <Cell key={`priority-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value, name) => [`${value} reports`, name]} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Personal Summary */}
+          <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Your Personal Statistics</h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+                <div className="text-2xl font-bold text-blue-600">{complaints.length}</div>
+                <div className="text-sm text-gray-600">Your Reports</div>
+              </div>
+              <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+                <div className="text-2xl font-bold text-green-600">
+                  {complaints.filter(c => c.status === 'resolved').length}
+                </div>
+                <div className="text-sm text-gray-600">Resolved</div>
+              </div>
+              <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+                <div className="text-2xl font-bold text-yellow-600">
+                  {complaints.filter(c => c.status !== 'resolved').length}
+                </div>
+                <div className="text-sm text-gray-600">Pending</div>
+              </div>
+              <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+                <div className="text-2xl font-bold text-purple-600">{user?.points || 0}</div>
+                <div className="text-sm text-gray-600">Credit Points</div>
+              </div>
             </div>
           </div>
         </div>

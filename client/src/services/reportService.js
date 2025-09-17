@@ -140,6 +140,17 @@ export const reportService = {
       throw error.response?.data || error;
     }
   },
+
+  // Get dashboard statistics
+  getDashboardStats: async () => {
+    try {
+      const response = await api.get('/reports/dashboardstats');
+      return response.data;
+    } catch (error) {
+      console.error('getDashboardStats error:', error);
+      throw error.response?.data || error;
+    }
+  },
 };
 
 // User Service
