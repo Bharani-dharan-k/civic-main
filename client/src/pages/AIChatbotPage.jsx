@@ -22,6 +22,7 @@ import {
 import { reportService } from '../services/reportService';
 import { toast } from 'react-toastify';
 import LocationPicker from '../components/LocationPicker';
+import DuplicateReportModal from '../components/Citizen/DuplicateReportModal';
 
 const AIChatbotPage = ({ onBack }) => {
   const [messages, setMessages] = useState([]);
@@ -36,6 +37,9 @@ const AIChatbotPage = ({ onBack }) => {
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const [recognition, setRecognition] = useState(null);
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+  const [duplicateReports, setDuplicateReports] = useState([]);
+  const [pendingSubmissionData, setPendingSubmissionData] = useState(null);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -190,7 +194,7 @@ const AIChatbotPage = ({ onBack }) => {
       setReportData(prev => ({ ...prev, address: message }));
       addMessage('bot', "Great! Now let's get the location. How would you like to provide the location?", [
         { text: "📍 Use Current Location", action: "use_gps_location" },
-        { text: "🗺️ Select on Map", action: "select_on_map" },
+        // { text: "🗺️ Select on Map", action: "select_on_map" },
         { text: "📝 Skip Location", action: "skip_location" }
       ]);
       return;
@@ -243,6 +247,57 @@ const AIChatbotPage = ({ onBack }) => {
     }
   };
 
+  const checkForDuplicates = async (coordinates) => {
+    if (!coordinates || coordinates.length < 2) {
+      return null;
+    }
+
+    try {
+      const response = await reportService.checkDuplicateReports(
+        coordinates[1], // latitude
+        coordinates[0], // longitude
+        20 // 20 meter radius
+      );
+
+      return response;
+    } catch (error) {
+      console.error('Error checking duplicates:', error);
+      return null;
+    }
+  };
+
+  const performDirectSubmission = async (reportPayload) => {
+    try {
+      console.log('Submitting report:', reportPayload);
+      const response = await reportService.submitReport(reportPayload);
+
+      if (response) {
+        addMessage('bot', `✅ Your report has been submitted successfully!
+
+📋 **Report ID:** ${response.report?._id || 'Generated'}
+📅 **Date:** ${new Date().toLocaleDateString()}
+🔄 **Status:** Submitted
+
+You can track the progress of your report anytime by asking me to check your report status.
+
+Is there anything else I can help you with?`, [
+          { text: "Report another issue", action: "start_report" },
+          { text: "Check report status", action: "check_status" },
+          { text: "Start new conversation", action: "new_conversation" }
+        ]);
+
+        setCurrentFlow(null);
+        setReportData({});
+        setSelectedImage(null);
+        setSelectedLocation(null);
+      }
+    } catch (error) {
+      console.error('Report submission error:', error);
+      const errorMessage = error.error || error.message || 'Unknown error occurred';
+      addMessage('bot', `❌ Sorry, there was an error submitting your report: ${errorMessage}. Please try again later or contact support.`);
+    }
+  };
+
   const submitReport = async () => {
     simulateTyping(async () => {
       try {
@@ -253,10 +308,10 @@ const AIChatbotPage = ({ onBack }) => {
         }
 
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-        
+
         // Use selected location if available, otherwise use default coordinates
         const coordinates = reportData.coordinates || [77.5946, 12.9716];
-        
+
         const reportPayload = {
           title: `${(reportData.issueType || 'civic').replace('-', ' ')} issue`,
           category: reportData.issueType || 'other',
@@ -269,35 +324,51 @@ const AIChatbotPage = ({ onBack }) => {
           imageUrl: selectedImage || 'https://via.placeholder.com/400x300?text=No+Image'
         };
 
-        console.log('Submitting report:', reportPayload);
-        const response = await reportService.submitReport(reportPayload);
-        
-        if (response) {
-          addMessage('bot', `✅ Your report has been submitted successfully! 
+        // Check for duplicates if GPS coordinates are available
+        if (reportData.coordinates && reportData.coordinates.length >= 2) {
+          const duplicateCheck = await checkForDuplicates(reportData.coordinates);
 
-📋 **Report ID:** ${response.report?._id || 'Generated'}
-📅 **Date:** ${new Date().toLocaleDateString()}
-🔄 **Status:** Submitted
-
-You can track the progress of your report anytime by asking me to check your report status.
-
-Is there anything else I can help you with?`, [
-            { text: "Report another issue", action: "start_report" },
-            { text: "Check report status", action: "check_status" },
-            { text: "Start new conversation", action: "new_conversation" }
-          ]);
-          
-          setCurrentFlow(null);
-          setReportData({});
-          setSelectedImage(null);
-          setSelectedLocation(null);
+          if (duplicateCheck && duplicateCheck.hasDuplicates && duplicateCheck.reports.length > 0) {
+            // Store submission data for later use
+            setPendingSubmissionData(reportPayload);
+            setDuplicateReports(duplicateCheck.reports);
+            setIsDuplicateModalOpen(true);
+            return; // Stop here and show modal
+          }
         }
+
+        // No duplicates found or no GPS coordinates, proceed with submission
+        await performDirectSubmission(reportPayload);
+
       } catch (error) {
         console.error('Report submission error:', error);
         const errorMessage = error.error || error.message || 'Unknown error occurred';
         addMessage('bot', `❌ Sorry, there was an error submitting your report: ${errorMessage}. Please try again later or contact support.`);
       }
     }, 1500);
+  };
+
+  const handleProceedWithSubmission = async () => {
+    if (pendingSubmissionData) {
+      try {
+        await performDirectSubmission(pendingSubmissionData);
+      } finally {
+        setIsDuplicateModalOpen(false);
+        setPendingSubmissionData(null);
+        setDuplicateReports([]);
+      }
+    }
+  };
+
+  const handleCloseDuplicateModal = () => {
+    setIsDuplicateModalOpen(false);
+    setPendingSubmissionData(null);
+    setDuplicateReports([]);
+  };
+
+  const handleViewExistingReport = (report) => {
+    console.log('Viewing existing report:', report);
+    addMessage('bot', `📋 **Report Details:**\n\n🔹 **Title:** ${report.title}\n📝 **Description:** ${report.description}\n📅 **Submitted:** ${new Date(report.createdAt).toLocaleDateString()}\n🔄 **Status:** ${report.status}`);
   };
 
   const handleImageUpload = (event) => {
@@ -980,6 +1051,19 @@ What would you like to do next?`, [
           </div>
         </div>
       </div>
+
+      {/* Duplicate Report Modal */}
+      <DuplicateReportModal
+        isOpen={isDuplicateModalOpen}
+        onClose={handleCloseDuplicateModal}
+        duplicateReports={duplicateReports}
+        onProceedAnyway={handleProceedWithSubmission}
+        onViewExisting={handleViewExistingReport}
+        userLocation={reportData.coordinates ? {
+          latitude: reportData.coordinates[1],
+          longitude: reportData.coordinates[0]
+        } : null}
+      />
     </div>
   );
 };

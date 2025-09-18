@@ -81,33 +81,39 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-green-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-white via-green-100 to-blue-100 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
         className="w-full max-w-md"
       >
-        {/* Header */}
+        {/* Header with Indian Flag Colors */}
         <div className="text-center mb-8">
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="mx-auto w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg"
+            className="mx-auto w-24 h-24 bg-gradient-to-br from-orange-500 via-white to-green-600 rounded-full flex items-center justify-center mb-4 shadow-xl border-4 border-blue-800"
           >
-            <Shield className="w-10 h-10 text-white" />
+            <Shield className="w-12 h-12 text-blue-800" />
           </motion.div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Admin Portal</h1>
-          <p className="text-gray-600">Sign in to manage civic issues</p>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-600 via-blue-800 to-green-600 bg-clip-text text-transparent mb-2">
+            Admin Portal
+          </h1>
+          <p className="text-gray-700 text-lg">Super Admin - Serving the Nation</p>
         </div>
 
-        {/* Login Card */}
+        {/* Login Card with Indian Flag Theme */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.6 }}
-          className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100"
+          className="bg-white rounded-3xl shadow-2xl p-8 border-4 border-gradient-to-r from-orange-500 via-white to-green-500"
+          style={{
+            background: 'linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.8) 100%)',
+            backdropFilter: 'blur(10px)'
+          }}
         >
           <form onSubmit={handleSubmit} className="space-y-6">
             {errors.general && (
@@ -122,19 +128,19 @@ const AdminLogin = () => {
 
             {/* Email Field */}
             <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="block text-sm font-bold text-gray-800">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-orange-500 w-5 h-5" />
                 <input
                   type="email"
                   id="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="Enter your email"
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
+                  placeholder="Enter your admin email"
+                  className={`w-full pl-12 pr-4 py-4 border-2 rounded-xl focus:ring-4 focus:ring-orange-200 focus:border-orange-500 transition-all font-medium ${
                     errors.email ? 'border-red-300' : 'border-gray-300'
                   }`}
                 />
@@ -152,11 +158,11 @@ const AdminLogin = () => {
 
             {/* Password Field */}
             <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="password" className="block text-sm font-bold text-gray-800">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-green-600 w-5 h-5" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="password"
@@ -164,14 +170,14 @@ const AdminLogin = () => {
                   value={formData.password}
                   onChange={handleInputChange}
                   placeholder="Enter your password"
-                  className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
+                  className={`w-full pl-12 pr-12 py-4 border-2 rounded-xl focus:ring-4 focus:ring-orange-200 focus:border-orange-500 transition-all font-medium ${
                     errors.password ? 'border-red-300' : 'border-gray-300'
                   }`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-blue-600 hover:text-blue-800"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -187,23 +193,28 @@ const AdminLogin = () => {
               )}
             </div>
 
-            {/* Submit Button */}
+            {/* Submit Button with Indian Flag Gradient */}
             <motion.button
               type="submit"
               disabled={isLoading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 focus:ring-4 focus:ring-orange-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="w-full bg-gradient-to-r from-orange-500 via-white to-green-600 text-gray-900 py-4 rounded-xl font-bold text-lg hover:shadow-xl focus:ring-4 focus:ring-blue-200 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3 border-2 border-blue-800"
+              style={{
+                background: isLoading
+                  ? 'linear-gradient(135deg, #f97316 0%, #ffffff 50%, #16a34a 100%)'
+                  : 'linear-gradient(135deg, #f97316 0%, #ffffff 25%, #ffffff 75%, #16a34a 100%)'
+              }}
             >
               {isLoading ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span>Signing in...</span>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-800"></div>
+                  <span className="text-blue-800 font-bold">Signing in...</span>
                 </>
               ) : (
                 <>
-                  <Shield className="w-5 h-5" />
-                  <span>Sign In</span>
+                  <Shield className="w-6 h-6 text-blue-800" />
+                  <span className="text-blue-800 font-bold">Access Admin Portal</span>
                 </>
               )}
             </motion.button>
@@ -214,24 +225,28 @@ const AdminLogin = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200"
+            className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-orange-50 rounded-xl border-2 border-blue-200"
           >
-            <p className="text-sm text-blue-700 font-medium mb-2">Demo Credentials:</p>
-            <p className="text-sm text-blue-600">Email: admin@civic.gov.in</p>
-            <p className="text-sm text-blue-600">Password: admin123</p>
+            <p className="text-sm text-blue-800 font-bold mb-2">🇮🇳 Demo Credentials:</p>
+            <p className="text-sm text-blue-700 font-medium">Email: admin@civic.gov.in</p>
+            <p className="text-sm text-blue-700 font-medium">Password: admin123</p>
           </motion.div>
         </motion.div>
 
-        {/* Footer */}
+        {/* Footer with Ashoka Chakra */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
           className="text-center mt-8"
         >
-          <div className="flex items-center justify-center space-x-2 text-gray-500 text-sm">
-            <AshokaChakra size={16} className="text-blue-800" />
-            <span>SevaTrack Admin Portal</span>
+          <div className="flex items-center justify-center space-x-3 text-gray-700 text-lg font-medium">
+            <AshokaChakra size={24} className="text-blue-800" />
+            <span>SevaTrack Super Admin Portal</span>
+            <AshokaChakra size={24} className="text-blue-800" />
+          </div>
+          <div className="mt-2 text-sm text-gray-600">
+            <span className="text-orange-600 font-bold">सत्यमेव जयते</span> - Truth Alone Triumphs
           </div>
         </motion.div>
       </motion.div>

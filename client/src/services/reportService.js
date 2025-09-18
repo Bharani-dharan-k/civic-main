@@ -151,6 +151,34 @@ export const reportService = {
       throw error.response?.data || error;
     }
   },
+
+  // Check for duplicate reports near location
+  checkDuplicateReports: async (latitude, longitude, radius = 20) => {
+    try {
+      const response = await api.get('/reports/check-duplicates', {
+        params: {
+          latitude,
+          longitude,
+          radius
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('checkDuplicateReports error:', error);
+
+      // If endpoint doesn't exist (404) or other server errors, return no duplicates
+      if (error.response?.status === 404 || error.response?.status >= 500) {
+        console.warn('Duplicate check endpoint not available, returning no duplicates');
+        return {
+          hasDuplicates: false,
+          reports: [],
+          message: 'Duplicate check service unavailable'
+        };
+      }
+
+      throw error.response?.data || error;
+    }
+  },
 };
 
 // User Service

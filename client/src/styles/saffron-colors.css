@@ -1,0 +1,93 @@
+/* Custom Saffron Colors for Indian Flag Theme */
+
+/* Saffron Color Utilities */
+.text-saffron-50 { color: #fefdf8; }
+.text-saffron-100 { color: #fef3c7; }
+.text-saffron-200 { color: #fde68a; }
+.text-saffron-300 { color: #fcd34d; }
+.text-saffron-400 { color: #fbbf24; }
+.text-saffron-500 { color: #f59e0b; }
+.text-saffron-600 { color: #d97706; }
+.text-saffron-700 { color: #b45309; }
+.text-saffron-800 { color: #92400e; }
+.text-saffron-900 { color: #78350f; }
+
+.bg-saffron-50 { background-color: #fefdf8; }
+.bg-saffron-100 { background-color: #fef3c7; }
+.bg-saffron-200 { background-color: #fde68a; }
+.bg-saffron-300 { background-color: #fcd34d; }
+.bg-saffron-400 { background-color: #fbbf24; }
+.bg-saffron-500 { background-color: #f59e0b; }
+.bg-saffron-600 { background-color: #d97706; }
+.bg-saffron-700 { background-color: #b45309; }
+.bg-saffron-800 { background-color: #92400e; }
+.bg-saffron-900 { background-color: #78350f; }
+
+.border-saffron-50 { border-color: #fefdf8; }
+.border-saffron-100 { border-color: #fef3c7; }
+.border-saffron-200 { border-color: #fde68a; }
+.border-saffron-300 { border-color: #fcd34d; }
+.border-saffron-400 { border-color: #fbbf24; }
+.border-saffron-500 { border-color: #f59e0b; }
+.border-saffron-600 { border-color: #d97706; }
+.border-saffron-700 { border-color: #b45309; }
+.border-saffron-800 { border-color: #92400e; }
+.border-saffron-900 { border-color: #78350f; }
+
+.ring-saffron-50 { --tw-ring-color: #fefdf8; }
+.ring-saffron-100 { --tw-ring-color: #fef3c7; }
+.ring-saffron-200 { --tw-ring-color: #fde68a; }
+.ring-saffron-300 { --tw-ring-color: #fcd34d; }
+.ring-saffron-400 { --tw-ring-color: #fbbf24; }
+.ring-saffron-500 { --tw-ring-color: #f59e0b; }
+.ring-saffron-600 { --tw-ring-color: #d97706; }
+.ring-saffron-700 { --tw-ring-color: #b45309; }
+.ring-saffron-800 { --tw-ring-color: #92400e; }
+.ring-saffron-900 { --tw-ring-color: #78350f; }
+
+/* Focus states for saffron */
+.focus\:ring-saffron-500:focus {
+  --tw-ring-color: #f59e0b;
+}
+
+.focus\:border-saffron-500:focus {
+  border-color: #f59e0b;
+}
+
+/* Hover states */
+.hover\:bg-saffron-600:hover {
+  background-color: #d97706;
+}
+
+.hover\:bg-saffron-700:hover {
+  background-color: #b45309;
+}
+
+.hover\:text-saffron-700:hover {
+  color: #b45309;
+}
+
+/* Gradients */
+.from-saffron-500 {
+  --tw-gradient-from: #f59e0b;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(245, 158, 11, 0));
+}
+
+.from-saffron-600 {
+  --tw-gradient-from: #d97706;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(217, 119, 6, 0));
+}
+
+.to-saffron-500 {
+  --tw-gradient-to: #f59e0b;
+}
+
+.to-saffron-600 {
+  --tw-gradient-to: #d97706;
+}
+
+/* Additional Indian Flag Colors */
+.bg-indian-white { background-color: #ffffff; }
+.bg-indian-green { background-color: #138808; }
+.text-indian-green { color: #138808; }
+.border-indian-green { border-color: #138808; }

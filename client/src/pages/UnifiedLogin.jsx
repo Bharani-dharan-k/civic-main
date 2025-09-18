@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { User, Shield, Eye, EyeOff, UserPlus, LogIn, Wrench } from 'lucide-react';
+import { User, Shield, Eye, EyeOff, UserPlus, LogIn, Wrench, ChevronDown } from 'lucide-react';
 import logo from "../assets/logo.png";
 const UnifiedLogin = () => {
   const navigate = useNavigate();
@@ -26,8 +26,9 @@ const UnifiedLogin = () => {
   });
 
   const [workerForm, setWorkerForm] = useState({
-    employeeId: '',
-    password: ''
+    loginId: '',
+    password: '',
+    department: ''
   });
 
   const handleCitizenSubmit = async (e) => {
@@ -142,31 +143,47 @@ const UnifiedLogin = () => {
   const handleWorkerSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
-      const response = await fetch('http://localhost:5000/api/auth/worker/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          employeeId: workerForm.employeeId,
-          password: workerForm.password
-        }),
-      });
+      // Department-specific authentication
+      const departmentCredentials = {
+        pwd: { id: 'pwd001', password: 'pwd@2024' },
+        sanitation: { id: 'san001', password: 'san@2024' },
+        lighting: { id: 'light001', password: 'light@2024' },
+        water: { id: 'water001', password: 'water@2024' },
+        others: { id: 'other001', password: 'other@2024' }
+      };
 
-      const data = await response.json();
+      const selectedDeptCreds = departmentCredentials[workerForm.department];
 
-      if (data.success) {
-        localStorage.setItem('workerToken', data.token);
-        localStorage.setItem('workerUser', JSON.stringify(data.user));
-        alert(`Welcome, ${data.user.name}!`);
-        navigate('/field-staff-dashboard');
+      if (selectedDeptCreds &&
+          workerForm.loginId === selectedDeptCreds.id &&
+          workerForm.password === selectedDeptCreds.password) {
+
+        const departmentNames = {
+          pwd: 'Roads & Public Works (PWD)',
+          sanitation: 'Sanitation & Waste Management',
+          lighting: 'Street Lighting & Electricity',
+          water: 'Water Supply & Drainage',
+          others: 'Others'
+        };
+
+        localStorage.setItem('fieldAdminToken', 'mock-field-jwt-token');
+        localStorage.setItem('fieldAdminUser', JSON.stringify({
+          name: `${departmentNames[workerForm.department]} Admin`,
+          email: workerForm.loginId,
+          role: 'Field Administrator',
+          department: workerForm.department,
+          departmentName: departmentNames[workerForm.department]
+        }));
+
+        alert(`Welcome to ${departmentNames[workerForm.department]}!`);
+        navigate('/field-admin/dashboard');
       } else {
-        alert(data.msg || 'Invalid worker credentials');
+        alert('Invalid credentials for selected department');
       }
     } catch (error) {
-      console.error('Worker login error:', error);
+      console.error('Field admin login error:', error);
       alert('Network error. Please try again.');
     } finally {
       setLoading(false);
@@ -174,32 +191,39 @@ const UnifiedLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-green-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-green-50 flex items-center justify-center p-4 relative">
+      {/* Indian Flag Top Border */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-white to-green-600"></div>
+
       {/* Background Pattern */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-br from-orange-200/30 to-orange-300/20 rounded-full blur-3xl"></div>
         <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-br from-green-200/30 to-green-300/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-gradient-to-br from-blue-200/20 to-blue-300/10 rounded-full blur-3xl"></div>
       </div>
+
+      {/* Indian Flag Bottom Border */}
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-white to-green-600"></div>
 
       <div className="w-full max-w-md relative z-10">
         {/* Header */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
           <div className="flex justify-center mb-4">
             <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-lg border-2 border-gray-100 hover:shadow-xl transition-shadow duration-200">
-              <img 
-                src={logo} 
-                alt="SEVA TRACK Logo" 
-                className="w-12 h-12 object-contain rounded-lg" 
+              <img
+                src={logo}
+                alt="SEVA TRACK Logo"
+                className="w-12 h-12 object-contain rounded-lg"
                 onError={(e) => {
                   e.target.style.display = 'none';
                   e.target.nextSibling.style.display = 'flex';
                 }}
               />
-              <div 
+              <div
                 className="w-12 h-12 bg-gradient-to-br from-orange-500 to-green-600 rounded-lg items-center justify-center text-white font-bold text-lg hidden"
                 style={{ display: 'none' }}
               >
@@ -216,7 +240,10 @@ const UnifiedLogin = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 overflow-hidden"
+          className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border-2 border-transparent bg-gradient-to-r from-orange-500/20 via-white to-green-600/20 bg-clip-border overflow-hidden"
+          style={{
+            background: 'linear-gradient(white, white) padding-box, linear-gradient(90deg, #ff9933 0%, #ffffff 50%, #16a34a 100%) border-box'
+          }}
         >
           {/* Tab Selector */}
           <div className="flex">
@@ -224,8 +251,8 @@ const UnifiedLogin = () => {
               onClick={() => setActiveTab('citizen')}
               className={`flex-1 py-4 px-4 text-center font-semibold transition-all duration-300 ${
                 activeTab === 'citizen'
-                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg border-b-2 border-blue-700'
+                  : 'bg-gradient-to-r from-orange-50 to-green-50 text-gray-600 hover:from-orange-100 hover:to-green-100'
               }`}
             >
               <User className="inline-block w-4 h-4 mr-1" />
@@ -236,20 +263,20 @@ const UnifiedLogin = () => {
               onClick={() => setActiveTab('worker')}
               className={`flex-1 py-4 px-4 text-center font-semibold transition-all duration-300 ${
                 activeTab === 'worker'
-                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg border-b-2 border-green-700'
+                  : 'bg-gradient-to-r from-orange-50 to-green-50 text-gray-600 hover:from-orange-100 hover:to-green-100'
               }`}
             >
               <Wrench className="inline-block w-4 h-4 mr-1" />
-              <span className="hidden sm:inline">Field Staff</span>
-              <span className="sm:hidden">Staff</span>
+              <span className="hidden sm:inline">Field Admin</span>
+              <span className="sm:hidden">Admin</span>
             </button>
             <button
               onClick={() => setActiveTab('admin')}
               className={`flex-1 py-4 px-4 text-center font-semibold transition-all duration-300 ${
                 activeTab === 'admin'
-                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg border-b-2 border-orange-700'
+                  : 'bg-gradient-to-r from-orange-50 to-green-50 text-gray-600 hover:from-orange-100 hover:to-green-100'
               }`}
             >
               <Shield className="inline-block w-4 h-4 mr-1" />
@@ -273,8 +300,8 @@ const UnifiedLogin = () => {
                     <button
                       onClick={() => setIsSignup(false)}
                       className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                        !isSignup 
-                          ? 'bg-blue-100 text-blue-700 shadow-md' 
+                        !isSignup
+                          ? 'bg-blue-100 text-blue-700 shadow-md'
                           : 'text-gray-500 hover:text-blue-600'
                       }`}
                     >
@@ -284,8 +311,8 @@ const UnifiedLogin = () => {
                     <button
                       onClick={() => setIsSignup(true)}
                       className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                        isSignup 
-                          ? 'bg-blue-100 text-blue-700 shadow-md' 
+                        isSignup
+                          ? 'bg-blue-100 text-blue-700 shadow-md'
                           : 'text-gray-500 hover:text-blue-600'
                       }`}
                     >
@@ -412,28 +439,53 @@ const UnifiedLogin = () => {
               >
                 <div className="mb-6">
                   <h2 className="text-xl font-bold text-center text-gray-800 mb-2">
-                    Field Staff Login
+                    Field Admin Login
                   </h2>
                   <p className="text-sm text-center text-gray-600">
-                    Field Staff / Technician Access
+                    Department-based Field Administration
                   </p>
                 </div>
 
                 <form onSubmit={handleWorkerSubmit} className="space-y-4">
+                  {/* Department Selection */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Employee ID
+                      Select Department
+                    </label>
+                    <div className="relative">
+                      <select
+                        required
+                        value={workerForm.department}
+                        onChange={(e) => setWorkerForm({...workerForm, department: e.target.value})}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all appearance-none bg-white"
+                      >
+                        <option value="">Choose your department...</option>
+                        <option value="pwd">🛣️ Roads & Public Works (PWD)</option>
+                        <option value="sanitation">🗑️ Sanitation & Waste Management</option>
+                        <option value="lighting">💡 Street Lighting & Electricity</option>
+                        <option value="water">🚰 Water Supply & Drainage</option>
+                        <option value="others">⚙️ Others</option>
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Login ID */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Department Login ID
                     </label>
                     <input
                       type="text"
                       required
-                      value={workerForm.employeeId}
-                      onChange={(e) => setWorkerForm({...workerForm, employeeId: e.target.value})}
+                      value={workerForm.loginId}
+                      onChange={(e) => setWorkerForm({...workerForm, loginId: e.target.value})}
                       className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                      placeholder="Enter employee ID"
+                      placeholder="Enter your department login ID"
                     />
                   </div>
 
+                  {/* Password */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Password
@@ -457,12 +509,32 @@ const UnifiedLogin = () => {
                     </div>
                   </div>
 
+                  {/* Department Info Display */}
+                  {workerForm.department && (
+                    <div className="bg-gradient-to-r from-orange-50 to-green-50 p-3 rounded-lg border border-green-200">
+                      <p className="text-sm text-gray-700 font-medium mb-2">
+                        🇮🇳 {workerForm.department === 'pwd' ? 'Roads & Public Works (PWD)' :
+                        workerForm.department === 'sanitation' ? 'Sanitation & Waste Management' :
+                        workerForm.department === 'lighting' ? 'Street Lighting & Electricity' :
+                        workerForm.department === 'water' ? 'Water Supply & Drainage' :
+                        'Others'} Department
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        Demo ID: {workerForm.department === 'pwd' ? 'pwd001' :
+                        workerForm.department === 'sanitation' ? 'san001' :
+                        workerForm.department === 'lighting' ? 'light001' :
+                        workerForm.department === 'water' ? 'water001' :
+                        'other001'} | Password: {workerForm.department}@2024
+                      </p>
+                    </div>
+                  )}
+
                   <button
                     type="submit"
                     disabled={loading}
                     className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                   >
-                    {loading ? 'Signing in...' : 'Login as Field Staff'}
+                    {loading ? 'Signing in...' : 'Login as Field Admin'}
                   </button>
                 </form>
               </motion.div>
