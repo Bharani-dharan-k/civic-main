@@ -842,6 +842,161 @@ const CitizenDashboard = () => {
                         </div>
                       )}
 
+                      {/* Feedback Form for Resolved Reports */}
+                      {complaint.status === 'resolved' && !complaint.feedback && (
+                        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="h-1 bg-gradient-to-r from-saffron-500 via-white to-green-600 mb-4"></div>
+                          <h4 className="text-sm font-semibold text-green-800 mb-3 flex items-center gap-2">
+                            <Star className="w-4 h-4" />
+                            Rate this resolution
+                          </h4>
+                          <div className="space-y-3">
+                            {/* Star Rating */}
+                            <div>
+                              <label className="block text-xs font-medium text-green-700 mb-2">
+                                How satisfied are you with the resolution?
+                              </label>
+                              <div className="flex gap-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <button
+                                    key={star}
+                                    type="button"
+                                    onClick={() => {
+                                      // Handle star rating
+                                      const updatedComplaints = complaints.map(c =>
+                                        c._id === complaint._id
+                                          ? { ...c, tempRating: star }
+                                          : c
+                                      );
+                                      setComplaints(updatedComplaints);
+                                    }}
+                                    className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
+                                      (complaint.tempRating || 0) >= star
+                                        ? 'text-yellow-500 hover:text-yellow-600'
+                                        : 'text-gray-300 hover:text-yellow-400'
+                                    }`}
+                                  >
+                                    <Star className={`w-5 h-5 ${(complaint.tempRating || 0) >= star ? 'fill-current' : ''}`} />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Comments */}
+                            <div>
+                              <label className="block text-xs font-medium text-green-700 mb-2">
+                                Share your feedback (optional)
+                              </label>
+                              <textarea
+                                placeholder="Tell us about your experience with this resolution..."
+                                rows={3}
+                                value={complaint.tempComment || ''}
+                                onChange={(e) => {
+                                  const updatedComplaints = complaints.map(c =>
+                                    c._id === complaint._id
+                                      ? { ...c, tempComment: e.target.value }
+                                      : c
+                                  );
+                                  setComplaints(updatedComplaints);
+                                }}
+                                className="w-full px-3 py-2 text-sm border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                              />
+                            </div>
+
+                            {/* Submit Feedback */}
+                            <div className="flex gap-2">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    // Submit feedback
+                                    const feedbackData = {
+                                      reportId: complaint._id,
+                                      rating: complaint.tempRating || 0,
+                                      comment: complaint.tempComment || ''
+                                    };
+
+                                    // Update local state to show feedback submitted
+                                    const updatedComplaints = complaints.map(c =>
+                                      c._id === complaint._id
+                                        ? {
+                                            ...c,
+                                            feedback: feedbackData,
+                                            tempRating: undefined,
+                                            tempComment: undefined
+                                          }
+                                        : c
+                                    );
+                                    setComplaints(updatedComplaints);
+                                    toast.success('Thank you for your feedback!');
+                                  } catch (error) {
+                                    toast.error('Failed to submit feedback');
+                                  }
+                                }}
+                                disabled={!complaint.tempRating}
+                                className="px-4 py-2 bg-gradient-to-r from-saffron-500 to-green-500 text-white text-xs rounded-md hover:from-saffron-600 hover:to-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                              >
+                                <CheckCircle className="w-3 h-3" />
+                                Submit Feedback
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const updatedComplaints = complaints.map(c =>
+                                    c._id === complaint._id
+                                      ? {
+                                          ...c,
+                                          feedback: { skipped: true },
+                                          tempRating: undefined,
+                                          tempComment: undefined
+                                        }
+                                      : c
+                                  );
+                                  setComplaints(updatedComplaints);
+                                }}
+                                className="px-4 py-2 bg-gray-100 text-gray-600 text-xs rounded-md hover:bg-gray-200"
+                              >
+                                Skip
+                              </button>
+                            </div>
+                          </div>
+                          <div className="h-1 bg-gradient-to-r from-saffron-500 via-white to-green-600 mt-4"></div>
+                        </div>
+                      )}
+
+                      {/* Show Submitted Feedback */}
+                      {complaint.status === 'resolved' && complaint.feedback && !complaint.feedback.skipped && (
+                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="h-1 bg-gradient-to-r from-saffron-500 via-white to-green-600 mb-3"></div>
+                          <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4" />
+                            Your Feedback
+                          </h4>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-blue-700">Rating:</span>
+                              <div className="flex gap-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star
+                                    key={star}
+                                    className={`w-4 h-4 ${
+                                      star <= (complaint.feedback.rating || 0)
+                                        ? 'text-yellow-500 fill-current'
+                                        : 'text-gray-300'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            {complaint.feedback.comment && (
+                              <div>
+                                <span className="text-xs text-blue-700">Comment:</span>
+                                <p className="text-xs text-blue-600 mt-1 italic">"{complaint.feedback.comment}"</p>
+                              </div>
+                            )}
+                          </div>
+                          <div className="h-1 bg-gradient-to-r from-saffron-500 via-white to-green-600 mt-3"></div>
+                        </div>
+                      )}
+
                       {/* Action Buttons */}
                       <div className="flex gap-3 pt-4 border-t border-gray-100">
                         <button className="text-saffron-600 hover:text-saffron-700 text-sm flex items-center gap-2 font-medium">
