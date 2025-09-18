@@ -347,24 +347,21 @@ const FieldAdminDashboard = () => {
   const deptInfo = getDepartmentInfo(fieldAdmin.department);
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-orange-50 via-white via-green-50 to-blue-50">
-      {/* Animated Background Patterns */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-orange-200/30 to-orange-300/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-br from-green-200/30 to-green-300/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-br from-blue-200/20 to-blue-300/15 rounded-full blur-3xl animate-pulse delay-500"></div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Enhanced header stripe with Indian flag colors */}
+      <div className="h-2 bg-gradient-to-r from-orange-600 via-white via-blue-800 to-green-700 shadow-sm"></div>
 
-      {/* Google Translate Bar */}
-      <div className="relative z-20 bg-white shadow-md border-b border-gray-200 px-4 py-3">
+      {/* Enhanced Google Translate Bar */}
+      <div className="bg-gradient-to-r from-white via-blue-50 to-white shadow-md border-b-2 border-orange-200 px-4 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-            <div className="flex items-center space-x-3">
-            <Languages className="w-5 h-5 text-blue-600" />
-            <span className="text-sm font-medium text-gray-700">Choose Language:</span>
+            <div className="flex items-center space-x-4">
+            <div className="p-2 bg-blue-100 rounded-full">
+              <Languages className="w-5 h-5 text-blue-600" />
+            </div>
+            <span className="text-sm font-semibold text-gray-800">Choose Language:</span>
 
-            {/* Custom pill that matches the desired UI. The real Google select is overlaid with opacity 0 to capture clicks. */}
             <div className="relative">
-              <div className="flex items-center bg-green-600 text-white rounded-full px-4 py-1.5 space-x-2 shadow-sm">
+              <div className="flex items-center bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg px-4 py-2 space-x-2 shadow-md hover:shadow-lg transition-shadow">
                 <span className="text-sm">🌐</span>
                 <span className="text-sm font-medium">{translateLabel}</span>
                 <span className="text-xs opacity-90">▾</span>
@@ -372,41 +369,47 @@ const FieldAdminDashboard = () => {
               <div id="google_translate_element_dashboard" className="absolute inset-0 opacity-0" aria-hidden="true"></div>
             </div>
           </div>
-          <div className="flex items-center space-x-2 text-xs text-gray-500">
-            <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded">🇮🇳 India</span>
-            <span>Government Portal</span>
+          <div className="flex items-center space-x-3 text-xs text-gray-600">
+            <span className="bg-gradient-to-r from-orange-600 to-orange-700 text-white px-3 py-2 rounded-lg font-semibold shadow-sm">🇮🇳 Government of India</span>
+            <span className="text-gray-500">Digital India</span>
           </div>
         </div>
       </div>
 
-      {/* Enhanced Header with Indian Flag Theme */}
-      <div className="relative z-10 bg-white shadow-lg border-b border-gray-200">
+      {/* Enhanced Professional Header */}
+      <div className="bg-gradient-to-r from-white via-orange-50 to-white shadow-lg border-b-4 border-gradient-to-r from-orange-600 via-blue-600 to-green-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-8">
             <div className="flex items-center space-x-6">
               <div className="relative">
-                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center shadow-md">
-                  <AshokaChakra size={20} className="text-white" />
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center shadow-lg ring-4 ring-white">
+                  <AshokaChakra size={24} className="text-white" />
                 </div>
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-gradient-to-r from-orange-500 to-green-600 rounded-full ring-2 ring-white"></div>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-1">
+                <h1 className="text-3xl font-bold text-gray-900 mb-1">
                   {deptInfo.icon} {fieldAdmin.departmentName || deptInfo.name}
                 </h1>
-                <p className="text-gray-600 text-sm font-medium">Field Administration Portal</p>
+                <p className="text-gray-600 text-sm font-medium flex items-center space-x-2">
+                  <span>🏛️ Field Administration Portal</span>
+                  <span className="text-orange-600">|</span>
+                  <span className="text-blue-600">Government Dashboard</span>
+                </p>
               </div>
             </div>
             <div className="flex items-center space-x-6">
-              <div className="text-right bg-gray-50 rounded-lg p-3 border border-gray-200">
+              <div className="text-right bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border border-gray-200 shadow-sm">
                 <p className="text-sm text-gray-600 font-medium">Welcome back,</p>
-                <p className="font-semibold text-gray-800 text-base">{fieldAdmin.name}</p>
+                <p className="font-bold text-gray-900 text-lg">{fieldAdmin.name}</p>
+                <p className="text-xs text-orange-600 mt-1">Field Administrator</p>
               </div>
               <button
                 onClick={handleLogout}
-                className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200 font-medium"
+                className="flex items-center space-x-2 px-5 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg transition-all shadow-md hover:shadow-lg"
               >
                 <LogOut className="w-5 h-5" />
-                <span>Logout</span>
+                <span className="font-medium">Logout</span>
               </button>
             </div>
           </div>
@@ -415,43 +418,56 @@ const FieldAdminDashboard = () => {
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Enhanced Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
           {[
-            { title: 'Assigned to Me', value: stats.assigned, icon: FileText, color: 'orange', gradient: 'from-orange-500 to-orange-600' },
-            { title: 'In Progress', value: stats.inProgress, icon: Clock, color: 'blue', gradient: 'from-blue-500 to-blue-600' },
-            { title: 'Completed', value: stats.completed, icon: CheckCircle, color: 'green', gradient: 'from-green-500 to-green-600' },
-            { title: 'Pending Action', value: stats.pending, icon: AlertTriangle, color: 'red', gradient: 'from-red-500 to-red-600' }
+            { title: 'Assigned to Me', value: stats.assigned, icon: FileText, color: 'orange', bgColor: 'bg-orange-600', lightBg: 'bg-orange-50' },
+            { title: 'In Progress', value: stats.inProgress, icon: Clock, color: 'blue', bgColor: 'bg-blue-600', lightBg: 'bg-blue-50' },
+            { title: 'Completed', value: stats.completed, icon: CheckCircle, color: 'green', bgColor: 'bg-green-600', lightBg: 'bg-green-50' },
+            { title: 'Pending Action', value: stats.pending, icon: AlertTriangle, color: 'red', bgColor: 'bg-red-600', lightBg: 'bg-red-50' }
           ].map((stat, index) => (
             <div
               key={stat.title}
-              className="relative bg-white rounded-lg shadow-md border border-gray-200 p-6"
+              className={`relative bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg border-l-4 border-${stat.color}-600 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1`}
             >
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-blue-600 shadow-md">
-                  <stat.icon className="w-6 h-6 text-white" />
+                <div className={`p-4 rounded-xl ${stat.bgColor} shadow-lg ring-2 ring-white`}>
+                  <stat.icon className="w-7 h-7 text-white" />
                 </div>
-                <span className="text-2xl font-bold text-gray-900">
-                  {stat.value}
-                </span>
+                <div className="text-right">
+                  <span className="text-3xl font-bold text-gray-900 block">
+                    {stat.value}
+                  </span>
+                  <span className="text-xs text-gray-500">Total</span>
+                </div>
               </div>
-              <div className="text-center">
-                <h3 className="text-gray-700 font-semibold text-base">{stat.title}</h3>
+              <div className={`${stat.lightBg} rounded-lg p-2 -mx-2`}>
+                <h3 className="text-gray-800 font-bold text-center">{stat.title}</h3>
               </div>
+              {/* Bottom accent stripe */}
+              <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-${stat.color}-500 to-${stat.color}-600 rounded-b-xl`}></div>
             </div>
           ))}
         </div>
 
-        {/* Assigned Issues */}
-        <div className="bg-white rounded-lg shadow-md border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
+        {/* Enhanced Assigned Issues Section */}
+        <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-xl border-t-4 border-gradient-to-r from-orange-600 via-white to-green-600">
+          <div className="bg-gradient-to-r from-orange-50 via-white to-green-50 p-8 border-b-2 border-orange-200 rounded-t-xl">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">My Assigned Issues</h2>
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-gradient-to-br from-orange-600 to-orange-700 rounded-xl shadow-lg">
+                  <FileText className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-900">My Assigned Issues</h2>
+                  <p className="text-gray-600 font-medium">Track and manage your field assignments</p>
+                </div>
+              </div>
               <button
                 onClick={() => loadAssignedIssues(fieldAdmin.department)}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-lg transition-all shadow-lg hover:shadow-xl"
               >
-                <RefreshCw className="w-4 h-4" />
-                <span>Refresh</span>
+                <RefreshCw className="w-5 h-5" />
+                <span className="font-medium">Refresh</span>
               </button>
             </div>
           </div>
@@ -471,48 +487,48 @@ const FieldAdminDashboard = () => {
               assignedIssues.map((issue, index) => (
                 <div
                   key={issue._id}
-                  className="p-6 hover:bg-gray-50 transition-colors"
+                  className="p-7 hover:bg-gradient-to-r hover:from-orange-50 hover:via-white hover:to-green-50 transition-all duration-200 border-l-4 border-orange-600 hover:border-l-green-600 hover:shadow-md"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className={`w-4 h-4 rounded-full ${getPriorityColor(issue.priority)}`}></div>
-                        <span className="text-sm font-medium text-gray-600">#{issue._id.slice(-6)}</span>
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(issue.status)}`}>
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className={`w-5 h-5 rounded-full ${getPriorityColor(issue.priority)} ring-2 ring-white shadow-md`}></div>
+                        <span className="text-sm font-bold text-gray-700 bg-gradient-to-r from-gray-100 to-gray-200 px-3 py-1 rounded-full">#{issue._id.slice(-6)}</span>
+                        <span className={`px-4 py-1.5 rounded-full text-sm font-semibold border-2 ${getStatusColor(issue.status)} shadow-sm`}>
                           {issue.status.replace('_', ' ').toUpperCase()}
                         </span>
                         {issue.priority === 'high' && (
-                          <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">
-                            HIGH PRIORITY
+                          <span className="text-xs bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1 rounded-full font-bold shadow-md">
+                            ⚠️ HIGH PRIORITY
                           </span>
                         )}
                       </div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">{issue.title}</h3>
-                      <p className="text-gray-600 mb-3">{issue.description}</p>
-                      <div className="flex items-center space-x-6 text-sm text-gray-600">
-                        <div className="flex items-center space-x-1">
-                          <MapPin className="w-4 h-4" />
-                          <span>{issue.address}</span>
+                      <h3 className="text-xl font-bold text-gray-900 mb-3">{issue.title}</h3>
+                      <p className="text-gray-700 mb-4 font-medium leading-relaxed">{issue.description}</p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                        <div className="flex items-center space-x-2 bg-gradient-to-r from-orange-50 to-orange-100 px-3 py-2 rounded-lg">
+                          <MapPin className="w-4 h-4 text-orange-600 flex-shrink-0" />
+                          <span className="font-medium text-gray-700">{issue.address}</span>
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <User className="w-4 h-4" />
-                          <span>Reported by: {issue.reportedBy?.name}</span>
+                        <div className="flex items-center space-x-2 bg-gradient-to-r from-green-50 to-green-100 px-3 py-2 rounded-lg">
+                          <User className="w-4 h-4 text-green-600 flex-shrink-0" />
+                          <span className="font-medium text-gray-700">By: {issue.reportedBy?.name}</span>
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <Calendar className="w-4 h-4" />
-                          <span>{new Date(issue.createdAt).toLocaleDateString()}</span>
+                        <div className="flex items-center space-x-2 bg-gradient-to-r from-gray-50 to-gray-100 px-3 py-2 rounded-lg">
+                          <Calendar className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                          <span className="font-medium text-gray-700">{new Date(issue.createdAt).toLocaleDateString()}</span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-col space-y-2 ml-6">
-                      <button className="flex items-center space-x-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">
+                    <div className="flex flex-col space-y-3 ml-8">
+                      <button className="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 rounded-lg transition-all shadow-sm hover:shadow-md font-medium">
                         <Eye className="w-4 h-4" />
                         <span>View Details</span>
                       </button>
                       {issue.status === 'assigned' && (
                         <button
                           onClick={() => handleStartWork(issue._id)}
-                          className="flex items-center space-x-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                          className="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-lg transition-all shadow-md hover:shadow-lg font-medium"
                         >
                           <PlayCircle className="w-4 h-4" />
                           <span>Start Work</span>
@@ -521,7 +537,7 @@ const FieldAdminDashboard = () => {
                       {issue.status === 'in_progress' && (
                         <button
                           onClick={() => handleCompleteWork(issue)}
-                          className="flex items-center space-x-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                          className="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg transition-all shadow-md hover:shadow-lg font-medium"
                         >
                           <CheckCircle className="w-4 h-4" />
                           <span>Mark Complete</span>
@@ -535,22 +551,37 @@ const FieldAdminDashboard = () => {
           </div>
         </div>
 
-        {/* Enhanced Footer */}
-        <div className="text-center mt-16 pb-12">
-          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 shadow-md">
-            <div className="flex items-center justify-center space-x-4 text-gray-800 text-lg font-semibold mb-3">
-              <AshokaChakra size={24} className="text-blue-600" />
-              <span className="text-gray-900">
+        {/* Enhanced Professional Footer */}
+        <div className="text-center mt-16 pb-8">
+          <div className="bg-gradient-to-br from-white via-orange-50 to-white rounded-xl p-8 border-2 border-gray-200 shadow-lg border-t-4 border-gradient-to-r from-orange-600 via-blue-600 to-green-600">
+            {/* Decorative top border */}
+            <div className="h-1 bg-gradient-to-r from-orange-600 via-blue-600 to-green-600 rounded-full mb-6 mx-auto w-24"></div>
+
+            <div className="flex items-center justify-center space-x-4 text-gray-800 text-xl font-bold mb-4">
+              <AshokaChakra size={28} className="text-blue-600" />
+              <span className="text-gray-900 bg-gradient-to-r from-orange-600 via-blue-600 to-green-600 bg-clip-text text-transparent">
                 SevaTrack Field Administration
               </span>
-              <AshokaChakra size={24} className="text-blue-600" />
+              <AshokaChakra size={28} className="text-blue-600" />
             </div>
-            <div className="space-y-2">
-              <p className="text-sm text-orange-600 font-semibold">Dedicated to Public Service</p>
-              <div className="flex items-center justify-center space-x-2 mt-3">
-                <span className="px-4 py-2 bg-orange-100 text-orange-700 rounded-full font-bold text-sm">Government of India</span>
+
+            <div className="space-y-4">
+              <p className="text-orange-700 font-bold text-lg">Dedicated to Public Service | जन सेवा के लिए समर्पित</p>
+              <div className="flex items-center justify-center space-x-4">
+                <span className="px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg font-bold shadow-md">
+                  🇮🇳 Government of India
+                </span>
+                <span className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-bold shadow-md">
+                  Digital India Initiative
+                </span>
               </div>
+              <p className="text-sm text-gray-600 font-medium mt-4">
+                Empowering Citizens | Building Tomorrow | सबका साथ, सबका विकास
+              </p>
             </div>
+
+            {/* Decorative bottom border */}
+            <div className="h-1 bg-gradient-to-r from-orange-600 via-blue-600 to-green-600 rounded-full mt-6 mx-auto w-24"></div>
           </div>
         </div>
       </div>
