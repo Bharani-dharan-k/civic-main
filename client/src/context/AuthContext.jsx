@@ -25,15 +25,31 @@ export const AuthProvider = ({ children }) => {
 	const fetchMe = async () => {
 		const token = getToken();
 		if (!token) {
+			console.log('❌ No token found, user will remain null');
 			setUser(null);
 			return;
 		}
+		
+		console.log('🔍 Attempting to fetch user data with token:', token.substring(0, 20) + '...');
+		
 		try {
 			const res = await axios.get(`${API_BASE}/auth/me`, {
 				headers: { Authorization: `Bearer ${token}` },
 			});
-			setUser(res.data);
+			
+			console.log('✅ User data fetched successfully:', res.data);
+			
+			if (res.data.success && res.data.user) {
+				setUser(res.data.user);
+				console.log('✅ User set in context:', res.data.user);
+			} else {
+				console.log('⚠️ API responded but no user data');
+				clearToken();
+				setUser(null);
+			}
 		} catch (err) {
+			console.error('❌ Error fetching user data:', err);
+			console.log('Response data:', err.response?.data);
 			// Token invalid or expired
 			clearToken();
 			setUser(null);
@@ -42,14 +58,16 @@ export const AuthProvider = ({ children }) => {
 
 	useEffect(() => {
 		// On mount, try to hydrate user from token
+		console.log('🚀 AuthContext initializing...');
 		(async () => {
 			await fetchMe();
 			setLoading(false);
+			console.log('🏁 AuthContext initialization complete');
 		})();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
-	const login = async ({ email, password, userType = 'admin' }) => {
+	const login = async (email, password, userType = 'admin', role = null) => {
 		setLoading(true);
 		try {
 			let endpoint;
@@ -61,13 +79,33 @@ export const AuthProvider = ({ children }) => {
 				endpoint = 'auth/login'; // citizen login
 			}
 			
-			console.log('🔑 Login attempt:', { email, userType, endpoint });
-			const res = await axios.post(`${API_BASE}/${endpoint}`, { email, password });
-			const { token } = res.data;
-			if (!token) throw new Error('No token returned');
-			setToken(token);
-			await fetchMe();
-			return { user: user || null };
+			console.log('🔑 Login attempt:', { email, userType, role, endpoint });
+			
+			// Prepare login data
+			const loginData = { email, password };
+			if (role && userType === 'admin') {
+				loginData.role = role;
+			}
+			
+			const res = await axios.post(`${API_BASE}/${endpoint}`, loginData);
+			
+			if (res.data.success) {
+				const { token, user } = res.data;
+				if (!token) throw new Error('No token returned');
+				
+				console.log('🔐 Login successful, storing token and user:', { token: token.substring(0, 20) + '...', user });
+				
+				setToken(token);
+				setUser(user);
+				return { success: true, user, token };
+			} else {
+				const errorMessage = res.data.message || 'Login failed';
+				return { success: false, message: errorMessage };
+			}
+		} catch (error) {
+			console.error('Login error:', error);
+			const errorMessage = error.response?.data?.message || error.message || 'Login failed';
+			return { success: false, message: errorMessage };
 		} finally {
 			setLoading(false);
 		}

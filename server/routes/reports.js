@@ -9,7 +9,10 @@ const {
     updateReportStatus,
     assignReportToWorker, 
     getLeaderboard,
-    getDashboardStats
+    getDashboardStats,
+    addCommentToReport,
+    submitFeedback,
+    checkDuplicateReports
 } = require('../controllers/reportController');
 const { protect, admin } = require('../middleware/authMiddleware');
 const upload = require('../utils/fileUploader');
@@ -72,6 +75,15 @@ router.route('/:reportId/assign').put(protect, admin, assignReportToWorker);
 
 // Worker updates report status
 router.route('/:reportId/status').put(updateReportStatus);
+
+// Add comment to report (citizen only)
+router.route('/:reportId/comment').post(protect, addCommentToReport);
+
+// Submit feedback for resolved report (citizen only)
+router.route('/:reportId/feedback').post(protect, submitFeedback);
+
+// Check for duplicate reports within a radius
+router.route('/check-duplicates').get(checkDuplicateReports);
 
 // Get single report by ID (must be last to avoid conflicts)
 router.route('/:id').get(getReportById);

@@ -20,7 +20,21 @@ const {
     getNotificationSettings,
     updateNotificationSettings,
     getSystemSettings,
-    updateSystemSettings
+    updateSystemSettings,
+    getDistrictUsers,
+    createDepartmentAdmin,
+    updateDepartmentAdmin,
+    deleteDepartmentAdmin,
+    resetUserPassword,
+    getStaffData,
+    addStaffMember,
+    assignTask,
+    getTasks,
+    getInfrastructureStatus,
+    getFinanceData,
+    getProjectsData,
+    getEmergencyAlerts,
+    getServiceRequests
 } = require('../controllers/adminController');
 const { getActiveWorkers } = require('../controllers/authController');
 const { protect, admin } = require('../middleware/authMiddleware');
@@ -35,6 +49,17 @@ router.get('/reports', getAllReports);
 router.get('/analytics', getAnalytics);
 router.get('/analytics/export', exportAnalyticsReport);
 router.get('/workers/active', getActiveWorkers);
+
+// Municipal Dashboard routes
+router.get('/staff', getStaffData);
+router.post('/staff', addStaffMember);
+router.post('/tasks', assignTask);
+router.get('/tasks', getTasks);
+router.get('/infrastructure', getInfrastructureStatus);
+router.get('/finance', getFinanceData);
+router.get('/projects', getProjectsData);
+router.get('/emergency-alerts', getEmergencyAlerts);
+router.get('/service-requests', getServiceRequests);
 
 // Report management routes
 router.put('/reports/:id/assign', assignWorkerToReport);
@@ -56,5 +81,12 @@ router.get('/settings/notifications', getNotificationSettings);
 router.put('/settings/notifications', updateNotificationSettings);
 router.get('/settings/system', getSystemSettings);
 router.put('/settings/system', updateSystemSettings);
+
+// User management routes
+router.get('/users', getDistrictUsers);
+router.post('/users', createDepartmentAdmin);
+router.put('/users/:id', updateDepartmentAdmin);
+router.delete('/users/:id', deleteDepartmentAdmin);
+router.put('/users/:id/reset-password', resetUserPassword);
 
 module.exports = router;

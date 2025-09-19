@@ -60,6 +60,22 @@ class NotificationService {
         return this.createNotification(userId, title, message, 'system', null, priority);
     }
 
+    // Create comment added notification
+    static async notifyCommentAdded(userId, reportTitle, reportId) {
+        const title = 'Comment Added';
+        const message = `Your comment has been added to report: "${reportTitle}"`;
+        
+        return this.createNotification(userId, title, message, 'comment', reportId, 'medium');
+    }
+
+    // Create feedback submitted notification
+    static async notifyFeedbackSubmitted(userId, reportTitle, rating, reportId) {
+        const title = 'Feedback Submitted';
+        const message = `Thank you! Your ${rating}-star feedback for "${reportTitle}" has been recorded.`;
+        
+        return this.createNotification(userId, title, message, 'feedback', reportId, 'medium');
+    }
+
     // Get user notifications
     static async getUserNotifications(userId, limit = 20) {
         try {

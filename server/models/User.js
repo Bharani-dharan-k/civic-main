@@ -23,8 +23,27 @@ const UserSchema = new mongoose.Schema({
     },
     role: { 
         type: String, 
-        enum: ['citizen', 'worker', 'admin'], 
+        enum: ['citizen', 'field_staff', 'field_head', 'department_head', 'municipality_admin', 'district_admin', 'super_admin'], 
         default: 'citizen' 
+    },
+    adminRole: {
+        type: String,
+        enum: ['super_admin', 'district_admin', 'municipality_admin', 'department_head', 'field_head'],
+        required: function() {
+            return ['super_admin', 'district_admin', 'municipality_admin', 'department_head', 'field_head'].includes(this.role);
+        }
+    },
+    district: {
+        type: String,
+        required: function() {
+            return ['district_admin', 'municipality_admin', 'department_head', 'field_head', 'field_staff'].includes(this.role);
+        }
+    },
+    municipality: {
+        type: String,
+        required: function() {
+            return ['municipality_admin', 'department_head', 'field_head', 'field_staff'].includes(this.role);
+        }
     },
     points: { 
         type: Number, 
@@ -52,7 +71,16 @@ const UserSchema = new mongoose.Schema({
     },
     department: {
         type: String,
-        maxlength: 100
+        required: function() {
+            return ['department_head', 'field_head', 'field_staff'].includes(this.role);
+        }
+    },
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: function() {
+            return ['municipality_admin', 'department_head', 'field_head', 'field_staff'].includes(this.role);
+        }
     },
     avatar: {
         type: String

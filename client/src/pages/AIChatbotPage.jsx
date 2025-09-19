@@ -41,6 +41,42 @@ const AIChatbotPage = ({ onBack }) => {
   const [duplicateReports, setDuplicateReports] = useState([]);
   const [pendingSubmissionData, setPendingSubmissionData] = useState(null);
 
+  // Jharkhand districts data
+  const jharkhandDistricts = [
+    'Ranchi', 'Dhanbad', 'Bokaro', 'Jamshedpur', 'Hazaribagh', 'Giridih',
+    'Deoghar', 'Dumka', 'Godda', 'Sahibganj', 'Pakur', 'Palamu',
+    'Garhwa', 'Latehar', 'Chatra', 'Koderma', 'Jamtara', 'Gumla',
+    'Simdega', 'Lohardaga', 'Khunti', 'West Singhbhum', 'Seraikela Kharsawan', 'Ramgarh'
+  ];
+
+  // Urban local bodies by district (sample data - you can expand this)
+  const urbanLocalBodies = {
+    'Ranchi': ['Ranchi Municipal Corporation', 'Bundu Nagar Panchayat', 'Khunti Nagar Panchayat'],
+    'Dhanbad': ['Dhanbad Municipal Corporation', 'Jharia Municipality', 'Sindri Municipality'],
+    'Bokaro': ['Bokaro Steel City', 'Chas Municipality', 'Bermo Municipality'],
+    'Jamshedpur': ['Jamshedpur Notified Area Committee', 'Jugsalai Municipality', 'Chakulia Municipality'],
+    'Hazaribagh': ['Hazaribagh Municipality', 'Ramgarh Municipality', 'Barhi Municipality'],
+    'Giridih': ['Giridih Municipality', 'Deoghar Municipality', 'Madhupur Municipality'],
+    'Deoghar': ['Deoghar Municipality', 'Jasidih Municipality', 'Madhupur Municipality'],
+    'Dumka': ['Dumka Municipality', 'Shikaripara Municipality'],
+    'Godda': ['Godda Municipality', 'Mahagama Municipality'],
+    'Sahibganj': ['Sahibganj Municipality', 'Rajmahal Municipality'],
+    'Pakur': ['Pakur Municipality', 'Littipara Municipality'],
+    'Palamu': ['Medininagar Municipality', 'Daltonganj Municipality'],
+    'Garhwa': ['Garhwa Municipality', 'Ranka Municipality'],
+    'Latehar': ['Latehar Municipality', 'Barwadih Municipality'],
+    'Chatra': ['Chatra Municipality', 'Hunterganj Municipality'],
+    'Koderma': ['Koderma Municipality', 'Jhumri Telaiya Municipality'],
+    'Jamtara': ['Jamtara Municipality', 'Narayanpur Municipality'],
+    'Gumla': ['Gumla Municipality', 'Bishunpur Municipality'],
+    'Simdega': ['Simdega Municipality', 'Bolba Municipality'],
+    'Lohardaga': ['Lohardaga Municipality', 'Senha Municipality'],
+    'Khunti': ['Khunti Municipality', 'Torpa Municipality'],
+    'West Singhbhum': ['Chaibasa Municipality', 'Manoharpur Municipality'],
+    'Seraikela Kharsawan': ['Seraikela Municipality', 'Kharsawan Municipality'],
+    'Ramgarh': ['Ramgarh Municipality', 'Patratu Municipality']
+  };
+
   // Initialize speech recognition
   useEffect(() => {
     if ('webkitSpeechRecognition' in window) {
@@ -73,12 +109,14 @@ const AIChatbotPage = ({ onBack }) => {
     const welcomeMessage = {
       id: `msg-${Date.now()}-welcome`,
       type: 'bot',
-      content: "Hello! I'm your civic assistant. I can help you:",
+      content: "🤖 Hello! I'm your **Jharkhand Civic Assistant**. I can help you with:",
       options: [
-        { text: "Report a new civic issue", action: "start_report" },
-        { text: "Check status of my reports", action: "check_status" },
-        { text: "Get area statistics", action: "area_stats" },
-        { text: "General help", action: "help" }
+        { text: "📝 Report a new civic issue", action: "start_report" },
+        { text: "📊 Check status of my reports", action: "check_status" },
+        { text: "🗺️ View reports on interactive map", action: "view_map" },
+        { text: "📈 Get district statistics", action: "area_stats" },
+        { text: "💬 View/add comments on reports", action: "manage_comments" },
+        { text: "❓ General help", action: "help" }
       ],
       timestamp: new Date()
     };
@@ -124,7 +162,7 @@ const AIChatbotPage = ({ onBack }) => {
   };
 
   const processUserMessage = async (message) => {
-    simulateTyping(() => {
+    simulateTyping(async () => {
       if (currentFlow === null) {
         handleMainMenu(message);
       } else if (currentFlow === 'report') {
@@ -137,6 +175,12 @@ const AIChatbotPage = ({ onBack }) => {
         handleStatusCheckByEmail(message);
       } else if (currentFlow === 'area_stats') {
         handleAreaStats(message);
+      } else if (currentFlow === 'add_comment') {
+        handleAddCommentFlow(message);
+      } else if (currentFlow === 'feedback_flow') {
+        handleFeedbackFlow(message);
+      } else if (currentFlow === 'comment_input') {
+        await submitComment(message);
       }
     });
   };
@@ -154,12 +198,36 @@ const AIChatbotPage = ({ onBack }) => {
       showHelp();
     } else {
       addMessage('bot', "I didn't understand that. Please choose one of the options below:", [
-        { text: "Report a new civic issue", action: "start_report" },
-        { text: "Check status of my reports", action: "check_status" },
-        { text: "Get area statistics", action: "area_stats" },
-        { text: "General help", action: "help" }
+        { text: "📝 Report a new civic issue", action: "start_report" },
+        { text: "📊 Check status of my reports", action: "check_status" },
+        { text: "🗺️ View reports on interactive map", action: "view_map" },
+        { text: "📈 Get district statistics", action: "area_stats" },
+        { text: "💬 View/add comments on reports", action: "manage_comments" },
+        { text: "❓ General help", action: "help" }
       ]);
     }
+  };
+
+  const showMainMenu = () => {
+    setCurrentFlow(null);
+    addMessage('bot', "🏠 **Main Menu** - How can I assist you today?", [
+      { text: "📝 Report a new civic issue", action: "start_report" },
+      { text: "📊 Check status of my reports", action: "check_status" },
+      { text: "🗺️ View reports on interactive map", action: "view_map" },
+      { text: "📈 Get district statistics", action: "area_stats" },
+      { text: "💬 View/add comments on reports", action: "manage_comments" },
+      { text: "❓ General help", action: "help" }
+    ]);
+  };
+
+  const startCommentManagement = () => {
+    setCurrentFlow('comment_management');
+    addMessage('bot', "💬 **Comment Management**\n\nI can help you with:\n• View comments on your reports\n• Add comments to reports\n• View feedback on resolved reports\n\nWhat would you like to do?", [
+      { text: "📝 Add comment to a report", action: "add_comment" },
+      { text: "👁️ View comments on my reports", action: "view_comments" },
+      { text: "⭐ Give feedback on resolved reports", action: "give_feedback" },
+      { text: "🏠 Back to main menu", action: "main_menu" }
+    ]);
   };
 
   const startReportFlow = () => {
@@ -186,15 +254,31 @@ const AIChatbotPage = ({ onBack }) => {
     
     if (!reportData.description) {
       setReportData(prev => ({ ...prev, description: message }));
-      addMessage('bot', "Thank you! Now please provide the location where this issue is present. You can type the address or describe the location:");
+      addMessage('bot', "Thank you! Now, which district is this issue located in?", 
+        jharkhandDistricts.map(district => ({
+          text: district,
+          action: "select_district",
+          value: district
+        }))
+      );
+      return;
+    }
+    
+    if (!reportData.district) {
+      // District will be set via option click
+      return;
+    }
+
+    if (!reportData.urbanLocalBody) {
+      // Urban local body will be set via option click
       return;
     }
     
     if (!reportData.address) {
       setReportData(prev => ({ ...prev, address: message }));
-      addMessage('bot', "Great! Now let's get the location. How would you like to provide the location?", [
+      addMessage('bot', "Perfect! Now let's get the precise location. How would you like to provide the location coordinates?", [
         { text: "📍 Use Current Location", action: "use_gps_location" },
-        // { text: "🗺️ Select on Map", action: "select_on_map" },
+        { text: "🗺️ Select on Map", action: "select_on_map" },
         { text: "📝 Skip Location", action: "skip_location" }
       ]);
       return;
@@ -206,8 +290,26 @@ const AIChatbotPage = ({ onBack }) => {
       startReportFlow();
     } else if (action === 'check_status') {
       startStatusCheck();
+    } else if (action === 'view_map') {
+      addMessage('user', '🗺️ View reports on interactive map');
+      addMessage('bot', "🗺️ I'd love to show you the interactive map! The map displays all civic reports with district-wise filtering and shows completed reports with special markers.\n\n**Map Features:**\n• 📍 View all reports by location\n• 🏛️ Filter by Jharkhand districts\n• ✅ Highlight completed reports\n• 💬 See report details and comments\n\nWould you like me to guide you to the map or help with something else?", [
+        { text: "🗺️ Go to Interactive Map", action: "navigate_to_map" },
+        { text: "📝 Report new issue", action: "start_report" },
+        { text: "📊 Check report status", action: "check_status" },
+        { text: "🏠 Back to main menu", action: "main_menu" }
+      ]);
+    } else if (action === 'navigate_to_map') {
+      addMessage('user', '🗺️ Go to Interactive Map');
+      addMessage('bot', "🗺️ To access the Interactive Map:\n\n1. **From Citizen Dashboard:** Look for the 'Interactive Map' button\n2. **From Main Menu:** Navigate to the Map section\n3. **Direct Access:** The map shows all reports with district filtering\n\n**Pro Tips:**\n• Use district filter to see reports in your area\n• Look for green checkmarks on completed reports\n• Click markers to see full report details\n• Use 'Show Only Completed' for success stories\n\nWould you like help with anything else?", [
+        { text: "📝 Report new issue", action: "start_report" },
+        { text: "📊 Check my reports", action: "check_status" },
+        { text: "🏠 Start over", action: "new_conversation" }
+      ]);
+    } else if (action === 'manage_comments') {
+      addMessage('user', '� View/add comments on reports');
+      startCommentManagement();
     } else if (action === 'show_all_reports') {
-      addMessage('user', '📋 Show all my reports');
+      addMessage('user', '�📋 Show all my reports');
       await handleStatusCheck();
     } else if (action === 'search_by_id') {
       addMessage('user', '🔍 Search by Report ID');
@@ -219,13 +321,38 @@ const AIChatbotPage = ({ onBack }) => {
       addMessage('bot', "Please enter your email address to find reports associated with your account:");
     } else if (action === 'area_stats') {
       startAreaStats();
+    } else if (action === 'get_district_stats') {
+      addMessage('user', `📈 ${value} District Statistics`);
+      await getDistrictStats(value);
     } else if (action === 'help') {
       showHelp();
+    } else if (action === 'main_menu') {
+      addMessage('user', '🏠 Back to main menu');
+      showMainMenu();
     } else if (action === 'select_type') {
       setReportData(prev => ({ ...prev, issueType: value }));
       addMessage('user', value.charAt(0).toUpperCase() + value.slice(1).replace('-', ' '));
       simulateTyping(() => {
-        addMessage('bot', `You've selected "${value.replace('-', ' ')}". Please describe the issue in detail:`);
+        addMessage('bot', `You've selected **"${value.replace('-', ' ')}"**. Please describe the issue in detail:\n\n💡 **Tips for better descriptions:**\n• Be specific about the problem\n• Mention size/severity if applicable\n• Include any safety concerns\n• Add timing information if relevant`);
+      });
+    } else if (action === 'select_district') {
+      setReportData(prev => ({ ...prev, district: value }));
+      addMessage('user', `📍 ${value} District`);
+      simulateTyping(() => {
+        const localBodies = urbanLocalBodies[value] || ['Municipality', 'Nagar Panchayat', 'Other'];
+        addMessage('bot', `Great! You've selected **${value} District**. Now, which urban local body/municipality is this issue in?`, 
+          localBodies.map(body => ({
+            text: body,
+            action: "select_urban_body",
+            value: body
+          }))
+        );
+      });
+    } else if (action === 'select_urban_body') {
+      setReportData(prev => ({ ...prev, urbanLocalBody: value }));
+      addMessage('user', `🏛️ ${value}`);
+      simulateTyping(() => {
+        addMessage('bot', `Perfect! **District:** ${reportData.district}, **Area:** ${value}\n\nNow please provide the specific address or location description where this issue is present:`);
       });
     } else if (action === 'upload_photo') {
       addMessage('user', 'Yes, upload photo');
@@ -242,6 +369,15 @@ const AIChatbotPage = ({ onBack }) => {
     } else if (action === 'skip_location') {
       addMessage('user', '📝 Skip Location');
       proceedToPhotoOptions();
+    } else if (action === 'add_comment') {
+      addMessage('user', '📝 Add comment to a report');
+      startAddComment();
+    } else if (action === 'view_comments') {
+      addMessage('user', '👁️ View comments on my reports');
+      await showReportsWithComments();
+    } else if (action === 'give_feedback') {
+      addMessage('user', '⭐ Give feedback on resolved reports');
+      await showResolvedReportsForFeedback();
     } else if (action === 'new_conversation') {
       startNewConversation();
     }
@@ -317,6 +453,8 @@ Is there anything else I can help you with?`, [
           category: reportData.issueType || 'other',
           description: reportData.description,
           address: selectedLocation?.address || reportData.address || 'Location not specified',
+          district: reportData.district || '',
+          urbanLocalBody: reportData.urbanLocalBody || '',
           location: {
             type: 'Point',
             coordinates: coordinates
@@ -416,7 +554,7 @@ Is there anything else I can help you with?`, [
           return;
         }
 
-        // Format the reports data
+        // Format the reports data with enhanced information
         let reportsText = `📊 **Found ${userReports.length} report${userReports.length > 1 ? 's' : ''} in your account:**\n\n`;
 
         userReports.slice(0, 5).forEach((report, index) => {
@@ -425,12 +563,40 @@ Is there anything else I can help you with?`, [
           const reportId = report._id ? report._id.slice(-6) : 'N/A';
 
           reportsText += `🔹 **Report #${reportId}** - ${report.title || 'Untitled'}\n`;
-          reportsText += `   Status: ${formatStatus(report.status)} ${statusIcon}\n`;
-          reportsText += `   Category: ${report.category || 'Other'}\n`;
-          reportsText += `   Submitted: ${timeAgo}\n`;
-          if (report.address) {
-            reportsText += `   Location: ${report.address}\n`;
+          reportsText += `   📊 Status: ${formatStatus(report.status)} ${statusIcon}\n`;
+          reportsText += `   🏷️ Category: ${report.category || 'Other'}\n`;
+          
+          // Add district and urban local body info
+          if (report.district) {
+            reportsText += `   🏛️ District: ${report.district}`;
+            if (report.urbanLocalBody) {
+              reportsText += ` • ${report.urbanLocalBody}`;
+            }
+            reportsText += `\n`;
           }
+          
+          reportsText += `   📅 Submitted: ${timeAgo}\n`;
+          
+          // Add resolution date if completed
+          if (report.status === 'resolved' && report.resolvedAt) {
+            const resolvedAgo = getTimeAgo(report.resolvedAt);
+            reportsText += `   ✅ Resolved: ${resolvedAgo}\n`;
+          }
+          
+          if (report.address) {
+            reportsText += `   📍 Location: ${report.address}\n`;
+          }
+          
+          // Add comment count if available
+          if (report.citizenComments && report.citizenComments.length > 0) {
+            reportsText += `   💬 Comments: ${report.citizenComments.length}\n`;
+          }
+          
+          // Add priority if high or critical
+          if (report.priority && (report.priority.toLowerCase() === 'high' || report.priority.toLowerCase() === 'critical')) {
+            reportsText += `   ⚡ Priority: ${report.priority}\n`;
+          }
+          
           reportsText += `\n`;
         });
 
@@ -593,67 +759,287 @@ Is there anything else I can help you with?`, [
 
   const startAreaStats = () => {
     setCurrentFlow('area_stats');
-    addMessage('bot', "Which area would you like statistics for? Please provide the area name or pincode:");
+    addMessage('bot', "📈 **District Statistics**\n\nI can show you statistics for any Jharkhand district. Which district would you like to analyze?", 
+      jharkhandDistricts.map(district => ({
+        text: district,
+        action: "get_district_stats",
+        value: district
+      }))
+    );
   };
 
-  const handleAreaStats = (message) => {
-    simulateTyping(() => {
-      addMessage('bot', `📈 Statistics for ${message}:
+  const handleAreaStats = async (message) => {
+    // This will handle text input for area stats
+    await getDistrictStats(message);
+  };
 
-📊 **Report Summary:**
-• Total Reports: 127
-• Resolved: 89 (70%)
-• In Progress: 23 (18%)  
-• Pending: 15 (12%)
+  const getDistrictStats = async (districtName) => {
+    simulateTyping(async () => {
+      try {
+        addMessage('bot', `� Fetching statistics for ${districtName}...`);
 
-🏆 **Top Issues:**
-1. Potholes (32 reports)
-2. Street lights (28 reports)
-3. Garbage collection (19 reports)
-4. Water supply (15 reports)
+        // Fetch all reports to calculate statistics
+        const allReports = await reportService.getAllReports();
+        
+        // Filter reports by district
+        const districtReports = allReports.filter(report => 
+          report.district && report.district.toLowerCase() === districtName.toLowerCase()
+        );
 
-⚡ **Response Time:** Average 3.2 days
-🎯 **Resolution Rate:** 70% this month
+        if (districtReports.length === 0) {
+          addMessage('bot', `📭 No reports found for ${districtName} district.\n\nThis could mean:\n• No reports have been submitted yet\n• Reports are from other districts\n• Different spelling used\n\nWould you like to check another district?`, [
+            { text: "📈 Check another district", action: "area_stats" },
+            { text: "� Report issue in this district", action: "start_report" },
+            { text: "🏠 Back to main menu", action: "main_menu" }
+          ]);
+          setCurrentFlow(null);
+          return;
+        }
 
-This area is performing well with quick response times!`, [
-        { text: "Report an issue here", action: "start_report" },
-        { text: "Check another area", action: "area_stats" },
-        { text: "Start new conversation", action: "new_conversation" }
-      ]);
-      setCurrentFlow(null);
+        // Calculate statistics
+        const totalReports = districtReports.length;
+        const resolvedReports = districtReports.filter(r => r.status === 'resolved');
+        const inProgressReports = districtReports.filter(r => r.status === 'in_progress' || r.status === 'assigned');
+        const pendingReports = districtReports.filter(r => r.status === 'submitted' || r.status === 'acknowledged');
+        
+        const resolvedPercent = Math.round((resolvedReports.length / totalReports) * 100);
+        const inProgressPercent = Math.round((inProgressReports.length / totalReports) * 100);
+        const pendingPercent = Math.round((pendingReports.length / totalReports) * 100);
+
+        // Count by category
+        const categoryCount = {};
+        districtReports.forEach(report => {
+          const category = report.category || 'other';
+          categoryCount[category] = (categoryCount[category] || 0) + 1;
+        });
+
+        const topIssues = Object.entries(categoryCount)
+          .sort(([,a], [,b]) => b - a)
+          .slice(0, 4);
+
+        // Calculate average resolution time for resolved reports
+        let avgResolutionDays = 'N/A';
+        if (resolvedReports.length > 0) {
+          const totalDays = resolvedReports.reduce((sum, report) => {
+            if (report.resolvedAt && report.createdAt) {
+              const days = Math.ceil((new Date(report.resolvedAt) - new Date(report.createdAt)) / (1000 * 60 * 60 * 24));
+              return sum + days;
+            }
+            return sum;
+          }, 0);
+          avgResolutionDays = Math.round(totalDays / resolvedReports.length) || 'N/A';
+        }
+
+        let statsMessage = `📈 **${districtName} District Statistics**\n\n`;
+        statsMessage += `📊 **Report Summary:**\n`;
+        statsMessage += `• Total Reports: ${totalReports}\n`;
+        statsMessage += `• ✅ Resolved: ${resolvedReports.length} (${resolvedPercent}%)\n`;
+        statsMessage += `• 🔄 In Progress: ${inProgressReports.length} (${inProgressPercent}%)\n`;
+        statsMessage += `• ⏳ Pending: ${pendingReports.length} (${pendingPercent}%)\n\n`;
+
+        if (topIssues.length > 0) {
+          statsMessage += `🏆 **Top Issues:**\n`;
+          topIssues.forEach(([category, count], index) => {
+            statsMessage += `${index + 1}. ${category.charAt(0).toUpperCase() + category.slice(1).replace('-', ' ')} (${count} reports)\n`;
+          });
+          statsMessage += `\n`;
+        }
+
+        statsMessage += `⚡ **Avg Resolution Time:** ${avgResolutionDays} days\n`;
+        statsMessage += `🎯 **Success Rate:** ${resolvedPercent}% completed\n\n`;
+
+        if (resolvedPercent >= 70) {
+          statsMessage += `🌟 **Excellent performance!** This district has a high resolution rate.`;
+        } else if (resolvedPercent >= 50) {
+          statsMessage += `👍 **Good progress!** This district is making steady improvements.`;
+        } else {
+          statsMessage += `📋 **Room for improvement** - More attention may be needed in this district.`;
+        }
+
+        addMessage('bot', statsMessage, [
+          { text: "📝 Report issue in this district", action: "start_report" },
+          { text: "🗺️ View on map", action: "view_map" },
+          { text: "📈 Check another district", action: "area_stats" },
+          { text: "🏠 Back to main menu", action: "main_menu" }
+        ]);
+        setCurrentFlow(null);
+
+      } catch (error) {
+        console.error('Error fetching district statistics:', error);
+        addMessage('bot', `❌ Sorry, I couldn't fetch statistics for ${districtName} right now. Please try again later.`, [
+          { text: "📈 Try another district", action: "area_stats" },
+          { text: "🏠 Back to main menu", action: "main_menu" }
+        ]);
+        setCurrentFlow(null);
+      }
+    });
+  };
+
+  const startAddComment = () => {
+    setCurrentFlow('add_comment');
+    addMessage('bot', "📝 **Add Comment to Report**\n\nPlease provide your Report ID (6-character code) to add a comment:");
+  };
+
+  const showReportsWithComments = async () => {
+    simulateTyping(async () => {
+      try {
+        addMessage('bot', "🔍 Fetching reports with comments...");
+        
+        const userReports = await reportService.getUserReports();
+        const reportsWithComments = userReports.filter(report => 
+          report.citizenComments && report.citizenComments.length > 0
+        );
+
+        if (reportsWithComments.length === 0) {
+          addMessage('bot', "📭 No comments found on your reports.\n\nNone of your reports have comments yet. Comments help track progress and communicate with officials.", [
+            { text: "📝 Add comment to a report", action: "add_comment" },
+            { text: "📋 View all my reports", action: "show_all_reports" },
+            { text: "🏠 Back to main menu", action: "main_menu" }
+          ]);
+          return;
+        }
+
+        let commentsText = `💬 **Reports with Comments (${reportsWithComments.length} found):**\n\n`;
+
+        reportsWithComments.slice(0, 3).forEach(report => {
+          const reportId = report._id.slice(-6);
+          const commentCount = report.citizenComments.length;
+          const latestComment = report.citizenComments[report.citizenComments.length - 1];
+          const timeAgo = getTimeAgo(latestComment.createdAt);
+
+          commentsText += `🔹 **Report #${reportId}** - ${report.title || report.category}\n`;
+          commentsText += `   💬 ${commentCount} comment${commentCount > 1 ? 's' : ''} • Latest: ${timeAgo}\n`;
+          commentsText += `   📝 ${latestComment.comment.substring(0, 50)}${latestComment.comment.length > 50 ? '...' : ''}\n\n`;
+        });
+
+        if (reportsWithComments.length > 3) {
+          commentsText += `📝 *Showing 3 of ${reportsWithComments.length} reports with comments.*\n\n`;
+        }
+
+        commentsText += "What would you like to do?";
+
+        addMessage('bot', commentsText, [
+          { text: "📝 Add new comment", action: "add_comment" },
+          { text: "📋 View all reports", action: "show_all_reports" },
+          { text: "🏠 Back to main menu", action: "main_menu" }
+        ]);
+      } catch (error) {
+        console.error('Error fetching comments:', error);
+        addMessage('bot', "❌ Sorry, I couldn't fetch comments right now. Please try again later.", [
+          { text: "📝 Add comment", action: "add_comment" },
+          { text: "🏠 Back to main menu", action: "main_menu" }
+        ]);
+      }
+    });
+  };
+
+  const showResolvedReportsForFeedback = async () => {
+    simulateTyping(async () => {
+      try {
+        addMessage('bot', "🔍 Looking for your resolved reports...");
+        
+        const userReports = await reportService.getUserReports();
+        const resolvedReports = userReports.filter(report => report.status === 'resolved');
+
+        if (resolvedReports.length === 0) {
+          addMessage('bot', "📭 No resolved reports found.\n\nYou don't have any resolved reports yet. Once your reports are completed, you can provide feedback to help improve services.", [
+            { text: "📝 Report new issue", action: "start_report" },
+            { text: "📊 Check report status", action: "check_status" },
+            { text: "🏠 Back to main menu", action: "main_menu" }
+          ]);
+          return;
+        }
+
+        let feedbackText = `⭐ **Resolved Reports (${resolvedReports.length} found):**\n\n`;
+
+        resolvedReports.slice(0, 3).forEach(report => {
+          const reportId = report._id.slice(-6);
+          const resolvedAgo = getTimeAgo(report.resolvedAt);
+          const hasFeedback = report.feedback && report.feedback.length > 0;
+
+          feedbackText += `🔹 **Report #${reportId}** - ${report.title || report.category}\n`;
+          feedbackText += `   ✅ Resolved: ${resolvedAgo}\n`;
+          feedbackText += `   ${hasFeedback ? '⭐ Feedback given' : '⭐ No feedback yet'}\n`;
+          feedbackText += `   📍 ${report.district || 'Unknown district'}\n\n`;
+        });
+
+        if (resolvedReports.length > 3) {
+          feedbackText += `📝 *Showing 3 of ${resolvedReports.length} resolved reports.*\n\n`;
+        }
+
+        feedbackText += "Would you like to give feedback on any of these completed reports?";
+
+        addMessage('bot', feedbackText, [
+          { text: "⭐ Give feedback by Report ID", action: "feedback_by_id" },
+          { text: "📋 View all resolved reports", action: "show_resolved_reports" },
+          { text: "🏠 Back to main menu", action: "main_menu" }
+        ]);
+      } catch (error) {
+        console.error('Error fetching resolved reports:', error);
+        addMessage('bot', "❌ Sorry, I couldn't fetch resolved reports right now. Please try again later.", [
+          { text: "📊 Check report status", action: "check_status" },
+          { text: "🏠 Back to main menu", action: "main_menu" }
+        ]);
+      }
     });
   };
 
   const showHelp = () => {
-    addMessage('bot', `🤖 **How to use this chatbot:**
+    addMessage('bot', `🤖 **Jharkhand Civic Assistant Help Guide:**
 
 📝 **Reporting Issues:**
 • Select "Report a new civic issue"
-• Choose issue type
-• Describe the problem
-• Provide location details
-• Optionally add photos
+• Choose from 9+ issue types (pothole, streetlight, garbage, etc.)
+• Select your district from 24 Jharkhand districts
+• Choose urban local body/municipality
+• Provide detailed description
+• Add precise location via GPS or map
+• Optionally upload photos for evidence
 
-📊 **Checking Status:**
-• Select "Check status of my reports"
-• Provide report ID or email
-• View all your report statuses
+📊 **Checking Report Status:**
+• View all your reports with detailed info
+• Search by Report ID or email
+• See district and urban local body info
+• Track resolution progress and timelines
+• View completion dates for resolved reports
 
-📈 **Area Statistics:**
-• Get insights about your area
-• View resolution rates and trends
-• Compare with other areas
+🗺️ **Interactive Map Features:**
+• View all reports on map by location
+• Filter reports by district
+• See completed reports with special markers
+• Click markers for detailed popups
+• District-based map centering
 
-💡 **Tips:**
-• Be specific in descriptions
-• Include exact locations
-• Add photos when possible
-• Keep your report ID for tracking
+📈 **District Statistics:**
+• Real-time statistics for all 24 districts
+• Resolution rates and completion trends
+• Top issues by category
+• Average response times
+• Performance comparisons
+
+💬 **Comments & Feedback:**
+• View existing comments on your reports
+• Add comments for updates or clarification
+• Give feedback on completed reports
+• Star rating system for resolved issues
+
+💡 **Pro Tips:**
+• Be specific in issue descriptions
+• Include exact addresses and landmarks
+• Use GPS location for precise reporting
+• Upload photos for faster resolution
+• Track your reports regularly
+• Provide feedback on completed work
+
+🏛️ **Jharkhand Coverage:**
+All 24 districts supported with local urban bodies!
 
 What would you like to do next?`, [
-      { text: "Report a new civic issue", action: "start_report" },
-      { text: "Check status of my reports", action: "check_status" },
-      { text: "Get area statistics", action: "area_stats" }
+      { text: "📝 Report new civic issue", action: "start_report" },
+      { text: "📊 Check my report status", action: "check_status" },
+      { text: "🗺️ View interactive map", action: "view_map" },
+      { text: "📈 Get district statistics", action: "area_stats" },
+      { text: "🏠 Back to main menu", action: "main_menu" }
     ]);
   };
 
@@ -815,6 +1201,96 @@ What would you like to do next?`, [
     } else {
       return 'Just now';
     }
+  };
+
+  // Comment management handlers
+  const handleAddCommentFlow = async (message) => {
+    const reportId = message.trim();
+    
+    if (reportId.length !== 6) {
+      addMessage('bot', "❌ Please provide a valid 6-character Report ID. You can find this in your reports list.");
+      return;
+    }
+
+    simulateTyping(async () => {
+      try {
+        const userReports = await reportService.getUserReports();
+        const matchingReport = userReports.find(report =>
+          report._id && report._id.slice(-6).toLowerCase() === reportId.toLowerCase()
+        );
+
+        if (!matchingReport) {
+          addMessage('bot', `❌ Report ID "${reportId}" not found in your account. Please check the ID and try again.`, [
+            { text: "🔍 Try another ID", action: "add_comment" },
+            { text: "📋 View all reports", action: "show_all_reports" },
+            { text: "🏠 Back to main menu", action: "main_menu" }
+          ]);
+          setCurrentFlow(null);
+          return;
+        }
+
+        // Set up for comment input
+        setReportData({ commentReportId: matchingReport._id });
+        setCurrentFlow('comment_input');
+        
+        addMessage('bot', `📝 **Adding comment to Report #${reportId}**\n\n**Report:** ${matchingReport.title || matchingReport.category}\n**Status:** ${formatStatus(matchingReport.status)}\n\nPlease type your comment or question:`);
+        
+      } catch (error) {
+        console.error('Error finding report:', error);
+        addMessage('bot', "❌ Sorry, I couldn't find that report right now. Please try again later.");
+        setCurrentFlow(null);
+      }
+    });
+  };
+
+  const handleFeedbackFlow = async (message) => {
+    // Handle feedback submission flow
+    addMessage('bot', "⭐ **Feedback Feature**\n\nFeedback functionality will be available soon. For now, you can add comments to your reports.", [
+      { text: "📝 Add comment instead", action: "add_comment" },
+      { text: "🏠 Back to main menu", action: "main_menu" }
+    ]);
+    setCurrentFlow(null);
+  };
+
+  const submitComment = async (commentText) => {
+    if (!commentText.trim()) {
+      addMessage('bot', "❌ Please provide a comment to add to the report.");
+      return;
+    }
+
+    if (!reportData.commentReportId) {
+      addMessage('bot', "❌ Error: Report ID not found. Please try again.", [
+        { text: "📝 Add comment", action: "add_comment" },
+        { text: "🏠 Back to main menu", action: "main_menu" }
+      ]);
+      setCurrentFlow(null);
+      return;
+    }
+
+    simulateTyping(async () => {
+      try {
+        addMessage('bot', "📝 Adding your comment to the report...");
+
+        await reportService.addComment(reportData.commentReportId, commentText);
+
+        addMessage('bot', `✅ **Comment added successfully!**\n\n💬 Your comment: "${commentText}"\n\nThe comment has been added to your report and relevant officials will be notified.\n\nWhat would you like to do next?`, [
+          { text: "📝 Add another comment", action: "add_comment" },
+          { text: "📊 View my reports", action: "show_all_reports" },
+          { text: "🏠 Back to main menu", action: "main_menu" }
+        ]);
+
+        setCurrentFlow(null);
+        setReportData({});
+
+      } catch (error) {
+        console.error('Error adding comment:', error);
+        addMessage('bot', "❌ Sorry, I couldn't add your comment right now. Please try again later.", [
+          { text: "🔄 Try again", action: "add_comment" },
+          { text: "🏠 Back to main menu", action: "main_menu" }
+        ]);
+        setCurrentFlow(null);
+      }
+    });
   };
 
   return (

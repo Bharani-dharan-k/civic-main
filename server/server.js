@@ -96,7 +96,23 @@ try {
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/admin/departments', require('./routes/departments'));
 app.use('/api/worker', require('./routes/worker'));
+app.use('/api/superadmin', require('./routes/superAdminRoutes'));
+app.use('/api/department-head', require('./routes/departmentHead'));
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+
+// Add process event handlers to prevent unexpected exits
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+// Keep the process alive
+setInterval(() => {
+    // Do nothing, just keep the process alive
+}, 1000);

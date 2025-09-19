@@ -123,6 +123,12 @@ export const translations = {
     'high': 'High',
     'submitting': 'Submitting...',
 
+    // Staff Management
+    'role': 'Role',
+    'fieldStaff': 'Field Staff',
+    'fieldHead': 'Field Head',
+    'departmentHead': 'Department Head',
+
     // Tracking
     'track_reports': 'Track Reports',
     'reports_found': 'reports found',
@@ -210,6 +216,12 @@ export const translations = {
     'close': 'बंद करें',
     'view_details': 'विवरण देखें',
     'failed_to_load_data': 'डेटा लोड नहीं हो सका। कृपया पुनः प्रयास करें।',
+
+    // Staff Management
+    'role': 'भूमिका',
+    'fieldStaff': 'फील्ड स्टाफ',
+    'fieldHead': 'फील्ड प्रमुख',
+    'departmentHead': 'विभाग प्रमुख',
   },
 
   ta: {
@@ -271,6 +283,12 @@ export const translations = {
     'close': 'மூடு',
     'view_details': 'விவரங்களைக் காண்க',
     'failed_to_load_data': 'தரவை ஏற்ற முடியவில்லை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.',
+
+    // Staff Management
+    'role': 'பாத்திரம்',
+    'fieldStaff': 'களப் பணியாளர்',
+    'fieldHead': 'களத் தலைவர்',
+    'departmentHead': 'துறைத் தலைவர்',
   }
 };
 

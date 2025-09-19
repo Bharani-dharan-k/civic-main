@@ -62,6 +62,7 @@ import AIChatbotPage from './AIChatbotPage';
 import { reportService, userService, notificationService } from '../services/reportService';
 import { useTranslation } from '../utils/translations';
 import DuplicateReportModal from '../components/Citizen/DuplicateReportModal';
+import ReportDetailsModal from '../components/Citizen/ReportDetailsModal';
 
 const CitizenDashboard = () => {
   const navigate = useNavigate();
@@ -75,6 +76,10 @@ const CitizenDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
+
+  // Report Details Modal State
+  const [isReportDetailsModalOpen, setIsReportDetailsModalOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState(null);
 
   // Language options with Indian flag theme
   const languages = [
@@ -196,6 +201,72 @@ const CitizenDashboard = () => {
     toast.success('Language changed');
   };
 
+  // Report Details Handlers
+  const handleViewDetails = (report) => {
+    setSelectedReport(report);
+    setIsReportDetailsModalOpen(true);
+  };
+
+  const handleAddComment = async (reportId, comment) => {
+    try {
+      const response = await reportService.addCommentToReport(reportId, comment);
+      toast.success('Comment added successfully!');
+      
+      // Update the selected report with the new comment
+      const updatedReport = { ...selectedReport };
+      if (!updatedReport.citizenComments) {
+        updatedReport.citizenComments = [];
+      }
+      updatedReport.citizenComments.push(response.comment);
+      setSelectedReport(updatedReport);
+      
+      // Refresh complaints list
+      const updatedReports = await reportService.getUserReports();
+      setComplaints(Array.isArray(updatedReports) ? updatedReports : []);
+      
+      // Refresh notifications to show new comment notification
+      const userNotifications = await notificationService.getNotifications();
+      setNotifications(Array.isArray(userNotifications) ? userNotifications : []);
+      const unreadCount = userNotifications.filter(n => !n.isRead).length;
+      setUnreadCount(unreadCount);
+      
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      toast.error('Failed to add comment');
+      throw error;
+    }
+  };
+
+  const handleSubmitFeedback = async (reportId, feedbackData) => {
+    try {
+      await reportService.submitFeedback(reportId, feedbackData);
+      toast.success('Thank you for your feedback!');
+      
+      // Update the selected report with feedback
+      const updatedReport = { ...selectedReport };
+      updatedReport.feedback = {
+        ...feedbackData,
+        submittedAt: new Date()
+      };
+      setSelectedReport(updatedReport);
+      
+      // Refresh complaints list
+      const updatedReports = await reportService.getUserReports();
+      setComplaints(Array.isArray(updatedReports) ? updatedReports : []);
+      
+      // Refresh notifications to show new feedback notification
+      const userNotifications = await notificationService.getNotifications();
+      setNotifications(Array.isArray(userNotifications) ? userNotifications : []);
+      const unreadCount = userNotifications.filter(n => !n.isRead).length;
+      setUnreadCount(unreadCount);
+      
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      toast.error('Failed to submit feedback');
+      throw error;
+    }
+  };
+
   // Enhanced Submit Complaint Section with Indian Design
   const SubmitComplaintSection = () => {
     const [formData, setFormData] = useState({
@@ -203,6 +274,8 @@ const CitizenDashboard = () => {
       description: '',
       category: '',
       location: '',
+      district: '',
+      urbanLocalBody: '',
       priority: 'medium',
       images: [],
       coordinates: null
@@ -211,6 +284,93 @@ const CitizenDashboard = () => {
     const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
     const [duplicateReports, setDuplicateReports] = useState([]);
     const [pendingSubmissionData, setPendingSubmissionData] = useState(null);
+
+    // Jharkhand Districts and Urban Local Bodies Data
+    const jharkhandData = {
+      'Bokaro': [
+        { value: 'phusro', label: 'Phusro (Nagar Parishad)', type: 'NP' },
+        { value: 'chas', label: 'Chas (Nagar Parishad)', type: 'NP' }
+      ],
+      'Chatra': [
+        { value: 'chatra', label: 'Chatra (Nagar Parishad)', type: 'NP' }
+      ],
+      'Deoghar': [
+        { value: 'deoghar', label: 'Deoghar (Municipal Corporation)', type: 'MC' },
+        { value: 'madhupur', label: 'Madhupur (Nagar Parishad)', type: 'NP' }
+      ],
+      'Dhanbad': [
+        { value: 'dhanbad', label: 'Dhanbad (Municipal Corporation)', type: 'MC' },
+        { value: 'chirkunda', label: 'Chirkunda (Nagar Panchayat)', type: 'NPanch' }
+      ],
+      'Dumka': [
+        { value: 'basukinath', label: 'Basukinath (Nagar Parishad)', type: 'NP' },
+        { value: 'dumka', label: 'Dumka (Nagar Parishad)', type: 'NP' }
+      ],
+      'Garhwa': [
+        { value: 'majhion', label: 'Majhion (Nagar Parishad)', type: 'NP' },
+        { value: 'garhwa', label: 'Garhwa (Nagar Parishad)', type: 'NP' }
+      ],
+      'Giridih': [
+        { value: 'giridih', label: 'Giridih (Nagar Parishad)', type: 'NP' }
+      ],
+      'Godda': [
+        { value: 'godda', label: 'Godda (Nagar Parishad)', type: 'NP' }
+      ],
+      'Gumla': [
+        { value: 'gumla', label: 'Gumla (Nagar Parishad)', type: 'NP' }
+      ],
+      'Hazaribagh': [
+        { value: 'hazaribagh', label: 'Hazaribagh (Nagar Parishad)', type: 'NP' }
+      ],
+      'Jamtara': [
+        { value: 'jamtara', label: 'Jamtara (Nagar Parishad)', type: 'NP' },
+        { value: 'mihijam', label: 'Mihijam (Nagar Parishad)', type: 'NP' }
+      ],
+      'Khunti': [
+        { value: 'khunti', label: 'Khunti (Nagar Parishad)', type: 'NP' }
+      ],
+      'Koderma': [
+        { value: 'kodarma', label: 'Kodarma (Nagar Parishad)', type: 'NP' },
+        { value: 'jhumri-tilaiya', label: 'Jhumri Tilaiya (Nagar Parishad)', type: 'NP' }
+      ],
+      'Latehar': [
+        { value: 'latehar', label: 'Latehar (Nagar Parishad)', type: 'NP' }
+      ],
+      'Lohardaga': [
+        { value: 'lohardaga', label: 'Lohardaga (Nagar Parishad)', type: 'NP' }
+      ],
+      'Palamu': [
+        { value: 'hussainabad', label: 'Hussainabad (Nagar Parishad)', type: 'NP' },
+        { value: 'bishrampur', label: 'Bishrampur (Nagar Parishad)', type: 'NP' },
+        { value: 'medininagar', label: 'Medininagar (Daltonganj) (Nagar Parishad)', type: 'NP' }
+      ],
+      'East Singhbhum': [
+        { value: 'mango', label: 'Mango (Notified Area Council)', type: 'NAC' },
+        { value: 'jamshedpur', label: 'Jamshedpur (Notified Area Council)', type: 'NAC' },
+        { value: 'jugsalai', label: 'Jugsalai (Municipality)', type: 'M' }
+      ],
+      'Ramgarh': [
+        { value: 'ramgarh', label: 'Ramgarh Cantonment (Cantonment Board)', type: 'CB' }
+      ],
+      'Ranchi': [
+        { value: 'ranchi', label: 'Ranchi (Municipal Corporation)', type: 'MC' },
+        { value: 'bundu', label: 'Bundu (Nagar Parishad)', type: 'NP' }
+      ],
+      'Sahebganj': [
+        { value: 'sahibganj', label: 'Sahibganj (Nagar Parishad)', type: 'NP' },
+        { value: 'rajmahal', label: 'Rajmahal (Nagar Parishad)', type: 'NP' }
+      ],
+      'Saraikela Kharsawan': [
+        { value: 'adityapur', label: 'Adityapur (Nagar Parishad)', type: 'NP' },
+        { value: 'seraikela', label: 'Seraikela (Nagar Parishad)', type: 'NP' }
+      ],
+      'Simdega': [
+        { value: 'simdega', label: 'Simdega (Nagar Parishad)', type: 'NP' }
+      ],
+      'West Singhbhum': [
+        { value: 'chaibasa', label: 'Chaibasa (Nagar Parishad)', type: 'NP' }
+      ]
+    };
 
     const categories = [
       { value: 'pothole', label: '🕳️ Road & Potholes', color: 'bg-red-50 border-red-200' },
@@ -225,7 +385,17 @@ const CitizenDashboard = () => {
 
     const handleInputChange = (e) => {
       const { name, value } = e.target;
-      setFormData(prev => ({ ...prev, [name]: value }));
+      
+      if (name === 'district') {
+        // Clear urban local body when district changes
+        setFormData(prev => ({ 
+          ...prev, 
+          [name]: value,
+          urbanLocalBody: '' // Reset urban local body selection
+        }));
+      } else {
+        setFormData(prev => ({ ...prev, [name]: value }));
+      }
     };
 
     const handleImageUpload = async (e) => {
@@ -459,7 +629,9 @@ const CitizenDashboard = () => {
           location: '',
           priority: 'medium',
           images: [],
-          coordinates: null
+          coordinates: null,
+          district: '',
+          urbanLocalBody: ''
         });
 
         // Refresh complaints list
@@ -475,8 +647,8 @@ const CitizenDashboard = () => {
     const handleSubmit = async (e) => {
       e.preventDefault();
 
-      if (!formData.title.trim() || !formData.description.trim() || !formData.category) {
-        toast.error('Please fill all required fields');
+      if (!formData.title.trim() || !formData.description.trim() || !formData.category || !formData.district) {
+        toast.error('Please fill all required fields including district');
         return;
       }
 
@@ -489,6 +661,11 @@ const CitizenDashboard = () => {
         submitData.append('category', formData.category);
         submitData.append('address', formData.location || 'Location not specified');
         submitData.append('priority', formData.priority);
+        submitData.append('district', formData.district);
+        
+        if (formData.urbanLocalBody) {
+          submitData.append('urbanLocalBody', formData.urbanLocalBody);
+        }
 
         if (formData.coordinates && formData.coordinates.latitude && formData.coordinates.longitude) {
           submitData.append('longitude', formData.coordinates.longitude);
@@ -707,6 +884,60 @@ const CitizenDashboard = () => {
                 </div>
               </div>
 
+              {/* District Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  🏛️ District *
+                </label>
+                <select
+                  name="district"
+                  value={formData.district}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-saffron-500 focus:border-saffron-500"
+                  required
+                >
+                  <option value="">Select District</option>
+                  {Object.keys(jharkhandData).map(district => (
+                    <option key={district} value={district}>
+                      {district}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Urban Local Body Selection */}
+              {formData.district && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    🏢 Urban Local Body *
+                  </label>
+                  <select
+                    name="urbanLocalBody"
+                    value={formData.urbanLocalBody}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-saffron-500 focus:border-saffron-500"
+                    required
+                  >
+                    <option value="">Select Urban Local Body</option>
+                    {jharkhandData[formData.district]?.map(body => (
+                      <option key={body.value} value={body.value}>
+                        {body.label}
+                      </option>
+                    ))}
+                  </select>
+                  
+                  {formData.urbanLocalBody && (
+                    <div className="mt-2 text-xs text-gray-600 bg-blue-50 px-3 py-2 rounded-lg">
+                      <span className="font-medium">Selected:</span> {
+                        jharkhandData[formData.district]?.find(body => body.value === formData.urbanLocalBody)?.label
+                      }
+                      <br />
+                      <span className="text-blue-600">🔗 More info: ipds.gov.in</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Priority */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
@@ -829,7 +1060,7 @@ const CitizenDashboard = () => {
   };
 
   // Enhanced Track Status Section
-  const TrackStatusSection = ({ complaints }) => {
+  const TrackStatusSection = ({ complaints, onViewDetails }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
 
@@ -991,12 +1222,15 @@ const CitizenDashboard = () => {
                       </div>
 
                       {/* Images */}
-                      {complaint.imageUrl && (
+                      {complaint.imageUrl && complaint.imageUrl !== '' && !complaint.imageUrl.includes('via.placeholder') && (
                         <div className="mb-4">
                           <img
                             src={complaint.imageUrl}
                             alt="Report image"
                             className="w-24 h-24 object-cover rounded-lg border-2 border-gray-200"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
                           />
                         </div>
                       )}
@@ -1158,11 +1392,17 @@ const CitizenDashboard = () => {
 
                       {/* Action Buttons */}
                       <div className="flex gap-3 pt-4 border-t border-gray-100">
-                        <button className="text-saffron-600 hover:text-saffron-700 text-sm flex items-center gap-2 font-medium">
+                        <button 
+                          onClick={() => onViewDetails(complaint)}
+                          className="text-saffron-600 hover:text-saffron-700 text-sm flex items-center gap-2 font-medium"
+                        >
                           <Eye className="w-4 h-4" />
                           View Details
                         </button>
-                        <button className="text-green-600 hover:text-green-700 text-sm flex items-center gap-2 font-medium">
+                        <button 
+                          onClick={() => onViewDetails(complaint)}
+                          className="text-green-600 hover:text-green-700 text-sm flex items-center gap-2 font-medium"
+                        >
                           <MessageSquare className="w-4 h-4" />
                           Add Comment
                         </button>
@@ -2316,13 +2556,22 @@ const CitizenDashboard = () => {
         ) : (
           <main className="flex-1 p-6 bg-gradient-to-br from-saffron-50/30 via-white to-green-50/30 overflow-auto">
             {activeTab === 'submit' && <SubmitComplaintSection />}
-            {activeTab === 'track' && <TrackStatusSection complaints={complaints} />}
+            {activeTab === 'track' && <TrackStatusSection complaints={complaints} onViewDetails={handleViewDetails} />}
             {activeTab === 'leaderboard' && <LeaderboardSection />}
             {activeTab === 'notifications' && <NotificationsSection />}
             {activeTab === 'insights' && <InsightsSection />}
             {activeTab === 'profile' && <ProfileSection />}
           </main>
         )}
+
+        {/* Report Details Modal */}
+        <ReportDetailsModal
+          isOpen={isReportDetailsModalOpen}
+          onClose={() => setIsReportDetailsModalOpen(false)}
+          report={selectedReport}
+          onAddComment={handleAddComment}
+          onSubmitFeedback={handleSubmitFeedback}
+        />
       </div>
     </div>
   );

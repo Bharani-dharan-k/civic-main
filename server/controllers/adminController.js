@@ -124,7 +124,7 @@ exports.assignWorkerToReport = async (req, res) => {
     const { workerId, workerEmployeeId, priority, estimatedTime, notes } = req.body;
     try {
         let report = await Report.findById(req.params.id);
-        if (!report) return res.status(404).json({ msg: 'Report not found' });
+        if (!report) return res.status(404).json({ success: false, message: 'Report not found' });
 
         // Import worker credentials from authController
         const { WORKER_CREDENTIALS } = require('./authController');
@@ -132,13 +132,33 @@ exports.assignWorkerToReport = async (req, res) => {
         // Use workerEmployeeId if provided, otherwise use workerId for backward compatibility
         const employeeId = workerEmployeeId || workerId;
         
-        // Check if the employeeId exists in predefined workers
-        const worker = WORKER_CREDENTIALS.find(w => w.employeeId === employeeId);
-        if (!worker) {
-            return res.status(400).json({ msg: 'Invalid worker ID' });
+        let worker = null;
+        let assignedToValue = null;
+        
+        // Check if it's a predefined worker employee ID
+        const predefinedWorker = WORKER_CREDENTIALS.find(w => w.employeeId === employeeId);
+        
+        if (predefinedWorker) {
+            // It's a predefined worker
+            worker = predefinedWorker;
+            assignedToValue = employeeId;
+        } else {
+            // Check if it's a database User (staff member)
+            const staffMember = await User.findById(employeeId);
+            if (staffMember && ['field_staff', 'field_head', 'department_head'].includes(staffMember.role)) {
+                worker = {
+                    employeeId: staffMember._id.toString(),
+                    name: staffMember.name,
+                    specialization: staffMember.department || 'General',
+                    phone: staffMember.phone || 'N/A'
+                };
+                assignedToValue = staffMember._id.toString();
+            } else {
+                return res.status(400).json({ success: false, message: 'Invalid worker ID or staff member not found' });
+            }
         }
 
-        report.assignedTo = employeeId; // Store employeeId
+        report.assignedTo = assignedToValue;
         report.assignedBy = req.user.id; // Admin who assigned
         report.assignedAt = new Date();
         report.status = 'assigned';
@@ -173,8 +193,11 @@ exports.assignWorkerToReport = async (req, res) => {
 
         res.json({
             success: true,
-            message: 'Worker assigned successfully',
-            report
+            message: `Report assigned to ${workerName} successfully`,
+            data: {
+                report,
+                assignedWorker: worker
+            }
         });
     } catch (err) {
         console.error('Assign worker error:', err.message);
@@ -227,7 +250,14 @@ exports.getAllReports = async (req, res) => {
         
         // Build filter object
         const filter = {};
-        if (status && status !== 'all') filter.status = status;
+        if (status && status !== 'all') {
+            // Handle multiple statuses separated by comma
+            if (status.includes(',')) {
+                filter.status = { $in: status.split(',') };
+            } else {
+                filter.status = status;
+            }
+        }
         if (category && category !== 'all') filter.category = category;
         
         // Calculate pagination
@@ -239,7 +269,6 @@ exports.getAllReports = async (req, res) => {
         
         const reports = await Report.find(filter)
             .populate('reportedBy', 'name email phone')
-            .populate('assignedTo', 'name email')
             .sort(sort)
             .skip(skip)
             .limit(parseInt(limit));
@@ -247,14 +276,20 @@ exports.getAllReports = async (req, res) => {
         const totalReports = await Report.countDocuments(filter);
         
         res.json({
-            reports,
+            success: true,
+            data: reports,
             totalReports,
             currentPage: parseInt(page),
-            totalPages: Math.ceil(totalReports / parseInt(limit))
+            totalPages: Math.ceil(totalReports / parseInt(limit)),
+            message: `Retrieved ${reports.length} reports successfully`
         });
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server Error');
+        res.status(500).json({
+            success: false,
+            message: 'Server Error',
+            error: err.message
+        });
     }
 };
 
@@ -295,7 +330,6 @@ exports.updateReportStatus = async (req, res) => {
         
         // Populate and return updated report
         await report.populate('reportedBy', 'name email');
-        await report.populate('assignedTo', 'name email');
 
         // Send notification about status update
         if (oldStatus !== status) {
@@ -1514,6 +1548,638 @@ exports.updateSystemSettings = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to update system settings'
+        });
+    }
+};
+
+// @desc    Get all district users (department admins, etc.)
+// @route   GET /api/admin/users
+exports.getDistrictUsers = async (req, res) => {
+    try {
+        const users = await User.find({ 
+            role: { $in: ['department_head', 'municipality_admin', 'field_head'] }
+        }).select('-password').sort({ createdAt: -1 });
+
+        res.json({
+            success: true,
+            users
+        });
+    } catch (error) {
+        console.error('Error fetching district users:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch district users'
+        });
+    }
+};
+
+// @desc    Create new department admin
+// @route   POST /api/admin/users
+exports.createDepartmentAdmin = async (req, res) => {
+    try {
+        const { 
+            name, 
+            email, 
+            password, 
+            role, 
+            department, 
+            district, 
+            municipality,
+            phone 
+        } = req.body;
+
+        // Validate required fields
+        if (!name || !email || !password || !role || !department) {
+            return res.status(400).json({
+                success: false,
+                message: 'Name, email, password, role, and department are required'
+            });
+        }
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: 'User with this email already exists'
+            });
+        }
+
+        // Get current admin's district and municipality for defaults
+        const currentAdmin = await User.findById(req.user.id);
+        const userDistrict = district || currentAdmin?.district || 'Bokaro';
+        const userMunicipality = municipality || currentAdmin?.municipality || 'Bokaro Municipality';
+
+        // Create new user with all required fields
+        const newUser = new User({
+            name,
+            email,
+            password, // The User model should hash this
+            role: role || 'department_head',
+            adminRole: role || 'department_head', // Set adminRole same as role
+            department,
+            district: userDistrict,
+            municipality: userMunicipality,
+            phone: phone || '',
+            isActive: true,
+            createdBy: req.user.id,
+            createdAt: new Date()
+        });
+
+        await newUser.save();
+
+        // Return user without password
+        const userResponse = await User.findById(newUser._id).select('-password');
+        
+        res.status(201).json({
+            success: true,
+            message: 'Department admin created successfully',
+            user: userResponse
+        });
+    } catch (error) {
+        console.error('Error creating department admin:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to create department admin: ' + (error.message || error)
+        });
+    }
+};
+
+// @desc    Update department admin
+// @route   PUT /api/admin/users/:id
+exports.updateDepartmentAdmin = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, email, role, department, district, municipality, phone, isActive } = req.body;
+
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Update user fields
+        if (name) user.name = name;
+        if (email) user.email = email;
+        if (role) user.role = role;
+        if (department) user.department = department;
+        if (district) user.district = district;
+        if (municipality) user.municipality = municipality;
+        if (phone) user.phone = phone;
+        if (typeof isActive === 'boolean') user.isActive = isActive;
+        
+        user.updatedAt = new Date();
+        user.updatedBy = req.user.id;
+
+        await user.save();
+
+        const updatedUser = await User.findById(id).select('-password');
+        
+        res.json({
+            success: true,
+            message: 'User updated successfully',
+            user: updatedUser
+        });
+    } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update user'
+        });
+    }
+};
+
+// @desc    Delete department admin
+// @route   DELETE /api/admin/users/:id
+exports.deleteDepartmentAdmin = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        await User.findByIdAndDelete(id);
+        
+        res.json({
+            success: true,
+            message: 'User deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete user'
+        });
+    }
+};
+
+// @desc    Reset user password
+// @route   PUT /api/admin/users/:id/reset-password
+exports.resetUserPassword = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { newPassword } = req.body;
+
+        if (!newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'New password is required'
+            });
+        }
+
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        user.password = newPassword; // User model should hash this
+        user.updatedAt = new Date();
+        user.updatedBy = req.user.id;
+        
+        await user.save();
+        
+        res.json({
+            success: true,
+            message: 'Password reset successfully'
+        });
+    } catch (error) {
+        console.error('Error resetting password:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to reset password'
+        });
+    }
+};
+
+// @desc    Get municipal staff data
+// @route   GET /api/admin/staff
+exports.getStaffData = async (req, res) => {
+    try {
+        console.log('📋 Fetching staff data...');
+        const staff = await User.find({
+            role: { $in: ['field_staff', 'field_head', 'department_head'] }
+        }).select('-password');
+
+        console.log(`👥 Found ${staff.length} staff members`);
+        res.json({
+            success: true,
+            data: staff
+        });
+    } catch (error) {
+        console.error('Error fetching staff data:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch staff data'
+        });
+    }
+};
+
+// @desc    Add new staff member
+// @route   POST /api/admin/staff
+exports.addStaffMember = async (req, res) => {
+    try {
+        console.log('👤 Adding new staff member...');
+        const { name, email, phone, role, department, ward } = req.body;
+
+        // Validate required fields
+        if (!name || !email || !role || !department) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide all required fields (name, email, role, department)'
+            });
+        }
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: 'User with this email already exists'
+            });
+        }
+
+        // Generate default password
+        const bcrypt = require('bcryptjs');
+        const salt = await bcrypt.genSalt(10);
+        const defaultPassword = 'staff123'; // You might want to generate a random password
+        const hashedPassword = await bcrypt.hash(defaultPassword, salt);
+
+        // Set adminRole based on role
+        let adminRole = null;
+        if (['department_head', 'field_head'].includes(role)) {
+            adminRole = role;
+        }
+
+        // Create new staff member
+        const newStaff = new User({
+            name,
+            email,
+            phone: phone || '0000000000',
+            password: hashedPassword,
+            role,
+            adminRole,
+            userType: role === 'field_staff' ? 'worker' : 'admin',
+            department,
+            district: 'Central District', // Default district
+            municipality: 'Central Municipal Corporation', // Default municipality
+            ward: ward || 'General',
+            verified: true,
+            isActive: true,
+            attendance: 0,
+            tasks_completed: 0,
+            createdBy: req.user.id
+        });
+
+        await newStaff.save();
+
+        console.log(`✅ Staff member created: ${name} (${role})`);
+        res.status(201).json({
+            success: true,
+            message: 'Staff member added successfully',
+            data: {
+                id: newStaff._id,
+                name: newStaff.name,
+                email: newStaff.email,
+                role: newStaff.role,
+                department: newStaff.department,
+                ward: newStaff.ward,
+                defaultPassword: defaultPassword // Send back for first login
+            }
+        });
+    } catch (error) {
+        console.error('❌ Error adding staff member:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to add staff member'
+        });
+    }
+};
+
+// @desc    Assign task to staff member
+// @route   POST /api/admin/tasks
+exports.assignTask = async (req, res) => {
+    try {
+        console.log('📋 Creating new task assignment...');
+        const { staffId, title, description, priority, deadline } = req.body;
+
+        // Validate required fields
+        if (!staffId || !title || !description) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide staff ID, title, and description'
+            });
+        }
+
+        // Check if staff member exists
+        const User = require('../models/User');
+        const staff = await User.findById(staffId);
+        if (!staff) {
+            return res.status(404).json({
+                success: false,
+                message: 'Staff member not found'
+            });
+        }
+
+        // Create new task
+        const Task = require('../models/Task');
+        const newTask = new Task({
+            title,
+            description,
+            priority: priority || 'medium',
+            deadline: deadline ? new Date(deadline) : null,
+            assignedTo: staffId,
+            assignedBy: req.user.id,
+            status: 'assigned'
+        });
+
+        await newTask.save();
+
+        // Populate the task with staff details for response
+        const populatedTask = await Task.findById(newTask._id)
+            .populate('assignedTo', 'name email role department')
+            .populate('assignedBy', 'name email');
+
+        console.log(`✅ Task assigned: ${title} to ${staff.name}`);
+        res.status(201).json({
+            success: true,
+            message: 'Task assigned successfully',
+            data: populatedTask
+        });
+    } catch (error) {
+        console.error('❌ Error assigning task:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to assign task'
+        });
+    }
+};
+
+// @desc    Get tasks for a staff member or all tasks
+// @route   GET /api/admin/tasks
+exports.getTasks = async (req, res) => {
+    try {
+        const { staffId, status } = req.query;
+        
+        let query = {};
+        if (staffId) query.assignedTo = staffId;
+        if (status) query.status = status;
+
+        const Task = require('../models/Task');
+        const tasks = await Task.find(query)
+            .populate('assignedTo', 'name email role department')
+            .populate('assignedBy', 'name email')
+            .sort({ createdAt: -1 });
+
+        res.json({
+            success: true,
+            data: tasks
+        });
+    } catch (error) {
+        console.error('❌ Error fetching tasks:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch tasks'
+        });
+    }
+};
+
+// @desc    Get infrastructure status
+// @route   GET /api/admin/infrastructure
+exports.getInfrastructureStatus = async (req, res) => {
+    try {
+        // Get infrastructure-related reports
+        const infrastructureReports = await Report.find({
+            category: { $in: ['pothole', 'streetlight', 'drainage', 'maintenance', 'electrical'] }
+        });
+
+        const waterReports = await Report.find({ category: 'drainage' });
+        const electricalReports = await Report.find({ category: 'electrical' });
+        const roadReports = await Report.find({ category: 'pothole' });
+
+        const infrastructureStatus = {
+            waterSupply: {
+                dailySupply: 45000,
+                quality: 'Good',
+                coverage: 95,
+                maintenance: waterReports.filter(r => r.status === 'in_progress').length
+            },
+            electrical: {
+                streetLights: 1250,
+                working: electricalReports.filter(r => r.status === 'resolved').length || 1180,
+                maintenance: electricalReports.filter(r => r.status === 'in_progress').length || 70
+            },
+            roads: {
+                totalLength: 245,
+                goodCondition: 185,
+                needsRepair: roadReports.filter(r => r.status !== 'resolved').length || 35,
+                underMaintenance: roadReports.filter(r => r.status === 'in_progress').length || 25
+            },
+            wasteManagement: {
+                dailyCollection: 125,
+                recycled: 45,
+                landfill: 80,
+                coverage: 98
+            }
+        };
+
+        res.json({
+            success: true,
+            data: infrastructureStatus
+        });
+    } catch (error) {
+        console.error('Error fetching infrastructure status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch infrastructure status'
+        });
+    }
+};
+
+// @desc    Get finance data
+// @route   GET /api/admin/finance
+exports.getFinanceData = async (req, res) => {
+    try {
+        // This would typically come from a financial database
+        const financeData = {
+            propertyTax: {
+                collected: 125000000,
+                pending: 25000000,
+                target: 150000000
+            },
+            waterCharges: {
+                collected: 45000000,
+                pending: 8000000,
+                target: 53000000
+            },
+            permits: {
+                collected: 12000000,
+                pending: 3000000,
+                target: 15000000
+            },
+            monthlyRevenue: [
+                { month: 'Jan', revenue: 15000000, expenses: 12000000 },
+                { month: 'Feb', revenue: 16000000, expenses: 13000000 },
+                { month: 'Mar', revenue: 14000000, expenses: 11000000 },
+                { month: 'Apr', revenue: 18000000, expenses: 14000000 },
+                { month: 'May', revenue: 17000000, expenses: 13500000 },
+                { month: 'Jun', revenue: 19000000, expenses: 15000000 }
+            ]
+        };
+
+        res.json({
+            success: true,
+            data: financeData
+        });
+    } catch (error) {
+        console.error('Error fetching finance data:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch finance data'
+        });
+    }
+};
+
+// @desc    Get projects data
+// @route   GET /api/admin/projects
+exports.getProjectsData = async (req, res) => {
+    try {
+        // This would typically come from a projects database
+        // For now, returning sample data based on reports and infrastructure needs
+        const projects = [
+            {
+                id: 1,
+                name: 'Smart Water Management System',
+                status: 'in_progress',
+                budget: 50000000,
+                spent: 30000000,
+                completion: 60,
+                startDate: '2025-01-01',
+                endDate: '2025-06-30',
+                department: 'Water Department'
+            },
+            {
+                id: 2,
+                name: 'Road Infrastructure Upgrade',
+                status: 'in_progress',
+                budget: 75000000,
+                spent: 45000000,
+                completion: 75,
+                startDate: '2024-11-01',
+                endDate: '2025-03-31',
+                department: 'Public Works'
+            },
+            {
+                id: 3,
+                name: 'Digital Waste Management',
+                status: 'planning',
+                budget: 25000000,
+                spent: 2000000,
+                completion: 15,
+                startDate: '2025-02-01',
+                endDate: '2025-08-31',
+                department: 'Sanitation'
+            }
+        ];
+
+        res.json({
+            success: true,
+            data: projects
+        });
+    } catch (error) {
+        console.error('Error fetching projects data:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch projects data'
+        });
+    }
+};
+
+// @desc    Get emergency alerts
+// @route   GET /api/admin/emergency-alerts
+exports.getEmergencyAlerts = async (req, res) => {
+    try {
+        // Get high priority reports as emergency alerts
+        const emergencyReports = await Report.find({
+            priority: { $in: ['High', 'Critical'] },
+            status: { $ne: 'resolved' }
+        }).populate('reportedBy', 'name phone email').sort({ createdAt: -1 });
+
+        const alerts = emergencyReports.map(report => ({
+            id: report._id,
+            title: report.title,
+            type: report.category,
+            severity: report.priority.toLowerCase(),
+            location: report.address,
+            status: report.status,
+            reportedBy: report.reportedBy?.name || 'Anonymous',
+            createdAt: report.createdAt,
+            description: report.description
+        }));
+
+        res.json({
+            success: true,
+            data: alerts
+        });
+    } catch (error) {
+        console.error('Error fetching emergency alerts:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch emergency alerts'
+        });
+    }
+};
+
+// @desc    Get service requests
+// @route   GET /api/admin/service-requests
+exports.getServiceRequests = async (req, res) => {
+    try {
+        console.log('🔧 Fetching service requests...');
+        
+        // For now, we'll create service requests from reports that require approvals or permits
+        // These could be categorized as maintenance, electrical, plumbing requests
+        const serviceReports = await Report.find({
+            category: { $in: ['maintenance', 'electrical', 'plumbing'] },
+            status: { $in: ['submitted', 'acknowledged', 'assigned'] }
+        }).populate('reportedBy', 'name phone email').sort({ createdAt: -1 });
+
+        console.log(`📊 Found ${serviceReports.length} service reports`);
+        console.log('📋 Categories:', serviceReports.map(r => r.category));
+
+        const serviceRequests = serviceReports.map(report => ({
+            id: report._id,
+            title: report.title,
+            type: report.category,
+            ward: report.ward || 'Unknown',
+            status: report.status,
+            applicant: report.reportedBy?.name || 'Anonymous',
+            phone: report.reportedBy?.phone || '',
+            documents: 'Complete', // Mock for now
+            fee: report.category === 'electrical' ? 1500 : report.category === 'plumbing' ? 2500 : 500, // Mock fees
+            createdAt: report.createdAt,
+            description: report.description,
+            address: report.address
+        }));
+
+        console.log('✅ Service requests processed successfully');
+        res.json({
+            success: true,
+            data: serviceRequests
+        });
+    } catch (error) {
+        console.error('❌ Error fetching service requests:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch service requests'
         });
     }
 };

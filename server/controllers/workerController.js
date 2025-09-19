@@ -208,8 +208,7 @@ exports.getWorkerStats = async (req, res) => {
 exports.getTaskDetails = async (req, res) => {
     try {
         const task = await Report.findById(req.params.id)
-            .populate('reportedBy', 'name email phone')
-            .populate('assignedTo', 'name email');
+            .populate('reportedBy', 'name email phone');
 
         if (!task) {
             return res.status(404).json({ 

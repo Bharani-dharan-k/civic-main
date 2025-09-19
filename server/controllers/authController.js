@@ -9,12 +9,32 @@ const ADMIN_CREDENTIALS = [
     {
         email: 'bharani@gmail.com',
         name: 'Admin Bharani',
-        password: 'bharani5544' // plaintext for existing
+        password: 'password', // plaintext for existing
+        role: 'super_admin'
     },
     {
         email: 'ashok@gmail.com',
         name: 'Admin Ashok',
-        password: '$2b$10$OApkdLa2.A6ic2omgLZA5uVx7edk8gJdteD2gADJK7ll7Opz5iNeS' // 123456 hashed
+        password: '$2b$10$OApkdLa2.A6ic2omgLZA5uVx7edk8gJdteD2gADJK7ll7Opz5iNeS', // 123456 hashed
+        role: 'district_admin'
+    },
+    {
+        email: 'district1@admin.com',
+        name: 'District Admin 1',
+        password: '$2b$10$YN9OykPdT6DAPRH94Y8L5.R2iVnVZBef3OcaNLstFAEvwXSKgwl.S', // district123 hashed
+        role: 'district_admin'
+    },
+    {
+        email: 'municipality1@admin.com',
+        name: 'Municipality Admin 1',
+        password: '$2b$10$d8YXnIZx4ZNgS0IGhnK3G.kGH9VPAy2qGTESkzfpA06/L4UDhr.j6', // municipality123 hashed
+        role: 'municipality_admin'
+    },
+    {
+        email: 'department1@admin.com',
+        name: 'Department Head 1',
+        password: '$2b$10$8BT4QSNRbNcyVSf/ne3fm.E5A5qci7sxRgwpBsrhEgxJWQdhEA9WK', // department123 hashed
+        role: 'department_head'
     }
 ];
 
@@ -349,21 +369,44 @@ exports.loginCitizen = async (req, res) => {
 // @desc    Login admin
 exports.loginAdmin = async (req, res) => {
     console.log('=== ADMIN LOGIN FUNCTION CALLED ===');
-    const { email, password } = req.body;
+    console.log('Request body:', req.body);
+    const { email, password, role } = req.body;
+    console.log('Extracted values:', { email, password, role });
     try {
-        console.log('Admin login attempt:', { email, password });
+        console.log('Admin login attempt:', { email, role });
         
-        // First, try to find admin user in database
-        const dbAdmin = await User.findOne({ email: email, role: 'admin' });
+        // First, try to find admin user in database (check for any admin role)
+        const adminRoles = ['super_admin', 'district_admin', 'municipality_admin', 'department_head', 'field_head'];
+        const dbAdmin = await User.findOne({ 
+            email: email, 
+            role: { $in: adminRoles } 
+        });
         
         if (dbAdmin) {
             console.log('Database admin found:', dbAdmin.email);
+            console.log('Input password:', JSON.stringify(password));
+            console.log('Password length:', password.length);
+            console.log('Password type:', typeof password);
+            console.log('Stored hash:', dbAdmin.password);
+            console.log('Hash length:', dbAdmin.password.length);
             
             // Check password using the User model method
             const isMatch = await dbAdmin.comparePassword(password);
             console.log('Password match:', isMatch);
             
+            // Also test with bcrypt directly for debugging
+            const directMatch = await bcrypt.compare(password, dbAdmin.password);
+            console.log('Direct bcrypt match:', directMatch);
+            
             if (isMatch) {
+                // Check if the user's role matches the requested role (if specified)
+                if (role && dbAdmin.role !== role) {
+                    return res.status(401).json({
+                        success: false,
+                        message: `Access denied. This account is not authorized for ${role.replace('_', ' ')} role.`
+                    });
+                }
+                
                 // Update last login
                 dbAdmin.lastLogin = new Date();
                 await dbAdmin.save();
@@ -372,9 +415,13 @@ exports.loginAdmin = async (req, res) => {
                 const payload = { 
                     user: {
                         id: dbAdmin._id.toString(), 
-                        role: 'admin',
+                        role: dbAdmin.role, // Use the actual role from database
                         email: dbAdmin.email,
-                        name: dbAdmin.name
+                        name: dbAdmin.name,
+                        department: dbAdmin.department,
+                        municipality: dbAdmin.municipality,
+                        district: dbAdmin.district,
+                        userType: 'admin'
                     }
                 };
                 const token = jwt.sign(payload, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '24h' });
@@ -386,8 +433,10 @@ exports.loginAdmin = async (req, res) => {
                         id: dbAdmin._id.toString(),
                         name: dbAdmin.name,
                         email: dbAdmin.email,
-                        role: 'admin'
-                    }
+                        role: dbAdmin.role, // Use the actual role from database
+                        userType: 'admin'
+                    },
+                    message: `Welcome ${dbAdmin.role.replace('_', ' ')}!`
                 });
             }
         }
@@ -396,7 +445,16 @@ exports.loginAdmin = async (req, res) => {
         const adminCredential = ADMIN_CREDENTIALS.find(admin => admin.email === email);
         
         if (adminCredential) {
-            console.log('Hardcoded admin found:', adminCredential.email);
+            console.log('Hardcoded admin found:', adminCredential.email, 'with role:', adminCredential.role);
+            
+            // Check if role matches (if role is provided in request)
+            if (role && adminCredential.role !== role) {
+                return res.status(401).json({
+                    success: false,
+                    message: `Access denied. This account is not authorized for ${role.replace('_', ' ')} role.`
+                });
+            }
+            
             let isMatch = false;
             
             // Check if password is hashed or plaintext
@@ -415,12 +473,15 @@ exports.loginAdmin = async (req, res) => {
                 const payload = { 
                     user: {
                         id: `admin_${adminCredential.email.split('@')[0]}`, 
-                        role: 'admin',
+                        role: adminCredential.role,
                         email: adminCredential.email,
-                        name: adminCredential.name
+                        name: adminCredential.name,
+                        userType: 'admin'
                     }
                 };
                 const token = jwt.sign(payload, process.env.JWT_SECRET || 'fallback_secret', { expiresIn: '24h' });
+
+                console.log('Admin login successful:', { email, role: adminCredential.role });
 
                 res.json({ 
                     success: true,
@@ -429,19 +490,21 @@ exports.loginAdmin = async (req, res) => {
                         id: `admin_${adminCredential.email.split('@')[0]}`,
                         name: adminCredential.name,
                         email: adminCredential.email,
-                        role: 'admin'
-                    }
+                        role: adminCredential.role,
+                        userType: 'admin'
+                    },
+                    message: `Welcome ${adminCredential.role.replace('_', ' ')}!`
                 });
             } else {
                 return res.status(400).json({ 
                     success: false,
-                    msg: 'Invalid admin credentials - password incorrect' 
+                    message: 'Invalid admin credentials - password incorrect' 
                 });
             }
         } else {
             return res.status(400).json({ 
                 success: false,
-                msg: 'Invalid admin credentials - email not found' 
+                message: 'Invalid admin credentials - email not found' 
             });
         }
     } catch (err) {
@@ -546,7 +609,8 @@ exports.getMe = async (req, res) => {
                         id: req.user.id,
                         name: adminCredential.name,
                         email: adminCredential.email,
-                        role: 'admin'
+                        role: req.user.role || adminCredential.role, // Use the role from token or admin credential
+                        userType: 'admin'
                     }
                 });
             }
