@@ -22,8 +22,7 @@ const ReportSchema = new mongoose.Schema({
     },
     reportedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     assignedTo: { 
-        type: String, // worker employee ID instead of ObjectId for simplicity
-        ref: 'Worker'
+        type: String // worker employee ID instead of ObjectId for simplicity
     },
     assignedDepartment: { type: String }, // Department assigned to handle the report
     assignedBy: { type: mongoose.Schema.Types.Mixed }, // admin ID (string) or user ObjectId

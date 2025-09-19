@@ -31,6 +31,8 @@ try {
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/admin/departments', require('./routes/departments'));
 app.use('/api/worker', require('./routes/worker'));
+app.use('/api/superadmin', require('./routes/superAdminRoutes'));
+app.use('/api/department-head', require('./routes/departmentHead'));
 
 const PORT = process.env.PORT || 5000;
 

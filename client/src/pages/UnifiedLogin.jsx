@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { User, Shield, Eye, EyeOff, UserPlus, LogIn, Wrench } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import logo from "../assets/logo.png";
 const UnifiedLogin = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [activeTab, setActiveTab] = useState('citizen'); // 'citizen', 'admin', or 'worker'
   const [isSignup, setIsSignup] = useState(false); // Only for citizen
   const [showPassword, setShowPassword] = useState(false);
@@ -22,7 +24,8 @@ const UnifiedLogin = () => {
 
   const [adminForm, setAdminForm] = useState({
     email: '',
-    password: ''
+    password: '',
+    role: 'super_admin'
   });
 
   const [workerForm, setWorkerForm] = useState({
@@ -108,28 +111,46 @@ const UnifiedLogin = () => {
     e.preventDefault();
     setLoading(true);
     
+    console.log('Admin form data:', adminForm); // Debug log
+    
+    // Validate form data
+    if (!adminForm.email || !adminForm.password || !adminForm.role) {
+      alert('Please fill in all admin fields');
+      setLoading(false);
+      return;
+    }
+    
     try {
-      const response = await fetch('http://localhost:5000/api/auth/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: adminForm.email,
-          password: adminForm.password
-        }),
-      });
+      console.log('Using AuthContext login for admin'); // Debug log
+      
+      // Use AuthContext login function
+      const result = await login(adminForm.email, adminForm.password, 'admin', adminForm.role);
+      
+      console.log('AuthContext login result:', result); // Debug log
 
-      const data = await response.json();
-
-      if (data.success) {
-        // Store admin token and user info
-        localStorage.setItem('adminToken', data.token);
-        localStorage.setItem('adminUser', JSON.stringify(data.user));
-        alert(`Welcome, ${data.user.name}!`);
-        navigate('/admin/dashboard');
+      if (result.success) {
+        const userRole = result.user?.role || adminForm.role;
+        alert(`Welcome ${userRole.replace('_', ' ')}!`);
+        
+        // Redirect based on actual user role from backend
+        if (userRole === 'super_admin') {
+          console.log('🚀 Redirecting to super admin dashboard');
+          navigate('/super-admin');
+        } else if (userRole === 'district_admin') {
+          console.log('🚀 Redirecting to district admin dashboard');
+          navigate('/district-admin');
+        } else if (userRole === 'municipality_admin') {
+          console.log('🚀 Redirecting to municipal dashboard');
+          navigate('/municipal-dashboard');
+        } else if (userRole === 'department_head') {
+          console.log('🚀 Redirecting to department head dashboard');
+          navigate('/department-head-dashboard');
+        } else {
+          console.log('🚀 Redirecting to regular admin dashboard');
+          navigate('/admin/dashboard');
+        }
       } else {
-        alert(data.msg || 'Invalid admin credentials');
+        alert(result.message || 'Invalid admin credentials');
       }
     } catch (error) {
       console.error('Admin login error:', error);
@@ -517,6 +538,77 @@ const UnifiedLogin = () => {
                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                       >
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Role Selection Field */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Admin Role
+                    </label>
+                    <select
+                      value={adminForm.role}
+                      onChange={(e) => setAdminForm({...adminForm, role: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all bg-white"
+                    >
+                      <option value="super_admin">Super Admin</option>
+                      <option value="district_admin">District Admin</option>
+                      <option value="municipality_admin">Municipality Admin</option>
+                      <option value="department_head">Department Head</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Select your administrative role level
+                    </p>
+                  </div>
+
+                  {/* Demo Credentials */}
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-600 text-center font-medium">Demo Accounts:</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setAdminForm({
+                          email: 'bharani@gmail.com',
+                          password: 'password',
+                          role: 'super_admin'
+                        })}
+                        className="text-xs bg-red-50 text-red-600 hover:bg-red-100 font-medium py-2 px-3 rounded-lg border border-red-200 transition-colors"
+                      >
+                        Super Admin
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAdminForm({
+                          email: 'district1@admin.com',
+                          password: 'district123',
+                          role: 'district_admin'
+                        })}
+                        className="text-xs bg-green-50 text-green-600 hover:bg-green-100 font-medium py-2 px-3 rounded-lg border border-green-200 transition-colors"
+                      >
+                        District Admin
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAdminForm({
+                          email: 'municipality1@admin.com',
+                          password: 'municipality123',
+                          role: 'municipality_admin'
+                        })}
+                        className="text-xs bg-purple-50 text-purple-600 hover:bg-purple-100 font-medium py-2 px-3 rounded-lg border border-purple-200 transition-colors"
+                      >
+                        Municipality
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAdminForm({
+                          email: 'department1@admin.com',
+                          password: 'department123',
+                          role: 'department_head'
+                        })}
+                        className="text-xs bg-orange-50 text-orange-600 hover:bg-orange-100 font-medium py-2 px-3 rounded-lg border border-orange-200 transition-colors"
+                      >
+                        Department Head
                       </button>
                     </div>
                   </div>

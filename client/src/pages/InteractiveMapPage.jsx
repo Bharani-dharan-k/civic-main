@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle, LayersControl } from 'react-leaflet';
 import { motion } from 'framer-motion';
 import { 
   Filter, 
@@ -10,7 +10,17 @@ import {
   ArrowLeft,
   Search,
   RefreshCw,
-  Layers
+  Layers,
+  BarChart3,
+  TrendingUp,
+  Users,
+  Activity,
+  Target,
+  Info,
+  Eye,
+  Calendar,
+  Navigation,
+  Globe
 } from 'lucide-react';
 import L from 'leaflet';
 import { reportService } from '../services/reportService';

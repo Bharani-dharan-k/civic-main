@@ -15,7 +15,22 @@ exports.protect = async (req, res, next) => {
             const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
             console.log('🔓 Token decoded:', decoded);
 
-            // Handle admin users - check if it's a database user (ObjectId) or hardcoded user (string)
+            // Handle new role-based admin users
+            if (decoded.user && decoded.user.role && ['super_admin', 'district_admin', 'municipality_admin', 'department_head', 'field_head'].includes(decoded.user.role)) {
+                req.user = {
+                    id: decoded.user.id,
+                    role: decoded.user.role,
+                    email: decoded.user.email,
+                    name: decoded.user.name,
+                    userType: decoded.user.userType || 'admin',
+                    district: decoded.user.district,
+                    municipality: decoded.user.municipality,
+                    department: decoded.user.department
+                };
+                return next();
+            }
+
+            // Handle backward compatibility - old admin users
             if (decoded.user && decoded.user.role === 'admin') {
                 req.user = {
                     id: decoded.user.id,
@@ -46,6 +61,20 @@ exports.protect = async (req, res, next) => {
                     name: decoded.user.name,
                     specialization: decoded.user.specialization,
                     phone: decoded.user.phone
+                };
+                return next();
+            }
+
+            // Handle field staff
+            if (decoded.user && decoded.user.role === 'field_staff') {
+                req.user = {
+                    id: decoded.user.id,
+                    role: decoded.user.role,
+                    email: decoded.user.email,
+                    name: decoded.user.name,
+                    district: decoded.user.district,
+                    municipality: decoded.user.municipality,
+                    department: decoded.user.department
                 };
                 return next();
             }
@@ -94,7 +123,9 @@ exports.protect = async (req, res, next) => {
 
 // Middleware to check for admin role
 exports.admin = (req, res, next) => {
-    if (req.user && req.user.role === 'admin') {
+    const adminRoles = ['super_admin', 'district_admin', 'municipality_admin', 'department_head', 'field_head', 'admin'];
+    
+    if (req.user && adminRoles.includes(req.user.role)) {
         next();
     } else {
         res.status(403).json({ 
@@ -126,4 +157,43 @@ exports.worker = (req, res, next) => {
             msg: 'Access denied. Worker privileges required.' 
         });
     }
+};
+
+// Middleware to check for super admin role
+exports.superAdminOnly = (req, res, next) => {
+    if (req.user && req.user.role === 'super_admin') {
+        next();
+    } else {
+        res.status(403).json({ 
+            success: false,
+            message: 'Access denied. Super Admin privileges required.' 
+        });
+    }
+};
+
+// Middleware to check for admin roles (any level)
+exports.adminOnly = (req, res, next) => {
+    const adminRoles = ['super_admin', 'district_admin', 'municipality_admin', 'department_head', 'field_head'];
+    if (req.user && adminRoles.includes(req.user.role)) {
+        next();
+    } else {
+        res.status(403).json({ 
+            success: false,
+            message: 'Access denied. Admin privileges required.' 
+        });
+    }
+};
+
+// Middleware to check for specific role
+exports.roleCheck = (allowedRoles) => {
+    return (req, res, next) => {
+        if (req.user && allowedRoles.includes(req.user.role)) {
+            next();
+        } else {
+            res.status(403).json({ 
+                success: false,
+                message: `Access denied. Required role: ${allowedRoles.join(' or ')}` 
+            });
+        }
+    };
 };

@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Shield, Mail, Lock } from 'lucide-react';
+import { Eye, EyeOff, Shield, Mail, Lock, Users } from 'lucide-react';
 import AshokaChakra from '../../components/Common/AshokaChakra';
+import { useAuth } from '../../context/AuthContext.jsx';
+import { toast } from 'react-toastify';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    password: '',
+    role: 'super_admin'
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
@@ -27,6 +31,33 @@ const AdminLogin = () => {
         [name]: ''
       }));
     }
+  };
+
+  const fillDemoCredentials = (roleType = 'super_admin') => {
+    const demoCredentials = {
+      super_admin: {
+        email: 'bharani@gmail.com',
+        password: 'bharani5544',
+        role: 'super_admin'
+      },
+      district_admin: {
+        email: 'district1@admin.com',
+        password: 'district123',
+        role: 'district_admin'
+      },
+      municipality_admin: {
+        email: 'municipality1@admin.com',
+        password: 'municipality123',
+        role: 'municipality_admin'
+      },
+      department_head: {
+        email: 'department1@admin.com',
+        password: 'department123',
+        role: 'department_head'
+      }
+    };
+    setFormData(demoCredentials[roleType]);
+    setErrors({}); // Clear any existing errors
   };
 
   const validateForm = () => {
@@ -58,22 +89,17 @@ const AdminLogin = () => {
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Use the real authentication with role
+      const result = await login(formData.email, formData.password, 'admin', formData.role);
       
-      // Mock authentication - in real app, this would be an API call
-      if (formData.email === 'admin@civic.gov.in' && formData.password === 'admin123') {
-        localStorage.setItem('adminToken', 'mock-jwt-token');
-        localStorage.setItem('adminUser', JSON.stringify({
-          name: 'Admin User',
-          email: formData.email,
-          role: 'Administrator'
-        }));
+      if (result.success) {
+        toast.success(`Welcome ${formData.role.replace('_', ' ')}!`);
         navigate('/admin/dashboard');
       } else {
-        setErrors({ general: 'Invalid email or password' });
+        setErrors({ general: result.message || 'Login failed' });
       }
     } catch (error) {
+      console.error('Admin login error:', error);
       setErrors({ general: 'Login failed. Please try again.' });
     } finally {
       setIsLoading(false);
@@ -185,6 +211,66 @@ const AdminLogin = () => {
                   {errors.password}
                 </motion.p>
               )}
+            </div>
+
+            {/* Role Selection Field */}
+            <div className="space-y-2">
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                Admin Role
+              </label>
+              <div className="relative">
+                <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <select
+                  id="role"
+                  name="role"
+                  value={formData.role}
+                  onChange={handleInputChange}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors bg-white"
+                >
+                  <option value="super_admin">Super Admin</option>
+                  <option value="district_admin">District Admin</option>
+                  <option value="municipality_admin">Municipality Admin</option>
+                  <option value="department_head">Department Head</option>
+                </select>
+              </div>
+              <p className="text-xs text-gray-500">
+                Select your administrative role level
+              </p>
+            </div>
+
+            {/* Demo Credentials */}
+            <div className="space-y-2">
+              <p className="text-xs text-gray-600 text-center font-medium">Demo Accounts:</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => fillDemoCredentials('super_admin')}
+                  className="text-xs bg-red-50 text-red-600 hover:bg-red-100 font-medium py-2 px-3 rounded-lg border border-red-200 transition-colors"
+                >
+                  Super Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fillDemoCredentials('district_admin')}
+                  className="text-xs bg-green-50 text-green-600 hover:bg-green-100 font-medium py-2 px-3 rounded-lg border border-green-200 transition-colors"
+                >
+                  District Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fillDemoCredentials('municipality_admin')}
+                  className="text-xs bg-purple-50 text-purple-600 hover:bg-purple-100 font-medium py-2 px-3 rounded-lg border border-purple-200 transition-colors"
+                >
+                  Municipality
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fillDemoCredentials('department_head')}
+                  className="text-xs bg-orange-50 text-orange-600 hover:bg-orange-100 font-medium py-2 px-3 rounded-lg border border-orange-200 transition-colors"
+                >
+                  Department Head
+                </button>
+              </div>
             </div>
 
             {/* Submit Button */}

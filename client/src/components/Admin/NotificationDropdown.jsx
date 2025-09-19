@@ -32,7 +32,8 @@ const NotificationDropdown = () => {
     try {
       const response = await fetch('http://localhost:5000/api/admin/notifications?limit=10', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
         }
       });
 
@@ -53,7 +54,7 @@ const NotificationDropdown = () => {
       const response = await fetch(`http://localhost:5000/api/admin/notifications/${notificationId}/read`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
 
@@ -77,7 +78,7 @@ const NotificationDropdown = () => {
       const response = await fetch('http://localhost:5000/api/admin/notifications/mark-all-read', {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
 

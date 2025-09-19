@@ -29,6 +29,10 @@ import DepartmentsManagement from './pages/Admin/DepartmentsManagement';
 import Analytics from './pages/Admin/Analytics';
 import Settings from './pages/Admin/Settings';
 import ReportsManagement from './pages/Admin/ReportsManagement';
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
+import DistrictAdminDashboard from './pages/DistrictAdminDashboard';
+import MunicipalDashboard from './pages/MunicipalDashboard';
+import DepartmentOfficerDashboard from './pages/DepartmentOfficerDashboardWithAPI.jsx';
 import WorkerDashboard from './pages/WorkerDashboard';
 import FieldStaffDashboard from './pages/FieldStaffDashboard.jsx';
 
@@ -80,6 +84,46 @@ function App() {
               element={
                 <ProtectedRoute requiredRoles={['super_admin']}>
                   <NewWardOfficerDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Super Admin Dashboard Route */}
+            <Route 
+              path="/super-admin" 
+              element={
+                <ProtectedRoute requiredRoles={['super_admin']}>
+                  <SuperAdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* District Admin Dashboard Route */}
+            <Route 
+              path="/district-admin" 
+              element={
+                <ProtectedRoute requiredRoles={['district_admin']}>
+                  <DistrictAdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Municipal Dashboard Route */}
+            <Route 
+              path="/municipal-dashboard" 
+              element={
+                <ProtectedRoute requiredRoles={['municipality_admin']}>
+                  <MunicipalDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Department Head Dashboard Route */}
+            <Route 
+              path="/department-head-dashboard" 
+              element={
+                <ProtectedRoute requiredRoles={['department_head']}>
+                  <DepartmentOfficerDashboard />
                 </ProtectedRoute>
               } 
             />

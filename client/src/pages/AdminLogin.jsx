@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, TextField, Typography, Paper, Box, Alert, Chip, Stack } from '@mui/material';
+import { Button, TextField, Typography, Paper, Box, Alert, Chip, Stack, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { toast } from 'react-toastify';
@@ -7,26 +7,41 @@ import { toast } from 'react-toastify';
 const AdminLogin = () => {
     const navigate = useNavigate();
     const { login } = useAuth();
-    const [formData, setFormData] = useState({ email: '', password: '' });
+    const [formData, setFormData] = useState({ 
+        email: '', 
+        password: '', 
+        role: 'super_admin' 
+    });
     const [loading, setLoading] = useState(false);
 
-    const { email, password } = formData;
+    const { email, password, role } = formData;
     const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
 
     const onSubmit = async e => {
         e.preventDefault();
         setLoading(true);
         try {
-            // Pass userType as 'admin' to use the correct endpoint
-            const result = await login({ ...formData, userType: 'admin' });
+            // Pass userType as 'admin' and role for validation
+            const result = await login(email, password, 'admin', role);
             
-            if (result.user && result.user.role !== 'super_admin') {
-                toast.error('Access denied. Admin credentials required.');
-                return;
+            if (result.success) {
+                const userRole = result.user?.role || role;
+                toast.success(`Welcome ${userRole.replace('_', ' ')}!`);
+                
+                // Redirect based on actual user role from backend
+                if (userRole === 'super_admin') {
+                    console.log('🚀 Redirecting to super admin dashboard');
+                    navigate('/super-admin');
+                } else if (userRole === 'district_admin') {
+                    console.log('🚀 Redirecting to district admin dashboard');
+                    navigate('/district-admin');
+                } else {
+                    console.log('🚀 Redirecting to regular admin dashboard');
+                    navigate('/admin/dashboard');
+                }
+            } else {
+                toast.error(result.message || 'Login failed');
             }
-            
-            toast.success(`Welcome Admin ${result.user ? result.user.name : 'User'}!`);
-            navigate('/admin-dashboard');
         } catch (error) {
             console.error('Admin login error:', error);
             toast.error('Login failed. Please check your admin credentials.');
@@ -35,8 +50,30 @@ const AdminLogin = () => {
         }
     };
 
-    const fillAdminDemo = () => {
-        setFormData({ email: 'bharani@gmail.com', password: 'bharani5544' });
+    const fillAdminDemo = (roleType = 'super_admin') => {
+        const demoCredentials = {
+            super_admin: {
+                email: 'bharani@gmail.com',
+                password: 'password',
+                role: 'super_admin'
+            },
+            district_admin: {
+                email: 'district1@admin.com',
+                password: 'district123',
+                role: 'district_admin'
+            },
+            municipality_admin: {
+                email: 'municipality1@admin.com',
+                password: 'municipality123',
+                role: 'municipality_admin'
+            },
+            department_head: {
+                email: 'department1@admin.com',
+                password: 'department123',
+                role: 'department_head'
+            }
+        };
+        setFormData(demoCredentials[roleType]);
     };
 
     return (
@@ -56,15 +93,38 @@ const AdminLogin = () => {
                     🔒 Admin access only - Authorized personnel
                 </Alert>
                 
-                <Stack direction="row" spacing={1} sx={{ mb: 3, justifyContent: 'center' }}>
+                <Stack direction="row" spacing={1} sx={{ mb: 3, justifyContent: 'center', flexWrap: 'wrap' }}>
                     <Chip
-                        label="Demo Admin"
-                        onClick={fillAdminDemo}
+                        label="Super Admin Demo"
+                        onClick={() => fillAdminDemo('super_admin')}
+                        color="error"
+                        variant="outlined"
+                        clickable
+                        size="small"
+                    />
+                    <Chip
+                        label="District Admin Demo"
+                        onClick={() => fillAdminDemo('district_admin')}
+                        color="success"
+                        variant="outlined"
+                        clickable
+                        size="small"
+                    />
+                    <Chip
+                        label="Municipality Demo"
+                        onClick={() => fillAdminDemo('municipality_admin')}
                         color="secondary"
                         variant="outlined"
                         clickable
-                        size="medium"
-                        sx={{ fontWeight: 'bold' }}
+                        size="small"
+                    />
+                    <Chip
+                        label="Department Head Demo"
+                        onClick={() => fillAdminDemo('department_head')}
+                        color="warning"
+                        variant="outlined"
+                        clickable
+                        size="small"
                     />
                 </Stack>
 
@@ -89,8 +149,24 @@ const AdminLogin = () => {
                         margin="normal"
                         required
                         fullWidth
-                        sx={{ mb: 3 }}
+                        sx={{ mb: 2 }}
                     />
+                    <FormControl fullWidth margin="normal" sx={{ mb: 3 }}>
+                        <InputLabel id="role-select-label">Admin Role</InputLabel>
+                        <Select
+                            labelId="role-select-label"
+                            id="role-select"
+                            name="role"
+                            value={role}
+                            label="Admin Role"
+                            onChange={onChange}
+                        >
+                            <MenuItem value="super_admin">Super Admin</MenuItem>
+                            <MenuItem value="district_admin">District Admin</MenuItem>
+                            <MenuItem value="municipality_admin">Municipality Admin</MenuItem>
+                            <MenuItem value="department_head">Department Head</MenuItem>
+                        </Select>
+                    </FormControl>
                     <Button 
                         type="submit" 
                         fullWidth 
