@@ -24,7 +24,9 @@
       "Bash(wmic process where \"name='node.exe'\" get commandline,processid:*)",
       "Bash(cmd /c:*)",
       "Bash(wmic:*)",
-      "WebFetch(domain:imageclassifier-wk4u.onrender.com)"
+      "WebFetch(domain:imageclassifier-wk4u.onrender.com)",
+      "Bash(move:*)",
+      "Bash(copy:*)"
     ],
     "deny": [],
     "ask": []

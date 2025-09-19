@@ -79,13 +79,142 @@ const COLORS = {
     green: '#138808',
     navy: '#000080',
     darkGreen: '#0F5132',
-    lightSaffron: '#FFB366'
+    lightSaffron: '#FFB366',
+    // Additional theme colors
+    saffronLight: '#FFB366',
+    saffronDark: '#E67300',
+    greenLight: '#26A65B',
+    greenDark: '#0B4D04',
+    border: '#000080'
 };
 
 // API Base URL
 const API_BASE_URL = 'http://localhost:5000/api';
 
 const DepartmentOfficerDashboard = () => {
+    // Main container style with Indian flag theme
+    return (
+        <Box sx={styles.container}>
+            {/* Enhanced Header with Indian flag theme */}
+            <Paper sx={styles.header} elevation={0}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box>
+                        <Typography sx={styles.pageTitle}>
+                            Department Head Dashboard
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography 
+                                sx={{ 
+                                    color: COLORS.navy,
+                                    fontSize: '1.1rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1
+                                }}
+                            >
+                                <PeopleIcon sx={{ color: COLORS.saffronDark }} />
+                                Welcome, {user?.name || 'Department Head'}
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <Box sx={{ 
+                        display: 'flex', 
+                        gap: 2,
+                        '& .MuiButton-root': {
+                            ...styles.button,
+                            minWidth: 'auto',
+                            py: 1
+                        }
+                    }}>
+                        <Button 
+                            startIcon={<Add />}
+                            onClick={() => handleOpenDialog('create-task')}
+                        >
+                            New Task
+                        </Button>
+                        <Button 
+                            startIcon={<Message />}
+                            onClick={() => handleOpenDialog('send-message')}
+                        >
+                            Message
+                        </Button>
+                    </Box>
+                </Box>
+                {/* Decorative elements */}
+                <Box sx={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    width: '150px',
+                    height: '150px',
+                    background: `radial-gradient(circle, ${COLORS.saffronLight}20 0%, transparent 70%)`,
+                    borderRadius: '50%',
+                    pointerEvents: 'none'
+                }} />
+                <Box sx={{
+                    position: 'absolute',
+                    bottom: -20,
+                    left: -20,
+                    width: '100px',
+                    height: '100px',
+                    background: `radial-gradient(circle, ${COLORS.greenLight}20 0%, transparent 70%)`,
+                    borderRadius: '50%',
+                    pointerEvents: 'none'
+                }} />
+            </Paper>
+
+            {/* Tabs with Indian theme */}
+            <Paper sx={styles.tabs}>
+                <Tabs
+                    value={activeTab}
+                    onChange={handleTabChange}
+                    variant="scrollable"
+                    scrollButtons="auto"
+                    sx={{
+                        '& .MuiTabs-indicator': {
+                            backgroundColor: COLORS.saffron
+                        }
+                    }}
+                >
+                    <Tab label="Dashboard" sx={styles.tab} icon={<DashboardIcon />} />
+                    <Tab label="Tasks" sx={styles.tab} icon={<TaskIcon />} />
+                    <Tab label="Staff" sx={styles.tab} icon={<PeopleIcon />} />
+                    <Tab label="Resources" sx={styles.tab} icon={<ResourceIcon />} />
+                    <Tab label="Budget" sx={styles.tab} icon={<BudgetIcon />} />
+                    <Tab label="Projects" sx={styles.tab} icon={<ProjectIcon />} />
+                    <Tab label="Complaints" sx={styles.tab} icon={<ComplaintIcon />} />
+                </Tabs>
+            </Paper>
+
+            {/* Main content */}
+            <Box sx={{ p: 2 }}>
+                {error && (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                        {error}
+                    </Alert>
+                )}
+
+                {activeTab === 0 && <DashboardOverview />}
+                {activeTab === 1 && <TasksSection />}
+                {activeTab === 2 && <StaffSection />}
+                {activeTab === 3 && <ResourcesSection />}
+                {activeTab === 4 && <BudgetSection />}
+                {activeTab === 5 && <ProjectsSection />}
+                {activeTab === 6 && <ComplaintsSection />}
+            </Box>
+
+            {/* Dialogs */}
+            {openDialog && (
+                <FormDialog
+                    open={openDialog}
+                    onClose={handleCloseDialog}
+                    type={dialogType}
+                    data={formData}
+                    onSubmit={handleFormSubmit}
+                />
+            )}
+        </Box>
+    );
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState(0);
     const [loading, setLoading] = useState(false);
@@ -94,6 +223,132 @@ const DepartmentOfficerDashboard = () => {
     const [selectedItem, setSelectedItem] = useState(null);
     const [anchorEl, setAnchorEl] = useState(null);
     const [error, setError] = useState(null);
+
+    // Custom styles for Indian flag theme with enhanced design
+    const styles = {
+        container: {
+            background: `linear-gradient(135deg, ${COLORS.white} 0%, ${COLORS.saffronLight}20 100%)`,
+            minHeight: '100vh',
+            padding: '20px',
+            position: 'relative',
+            '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '4px',
+                background: `linear-gradient(to right, ${COLORS.saffron}, ${COLORS.white}, ${COLORS.green})`
+            }
+        },
+        header: {
+            background: `linear-gradient(135deg, ${COLORS.saffron}40 0%, ${COLORS.white} 50%, ${COLORS.green}40 100%)`,
+            padding: '24px',
+            borderRadius: '16px',
+            marginBottom: '24px',
+            border: `2px solid ${COLORS.border}`,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            position: 'relative',
+            overflow: 'hidden',
+            '&::after': {
+                content: '""',
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: '4px',
+                background: COLORS.navy
+            }
+        },
+        card: {
+            border: `2px solid ${COLORS.border}`,
+            borderRadius: '16px',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+            '&:hover': {
+                transform: 'translateY(-8px)',
+                boxShadow: '0 12px 24px rgba(0,0,0,0.1)'
+            }
+        },
+        saffronCard: {
+            background: `linear-gradient(135deg, ${COLORS.saffron}40 0%, ${COLORS.saffronLight} 100%)`,
+            color: COLORS.navy,
+            '&:hover': {
+                background: `linear-gradient(135deg, ${COLORS.saffron}50 0%, ${COLORS.saffronLight} 100%)`
+            }
+        },
+        whiteCard: {
+            background: COLORS.white,
+            color: COLORS.navy,
+            '&:hover': {
+                background: `linear-gradient(135deg, ${COLORS.white} 0%, ${COLORS.saffronLight}10 100%)`
+            }
+        },
+        greenCard: {
+            background: `linear-gradient(135deg, ${COLORS.green}90 0%, ${COLORS.greenLight} 100%)`,
+            color: COLORS.white,
+            '&:hover': {
+                background: `linear-gradient(135deg, ${COLORS.green} 0%, ${COLORS.greenLight} 100%)`
+            }
+        },
+        tabs: {
+            backgroundColor: COLORS.white,
+            borderRadius: '12px',
+            marginBottom: '24px',
+            border: `2px solid ${COLORS.border}`,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
+            overflow: 'hidden',
+            '& .MuiTabs-flexContainer': {
+                borderBottom: `2px solid ${COLORS.saffronLight}`
+            }
+        },
+        tab: {
+            color: COLORS.navy,
+            fontWeight: 600,
+            transition: 'all 0.3s ease',
+            '&.Mui-selected': {
+                color: COLORS.saffron,
+                background: `linear-gradient(to bottom, ${COLORS.saffronLight}20 0%, transparent 100%)`
+            },
+            '&:hover': {
+                color: COLORS.saffronDark,
+                background: `linear-gradient(to bottom, ${COLORS.saffronLight}10 0%, transparent 100%)`
+            }
+        },
+        button: {
+            background: `linear-gradient(135deg, ${COLORS.navy} 0%, ${COLORS.border} 100%)`,
+            color: COLORS.white,
+            fontWeight: 600,
+            padding: '10px 24px',
+            borderRadius: '8px',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+                background: `linear-gradient(135deg, ${COLORS.saffronDark} 0%, ${COLORS.saffron} 100%)`,
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(255, 153, 51, 0.3)'
+            }
+        },
+        chartCard: {
+            background: COLORS.white,
+            borderRadius: '16px',
+            padding: '20px',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.06)',
+            border: `2px solid ${COLORS.border}`,
+            '&:hover': {
+                boxShadow: '0 12px 32px rgba(0,0,0,0.1)'
+            }
+        },
+        pageTitle: {
+            fontSize: '2.5rem',
+            fontWeight: 700,
+            background: `linear-gradient(135deg, ${COLORS.navy} 0%, ${COLORS.saffronDark} 100%)`,
+            backgroundClip: 'text',
+            textFillColor: 'transparent',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            marginBottom: '8px'
+        }
+    };
 
     // Data states
     const [dashboardData, setDashboardData] = useState(null);
@@ -361,15 +616,18 @@ const DepartmentOfficerDashboard = () => {
                 <Grid item xs={12}>
                     <Grid container spacing={2}>
                         <Grid item xs={12} sm={6} md={3}>
-                            <Card>
+                            <Card sx={{
+                                ...styles.card,
+                                ...styles.saffronCard
+                            }}>
                                 <CardContent>
                                     <Box display="flex" alignItems="center">
-                                        <TaskIcon style={{ color: COLORS.saffron, marginRight: 8 }} />
+                                        <TaskIcon style={{ color: COLORS.navy, marginRight: 8 }} />
                                         <Box>
                                             <Typography variant="h4" style={{ color: COLORS.navy }}>
                                                 {dashboardData?.overview?.tasks?.total || 0}
                                             </Typography>
-                                            <Typography color="textSecondary">Total Tasks</Typography>
+                                            <Typography style={{ color: COLORS.navy }}>Total Tasks</Typography>
                                         </Box>
                                     </Box>
                                 </CardContent>
@@ -377,15 +635,18 @@ const DepartmentOfficerDashboard = () => {
                         </Grid>
 
                         <Grid item xs={12} sm={6} md={3}>
-                            <Card>
+                            <Card sx={{
+                                ...styles.card,
+                                ...styles.whiteCard
+                            }}>
                                 <CardContent>
                                     <Box display="flex" alignItems="center">
-                                        <PeopleIcon style={{ color: COLORS.green, marginRight: 8 }} />
+                                        <PeopleIcon style={{ color: COLORS.navy, marginRight: 8 }} />
                                         <Box>
                                             <Typography variant="h4" style={{ color: COLORS.navy }}>
                                                 {dashboardData?.overview?.staff?.total || 0}
                                             </Typography>
-                                            <Typography color="textSecondary">Staff Members</Typography>
+                                            <Typography style={{ color: COLORS.navy }}>Staff Members</Typography>
                                         </Box>
                                     </Box>
                                 </CardContent>
@@ -393,15 +654,18 @@ const DepartmentOfficerDashboard = () => {
                         </Grid>
 
                         <Grid item xs={12} sm={6} md={3}>
-                            <Card>
+                            <Card sx={{
+                                ...styles.card,
+                                ...styles.greenCard
+                            }}>
                                 <CardContent>
                                     <Box display="flex" alignItems="center">
-                                        <ProjectIcon style={{ color: COLORS.saffron, marginRight: 8 }} />
+                                        <ProjectIcon style={{ color: COLORS.white, marginRight: 8 }} />
                                         <Box>
-                                            <Typography variant="h4" style={{ color: COLORS.navy }}>
+                                            <Typography variant="h4" style={{ color: COLORS.white }}>
                                                 {dashboardData?.overview?.projects?.active || 0}
                                             </Typography>
-                                            <Typography color="textSecondary">Active Projects</Typography>
+                                            <Typography style={{ color: COLORS.white }}>Active Projects</Typography>
                                         </Box>
                                     </Box>
                                 </CardContent>
@@ -409,15 +673,18 @@ const DepartmentOfficerDashboard = () => {
                         </Grid>
 
                         <Grid item xs={12} sm={6} md={3}>
-                            <Card>
+                            <Card sx={{
+                                ...styles.card,
+                                ...styles.saffronCard
+                            }}>
                                 <CardContent>
                                     <Box display="flex" alignItems="center">
-                                        <BudgetIcon style={{ color: COLORS.green, marginRight: 8 }} />
+                                        <BudgetIcon style={{ color: COLORS.navy, marginRight: 8 }} />
                                         <Box>
                                             <Typography variant="h4" style={{ color: COLORS.navy }}>
                                                 ₹{dashboardData?.budget?.totalBudget || 0}
                                             </Typography>
-                                            <Typography color="textSecondary">Budget Used</Typography>
+                                            <Typography style={{ color: COLORS.navy }}>Budget Used</Typography>
                                         </Box>
                                     </Box>
                                 </CardContent>
@@ -428,11 +695,24 @@ const DepartmentOfficerDashboard = () => {
 
                 {/* Task Status Chart */}
                 <Grid item xs={12} md={6}>
-                    <Card>
+                    <Card sx={styles.chartCard}>
                         <CardContent>
-                            <Typography variant="h6" gutterBottom style={{ color: COLORS.navy }}>
-                                Task Status Distribution
-                            </Typography>
+                            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography 
+                                    variant="h6" 
+                                    sx={{ 
+                                        color: COLORS.navy,
+                                        fontWeight: 600,
+                                        fontSize: '1.2rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1
+                                    }}
+                                >
+                                    <BarChart sx={{ color: COLORS.saffronDark }} />
+                                    Task Status Distribution
+                                </Typography>
+                            </Box>
                             <ResponsiveContainer width="100%" height={300}>
                                 <PieChart>
                                     <Pie
