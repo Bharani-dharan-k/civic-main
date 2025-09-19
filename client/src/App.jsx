@@ -34,13 +34,16 @@ import DistrictAdminDashboard from './pages/DistrictAdminDashboard';
 import MunicipalDashboard from './pages/MunicipalDashboard';
 import DepartmentOfficerDashboard from './pages/DepartmentOfficerDashboardWithAPI.jsx';
 import WorkerDashboard from './pages/WorkerDashboard';
-import FieldStaffDashboard from './pages/FieldStaffDashboard.jsx';
+
+// Field Admin Components
+import FieldAdminLogin from './pages/FieldAdminLogin';
+import FieldAdminDashboard from './pages/FieldAdminDashboard';
 
 function App() {
   return (
     <AuthProvider>
       <Router>
-        <main className="min-h-screen bg-gray-50">
+        <main className="min-h-screen bg-gradient-to-br from-saffron-50 via-white to-green-50">
           <Routes>
             <Route path="/" element={<IndiaFlagHomepage />} />
             <Route path="/citizen-portal" element={<EnglishCitizenPortal />} />
@@ -71,13 +74,13 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route 
-              path="/field-dashboard" 
+            <Route
+              path="/field-dashboard"
               element={
-                <ProtectedRoute requiredRoles={['field_staff']}>
-                  <NewWardOfficerDashboard />
+                <ProtectedRoute requiredRoles={['field_admin']}>
+                  <FieldAdminDashboard />
                 </ProtectedRoute>
-              } 
+              }
             />
             <Route 
               path="/admin-dashboard" 
@@ -130,8 +133,11 @@ function App() {
             
             {/* Worker Routes */}
             <Route path="/worker-dashboard" element={<WorkerDashboard />} />
-            <Route path="/field-staff-dashboard" element={<FieldStaffDashboard />} />
-            
+
+            {/* Field Admin Routes */}
+            <Route path="/field-admin/login" element={<FieldAdminLogin />} />
+            <Route path="/field-admin/dashboard" element={<FieldAdminDashboard />} />
+
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={

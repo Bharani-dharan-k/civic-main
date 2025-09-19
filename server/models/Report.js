@@ -14,6 +14,8 @@ const ReportSchema = new mongoose.Schema({
     },
     address: { type: String, required: true },
     ward: { type: String },
+    district: { type: String },
+    urbanLocalBody: { type: String },
     imageUrl: { type: String, required: true },
     status: {
         type: String,
@@ -48,6 +50,17 @@ const ReportSchema = new mongoose.Schema({
         uploadedAt: { type: Date, default: Date.now },
         type: { type: String, enum: ['progress', 'completion'], default: 'progress' }
     }],
+    citizenComments: [{
+        comment: String,
+        addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        addedAt: { type: Date, default: Date.now }
+    }],
+    feedback: {
+        rating: { type: Number, min: 1, max: 5 },
+        comment: String,
+        submittedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        submittedAt: { type: Date, default: Date.now }
+    },
     priority: {
         type: String,
         enum: ['Low', 'Medium', 'High', 'Critical'],

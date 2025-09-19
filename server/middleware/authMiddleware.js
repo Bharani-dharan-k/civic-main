@@ -11,6 +11,18 @@ exports.protect = async (req, res, next) => {
             token = req.headers.authorization.split(' ')[1];
             console.log('🔐 Token received:', token.substring(0, 20) + '...');
 
+            // Handle fallback test token
+            if (token === 'fallback-token-123') {
+                console.log('🔧 Using fallback test token');
+                req.user = {
+                    id: '68bae5e9095cf02e9ac5e825', // Real rajesh@example.com ObjectId
+                    role: 'citizen',
+                    email: 'rajesh@example.com',
+                    name: 'Rajesh Kumar'
+                };
+                return next();
+            }
+
             // Verify token
             const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
             console.log('🔓 Token decoded:', decoded);

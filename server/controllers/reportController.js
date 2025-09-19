@@ -44,11 +44,15 @@ const WORKER_CREDENTIALS = [
 
 // @desc    Create a new report by citizen
 exports.createReport = async (req, res) => {
-    console.log('=== CREATE REPORT ===', req.body);
-    const { title, description, category, longitude, latitude, address, ward } = req.body;
+    console.log('=== CREATE REPORT REQUEST RECEIVED ===');
+    console.log('Request body:', req.body);
+    console.log('Request file:', req.file);
+    console.log('User from token:', req.user);
+    
+    const { title, description, category, longitude, latitude, address, ward, district, urbanLocalBody } = req.body;
     
     try {
-        const imageUrl = req.file ? req.file.path : req.body.imageUrl || '';
+        const imageUrl = req.file ? req.file.path : (req.body.imageUrl || 'https://via.placeholder.com/400x300?text=No+Image');
         
         const newReport = new Report({
             title,
@@ -60,6 +64,8 @@ exports.createReport = async (req, res) => {
             },
             address: address || `Location: ${latitude}, ${longitude}`,
             ward: ward || 'Ward 1',
+            district: district,
+            urbanLocalBody: urbanLocalBody,
             imageUrl,
             reportedBy: req.user.id,
             priority: determinePriority(category, description),
@@ -139,11 +145,13 @@ exports.getAllReports = async (req, res) => {
 
 // @desc    Get reports by current user (citizen)
 exports.getUserReports = async (req, res) => {
+    console.log('🔍 Getting reports for user ID:', req.user.id);
     try {
         const reports = await Report.find({ reportedBy: req.user.id })
             .populate('reportedBy', 'name email')
             .sort({ createdAt: -1 });
             
+        console.log('✅ Found', reports.length, 'reports for user');
         res.json({
             success: true,
             count: reports.length,
@@ -153,7 +161,8 @@ exports.getUserReports = async (req, res) => {
         console.error('Get user reports error:', err.message);
         res.status(500).json({
             success: false,
-            message: 'Failed to fetch user reports'
+            message: 'Failed to fetch user reports',
+            error: err.message
         });
     }
 };
@@ -531,3 +540,190 @@ function getPointsForResolution(category, priority) {
     
     return Math.round(base * multiplier);
 }
+
+// @desc    Add comment to report by citizen
+exports.addCommentToReport = async (req, res) => {
+    try {
+        const { reportId } = req.params;
+        const { comment } = req.body;
+        
+        if (!comment || !comment.trim()) {
+            return res.status(400).json({ message: 'Comment is required' });
+        }
+
+        const report = await Report.findById(reportId);
+        if (!report) {
+            return res.status(404).json({ message: 'Report not found' });
+        }
+
+        // Check if the user is the one who created the report
+        if (report.reportedBy.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'Not authorized to comment on this report' });
+        }
+
+        // Use findByIdAndUpdate to avoid validation issues with existing reports
+        const updatedReport = await Report.findByIdAndUpdate(
+            reportId,
+            {
+                $push: {
+                    citizenComments: {
+                        comment: comment.trim(),
+                        addedBy: req.user.id,
+                        addedAt: new Date()
+                    }
+                }
+            },
+            { new: true }
+        ).populate('citizenComments.addedBy', 'name email');
+
+        // Create notification for comment added
+        await NotificationService.notifyCommentAdded(
+            req.user.id,
+            report.title,
+            reportId
+        );
+
+        res.status(200).json({
+            message: 'Comment added successfully',
+            comment: updatedReport.citizenComments[updatedReport.citizenComments.length - 1]
+        });
+    } catch (error) {
+        console.error('Add comment error:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Submit feedback for resolved report
+exports.submitFeedback = async (req, res) => {
+    try {
+        const { reportId } = req.params;
+        const { rating, comment } = req.body;
+        
+        if (!rating || rating < 1 || rating > 5) {
+            return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+        }
+
+        const report = await Report.findById(reportId);
+        if (!report) {
+            return res.status(404).json({ message: 'Report not found' });
+        }
+
+        // Check if the user is the one who created the report
+        if (report.reportedBy.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'Not authorized to provide feedback on this report' });
+        }
+
+        // Check if report is resolved
+        if (report.status !== 'resolved') {
+            return res.status(400).json({ message: 'Feedback can only be submitted for resolved reports' });
+        }
+
+        // Check if feedback already exists
+        if (report.feedback && report.feedback.rating) {
+            return res.status(400).json({ message: 'Feedback has already been submitted for this report' });
+        }
+
+        // Use findByIdAndUpdate to avoid validation issues with existing reports
+        const updatedReport = await Report.findByIdAndUpdate(
+            reportId,
+            {
+                feedback: {
+                    rating,
+                    comment: comment || '',
+                    submittedBy: req.user.id,
+                    submittedAt: new Date()
+                }
+            },
+            { new: true }
+        ).populate('feedback.submittedBy', 'name email');
+
+        // Create notification for feedback submitted
+        await NotificationService.notifyFeedbackSubmitted(
+            req.user.id,
+            report.title,
+            rating,
+            reportId
+        );
+
+        res.status(200).json({
+            message: 'Feedback submitted successfully',
+            feedback: updatedReport.feedback
+        });
+    } catch (error) {
+        console.error('Submit feedback error:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Check for duplicate reports within a radius
+exports.checkDuplicateReports = async (req, res) => {
+    console.log('=== CHECK DUPLICATE REPORTS REQUEST ===');
+    const { latitude, longitude, radius = 20 } = req.query;
+    console.log('Query params:', { latitude, longitude, radius });
+
+    try {
+        // Validate coordinates
+        const lat = parseFloat(latitude);
+        const lng = parseFloat(longitude);
+        const searchRadius = parseInt(radius);
+
+        if (isNaN(lat) || isNaN(lng) || isNaN(searchRadius)) {
+            return res.status(400).json({ 
+                message: 'Invalid coordinates or radius provided',
+                hasDuplicates: false,
+                reports: []
+            });
+        }
+
+        console.log('Searching for duplicates at:', { lat, lng, searchRadius });
+
+        // Find reports within the specified radius using MongoDB geospatial query
+        const duplicateReports = await Report.find({
+            location: {
+                $near: {
+                    $geometry: {
+                        type: 'Point',
+                        coordinates: [lng, lat]
+                    },
+                    $maxDistance: searchRadius // distance in meters
+                }
+            },
+            // Only check reports that are not rejected or closed
+            status: { $nin: ['rejected', 'closed'] }
+        }).populate('reportedBy', 'name email').limit(10);
+
+        console.log(`Found ${duplicateReports.length} potential duplicates`);
+
+        const hasDuplicates = duplicateReports.length > 0;
+
+        res.json({
+            hasDuplicates,
+            count: duplicateReports.length,
+            reports: duplicateReports.map(report => ({
+                id: report._id,
+                title: report.title,
+                category: report.category,
+                description: report.description,
+                status: report.status,
+                address: report.address,
+                district: report.district,
+                urbanLocalBody: report.urbanLocalBody,
+                createdAt: report.createdAt,
+                reportedBy: {
+                    name: report.reportedBy?.name,
+                    email: report.reportedBy?.email
+                },
+                coordinates: report.location?.coordinates
+            }))
+        });
+
+    } catch (error) {
+        console.error('Check duplicates error:', error);
+        res.status(500).json({ 
+            message: 'Server error while checking duplicates', 
+            error: error.message,
+            hasDuplicates: false,
+            reports: []
+        });
+    }
+};

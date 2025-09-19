@@ -418,93 +418,118 @@ const getPendingReports = async (req, res) => {
 const getReportProgress = async (req, res) => {
     try {
         const { user } = req;
-        const department = user.department || 'general';
+        const department = (user && user.department) || 'general';
         
-        // Get all reports with their associated tasks and progress information
+        console.log('Getting report progress for department:', department);
+        console.log('User:', user ? user.email : 'No user (auth bypassed)');
+        
+        // Get all reports with their associated users
         const reports = await Report.find({})
             .populate('reportedBy', 'name email phone')
             .sort({ createdAt: -1 })
-            .limit(100);
+            .limit(50)
+            .lean(); // Use lean() for better performance
+
+        console.log(`Found ${reports.length} reports`);
 
         // For each report, find associated tasks and enrich with progress data
-        const reportsWithProgress = await Promise.all(reports.map(async (report) => {
-            let relatedTasks = [];
-            
-            // Find tasks related to this report only if report has a title
-            if (report.title && typeof report.title === 'string') {
-                try {
+        const reportsWithProgress = [];
+        
+        for (const report of reports) {
+            try {
+                let relatedTasks = [];
+                
+                // Only search for tasks if report has a valid title
+                if (report.title && typeof report.title === 'string' && report.title.trim().length > 0) {
+                    // Use a safer approach to find related tasks
                     relatedTasks = await Task.find({
                         $or: [
-                            { description: { $regex: report.title, $options: 'i' } },
-                            { title: { $regex: report.title, $options: 'i' } }
+                            { description: { $regex: report.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } },
+                            { title: { $regex: report.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } }
                         ]
-                    }).populate('assignedTo', 'name email').sort({ createdAt: -1 });
-                } catch (taskError) {
-                    console.error('Error finding related tasks for report:', report._id, taskError);
-                    relatedTasks = [];
+                    })
+                    .populate('assignedTo', 'name email')
+                    .sort({ createdAt: -1 })
+                    .lean();
                 }
+
+                // Get the most recent task for this report
+                const currentTask = relatedTasks.length > 0 ? relatedTasks[0] : null;
+                
+                // Build progress data object
+                const progressData = {
+                    _id: report._id,
+                    subject: report.title || report.subject || 'Untitled Report',
+                    description: report.description || 'No description available',
+                    location: report.address || report.location || 'Unknown location',
+                    status: report.status || 'submitted',
+                    priority: report.priority || 'medium',
+                    category: report.category || 'others',
+                    citizenName: report.reportedBy?.name || 'Unknown citizen',
+                    citizenEmail: report.reportedBy?.email || 'N/A',
+                    citizenPhone: report.reportedBy?.phone || 'N/A',
+                    createdAt: report.createdAt,
+                    updatedAt: report.updatedAt,
+                    assignedTo: currentTask?.assignedTo ? {
+                        name: currentTask.assignedTo.name,
+                        email: currentTask.assignedTo.email
+                    } : null,
+                    currentTask: currentTask ? {
+                        _id: currentTask._id,
+                        title: currentTask.title,
+                        status: currentTask.status,
+                        createdAt: currentTask.createdAt,
+                        updatedAt: currentTask.updatedAt
+                    } : null,
+                    totalTasks: relatedTasks.length,
+                    activeTasks: relatedTasks.filter(task => 
+                        task.status && ['assigned', 'in_progress'].includes(task.status)
+                    ).length
+                };
+
+                // Determine effective status based on task status
+                if (currentTask?.status) {
+                    if (currentTask.status === 'completed') {
+                        progressData.status = 'resolved';
+                    } else if (currentTask.status === 'in_progress') {
+                        progressData.status = 'in_progress';
+                    } else if (currentTask.status === 'assigned') {
+                        progressData.status = 'acknowledged';
+                    }
+                }
+
+                reportsWithProgress.push(progressData);
+                
+            } catch (reportError) {
+                console.error('Error processing report:', report._id, reportError);
+                // Add a minimal version of the report even if processing fails
+                reportsWithProgress.push({
+                    _id: report._id,
+                    subject: report.title || 'Error Loading Report',
+                    description: 'Error processing report data',
+                    location: 'Unknown',
+                    status: report.status || 'submitted',
+                    priority: 'medium',
+                    category: 'others',
+                    citizenName: report.reportedBy?.name || 'Unknown',
+                    createdAt: report.createdAt,
+                    updatedAt: report.updatedAt,
+                    assignedTo: null,
+                    currentTask: null,
+                    totalTasks: 0,
+                    activeTasks: 0
+                });
             }
+        }
 
-            // Get the most recent task for this report
-            const currentTask = relatedTasks.length > 0 ? relatedTasks[0] : null;
-            
-            // Calculate progress timestamps based on report and task status
-            const progressData = {
-                ...report.toObject(),
-                // Task information
-                currentTask: currentTask,
-                assignedTo: currentTask?.assignedTo || null,
-                taskStatus: currentTask?.status || null,
-                
-                // Progress timestamps
-                acknowledgedAt: report.status !== 'submitted' ? report.updatedAt : null,
-                assignedAt: currentTask ? currentTask.createdAt : null,
-                startedAt: currentTask?.status === 'in_progress' ? currentTask.updatedAt : null,
-                completedAt: report.status === 'resolved' || currentTask?.status === 'completed' ? 
-                             (currentTask?.updatedAt || report.updatedAt) : null,
-                
-                // Enhanced status based on task status
-                effectiveStatus: currentTask ? 
-                    (currentTask.status === 'assigned' ? 'assigned' :
-                     currentTask.status === 'in_progress' ? 'in_progress' :
-                     currentTask.status === 'completed' ? 'completed' : report.status) 
-                    : report.status,
-                
-                // Related tasks count
-                totalTasks: relatedTasks.length,
-                activeTasks: relatedTasks.filter(task => ['assigned', 'in_progress'].includes(task.status)).length
-            };
-
-            return progressData;
-        }));
-
-        // Format response to match frontend expectations
-        const formattedReports = reportsWithProgress.map(report => ({
-            _id: report._id,
-            subject: report.title, // Map title to subject for frontend
-            description: report.description,
-            location: report.address || 'Unknown location',
-            status: report.effectiveStatus || report.status,
-            priority: report.priority || 'medium',
-            category: report.category || 'other',
-            citizenName: report.reportedBy?.name || 'Unknown citizen',
-            citizenEmail: report.reportedBy?.email || 'N/A',
-            createdAt: report.createdAt,
-            updatedAt: report.updatedAt,
-            assignedTo: report.assignedTo ? {
-                name: report.assignedTo.name,
-                email: report.assignedTo.email
-            } : null,
-            currentTask: report.currentTask,
-            totalTasks: report.totalTasks,
-            activeTasks: report.activeTasks
-        }));
+        console.log(`Processed ${reportsWithProgress.length} reports with progress data`);
 
         res.json({ 
             success: true, 
-            reports: formattedReports,
-            total: formattedReports.length 
+            reports: reportsWithProgress,
+            total: reportsWithProgress.length 
         });
+        
     } catch (error) {
         console.error('Get report progress error:', error);
         res.status(500).json({ 

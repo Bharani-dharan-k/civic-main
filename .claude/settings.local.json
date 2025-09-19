@@ -17,7 +17,9 @@
       "Bash(npm run dev:*)",
       "Bash(timeout:*)",
       "Bash(sed:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Read(//d/**)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []

@@ -38,7 +38,7 @@ const seedReports = async () => {
                 },
                 address: 'Main Road, Near Bus Stop, Sector 15, Delhi',
                 ward: 'Ward 12',
-                imageUrl: 'https://via.placeholder.com/400x300/333/fff?text=Broken+Street+Light',
+                imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop',
                 status: 'submitted',
                 priority: 'High',
                 reportedBy: citizens[0]._id
@@ -53,7 +53,7 @@ const seedReports = async () => {
                 },
                 address: 'Ring Road, Near Metro Station, Delhi',
                 ward: 'Ward 8',
-                imageUrl: 'https://via.placeholder.com/400x300/654321/fff?text=Deep+Pothole',
+                imageUrl: 'https://images.unsplash.com/photo-1544966503-7cc5ac882d5d?w=400&h=300&fit=crop',
                 status: 'acknowledged',
                 priority: 'Critical',
                 reportedBy: citizens[1]._id
@@ -68,7 +68,7 @@ const seedReports = async () => {
                 },
                 address: 'Residential Colony, Block C, Sector 22, Delhi',
                 ward: 'Ward 5',
-                imageUrl: 'https://via.placeholder.com/400x300/8B4513/fff?text=Overflowing+Garbage',
+                imageUrl: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?w=400&h=300&fit=crop',
                 status: 'submitted',
                 priority: 'Medium',
                 reportedBy: citizens[2]._id
@@ -83,7 +83,7 @@ const seedReports = async () => {
                 },
                 address: 'Central Park, Sector 18, Delhi',
                 ward: 'Ward 14',
-                imageUrl: 'https://via.placeholder.com/400x300/4682B4/fff?text=Water+Logging',
+                imageUrl: 'https://images.unsplash.com/photo-1517242027094-631c8d229e0d?w=400&h=300&fit=crop',
                 status: 'submitted',
                 priority: 'Medium',
                 reportedBy: citizens[0]._id
@@ -98,7 +98,7 @@ const seedReports = async () => {
                 },
                 address: 'Community Playground, Sector 11, Delhi',
                 ward: 'Ward 7',
-                imageUrl: 'https://via.placeholder.com/400x300/FF6347/fff?text=Broken+Swings',
+                imageUrl: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400&h=300&fit=crop',
                 status: 'acknowledged',
                 priority: 'High',
                 reportedBy: citizens[1]._id
@@ -113,7 +113,7 @@ const seedReports = async () => {
                 },
                 address: 'Market Street, Near School, Sector 9, Delhi',
                 ward: 'Ward 3',
-                imageUrl: 'https://via.placeholder.com/400x300/FFD700/000?text=Hanging+Wire',
+                imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop',
                 status: 'submitted',
                 priority: 'Critical',
                 reportedBy: citizens[2]._id
@@ -128,7 +128,7 @@ const seedReports = async () => {
                 },
                 address: 'Market Area, Public Toilet, Sector 16, Delhi',
                 ward: 'Ward 10',
-                imageUrl: 'https://via.placeholder.com/400x300/8A2BE2/fff?text=Dirty+Toilet',
+                imageUrl: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&h=300&fit=crop',
                 status: 'submitted',
                 priority: 'Medium',
                 reportedBy: citizens[3] || citizens[0]._id
@@ -143,7 +143,7 @@ const seedReports = async () => {
                 },
                 address: 'Commercial Complex, Footpath Area, Sector 20, Delhi',
                 ward: 'Ward 2',
-                imageUrl: 'https://via.placeholder.com/400x300/00CED1/fff?text=Water+Leak',
+                imageUrl: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400&h=300&fit=crop',
                 status: 'acknowledged',
                 priority: 'High',
                 reportedBy: citizens[4] || citizens[1]._id
@@ -158,7 +158,7 @@ const seedReports = async () => {
                 },
                 address: 'Residential Area, Block D, Sector 25, Delhi',
                 ward: 'Ward 15',
-                imageUrl: 'https://via.placeholder.com/400x300/CD853F/fff?text=Stray+Dogs',
+                imageUrl: 'https://images.unsplash.com/photo-1551717743-49959800b1f6?w=400&h=300&fit=crop',
                 status: 'submitted',
                 priority: 'Medium',
                 reportedBy: citizens[0]._id
@@ -173,7 +173,7 @@ const seedReports = async () => {
                 },
                 address: 'Highway Extension, Near Hospital, Sector 13, Delhi',
                 ward: 'Ward 6',
-                imageUrl: 'https://via.placeholder.com/400x300/696969/fff?text=Construction+Debris',
+                imageUrl: 'https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?w=400&h=300&fit=crop',
                 status: 'submitted',
                 priority: 'Low',
                 reportedBy: citizens[2]._id

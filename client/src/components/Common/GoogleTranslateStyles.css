@@ -1,0 +1,94 @@
+/* Google Translate Widget Styling - Dashboard header friendly */
+
+/* Base select styling to blend with header */
+.goog-te-combo {
+  padding: 6px 12px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #1f2937 !important;
+  min-width: 100% !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+}
+
+/* Remove visible outlines/shadows from the injected control */
+.goog-te-combo:hover,
+.goog-te-combo:focus {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Keep Google gadget font consistent */
+.goog-te-gadget {
+  font-family: 'Inter', sans-serif !important;
+}
+.goog-te-gadget .goog-te-combo {
+  margin: 0 !important;
+}
+
+/* Hide Google toolbar/banner and branding */
+.goog-te-banner-frame.skiptranslate,
+.goog-te-banner-frame,
+.goog-logo-link,
+.goog-te-gadget-icon {
+  display: none !important;
+}
+
+/* Prevent body top offset added by Google */
+body {
+  top: 0 !important;
+}
+
+/* Prevent duplicate widgets */
+.goog-te-gadget:not(:first-child) {
+  display: none !important;
+}
+
+/* Make the injected select fill its parent so our styled pill remains visible but the select is clickable */
+#google_translate_element_dashboard select.goog-te-combo {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0 !important;
+  z-index: 20 !important;
+  cursor: pointer !important;
+}
+
+/* Visible pill style helpers (matches image 2 style) */
+.google-translate-pill {
+  background: linear-gradient(90deg,#2d9cdb,#2fb38a); /* blue-green */
+  color: white;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+/* Dropdown options */
+.goog-te-combo option {
+  padding: 8px;
+  background: white;
+  color: #374151;
+}
+.goog-te-combo option:hover {
+  background: #f97316;
+  color: white;
+}
+
+/* Small fix for IE/Edge dropdown arrow inside select */
+.goog-te-gadget .goog-te-combo::-ms-expand { display: none; }
+
+/* Responsive tweaks */
+@media (max-width: 640px) {
+  .goog-te-combo {
+    min-width: 120px !important;
+    font-size: 13px !important;
+    padding: 6px 28px 6px 10px !important;
+  }
+}

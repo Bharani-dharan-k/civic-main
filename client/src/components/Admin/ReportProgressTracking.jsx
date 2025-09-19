@@ -77,6 +77,8 @@ const ReportProgressTracking = () => {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
+            console.log('Fetching report progress with token:', token ? 'Token present' : 'No token');
+            
             const response = await fetch('http://localhost:5000/api/department-head/report-progress', {
                 method: 'GET',
                 headers: {
@@ -85,11 +87,22 @@ const ReportProgressTracking = () => {
                 }
             });
 
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+
             if (response.ok) {
                 const data = await response.json();
+                console.log('Received data:', data);
                 setReports(data.reports || []);
             } else {
-                throw new Error('Failed to fetch report progress');
+                const errorData = await response.text();
+                console.error('Response error:', errorData);
+                if (response.status === 401 || response.status === 403) {
+                    setError('Authentication failed. Please log in as a Department Head.');
+                } else {
+                    setError('Failed to load report progress data. Please try again.');
+                }
+                return;
             }
         } catch (err) {
             console.error('Error fetching report progress:', err);
@@ -363,6 +376,11 @@ const ReportProgressTracking = () => {
         return (
             <Alert severity="error" sx={{ mb: 2 }}>
                 {error}
+                {error.includes('Authentication') && (
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                        Please ensure you are logged in as a Department Head to access this feature.
+                    </Typography>
+                )}
             </Alert>
         );
     }

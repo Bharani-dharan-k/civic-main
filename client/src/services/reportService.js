@@ -49,12 +49,23 @@ export const reportService = {
       formData.append('longitude', reportData.location?.coordinates?.[0] || 0);
       formData.append('latitude', reportData.location?.coordinates?.[1] || 0);
       
+      // Add district and urban local body fields
+      if (reportData.district) {
+        formData.append('district', reportData.district);
+      }
+      if (reportData.urbanLocalBody) {
+        formData.append('urbanLocalBody', reportData.urbanLocalBody);
+      }
+      
       // Add image if provided
       if (reportData.imageUrl && reportData.imageUrl.startsWith('data:')) {
         // Convert base64 to blob if needed
         const response = await fetch(reportData.imageUrl);
         const blob = await response.blob();
         formData.append('image', blob, 'report-image.png');
+      } else if (reportData.imageUrl) {
+        // Add imageUrl for placeholder or regular URLs
+        formData.append('imageUrl', reportData.imageUrl);
       }
       
       const response = await api.post('/reports', formData, {
@@ -148,6 +159,54 @@ export const reportService = {
       return response.data;
     } catch (error) {
       console.error('getDashboardStats error:', error);
+      throw error.response?.data || error;
+    }
+  },
+
+  // Check for duplicate reports near location
+  checkDuplicateReports: async (latitude, longitude, radius = 20) => {
+    try {
+      const response = await api.get('/reports/check-duplicates', {
+        params: {
+          latitude,
+          longitude,
+          radius
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('checkDuplicateReports error:', error);
+
+      // If endpoint doesn't exist (404) or other server errors, return no duplicates
+      if (error.response?.status === 404 || error.response?.status >= 500) {
+        console.warn('Duplicate check endpoint not available, returning no duplicates');
+        return {
+          hasDuplicates: false,
+          reports: [],
+          message: 'Duplicate check service unavailable'
+        };
+      }
+
+      throw error.response?.data || error;
+    }
+  },
+
+  // Add comment to report
+  addCommentToReport: async (reportId, comment) => {
+    try {
+      const response = await api.post(`/reports/${reportId}/comment`, { comment });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Submit feedback for resolved report
+  submitFeedback: async (reportId, feedbackData) => {
+    try {
+      const response = await api.post(`/reports/${reportId}/feedback`, feedbackData);
+      return response.data;
+    } catch (error) {
       throw error.response?.data || error;
     }
   },
