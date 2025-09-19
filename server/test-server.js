@@ -1,44 +1,37 @@
 const express = require('express');
-const connectDB = require('./config/db');
 const cors = require('cors');
 const multer = require('multer');
 const FormData = require('form-data');
-const fetch = require('node-fetch');
-require('dotenv').config();
+// Node.js v22 has built-in fetch
 
 const app = express();
 
-// Connect Database
-connectDB();
-
-// Init Middleware
+// Basic middleware
 app.use(cors());
-app.use(express.json({ extended: false }));
+app.use(express.json());
 
-app.get('/', (req, res) => res.send('API Running'));
-
-// Simple test route
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'Test route working' });
-});
-
-// Configure multer for image upload
+// Configure multer for memory storage
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
-// Test POST route without file upload
-app.post('/api/test-post', (req, res) => {
-  res.json({ message: 'POST route working' });
+// Test route
+app.get('/test', (req, res) => {
+  res.json({ message: 'Test server working!' });
 });
 
 // Image classifier proxy route
 app.post('/api/image-classifier/analyze', upload.single('image'), async (req, res) => {
+  console.log('Image classifier endpoint called');
+
   try {
     if (!req.file) {
+      console.log('No file provided');
       return res.status(400).json({ message: 'No image file provided' });
     }
+
+    console.log('File received:', req.file.originalname, req.file.size, 'bytes');
 
     // Create FormData for the external API call
     const formData = new FormData();
@@ -47,12 +40,16 @@ app.post('/api/image-classifier/analyze', upload.single('image'), async (req, re
       contentType: req.file.mimetype
     });
 
+    console.log('Calling external API...');
+
     // Call the external image classifier API
     const response = await fetch('https://imageclassifier-wk4u.onrender.com/analyze', {
       method: 'POST',
       body: formData,
       headers: formData.getHeaders()
     });
+
+    console.log('External API response status:', response.status);
 
     if (!response.ok) {
       console.error('External API error:', response.status, response.statusText);
@@ -77,26 +74,11 @@ app.post('/api/image-classifier/analyze', upload.single('image'), async (req, re
   }
 });
 
-console.log('Image classifier route loaded directly in server.js');
+const PORT = 5001; // Use different port to avoid conflicts
 
-// Test route for debugging
-app.post('/api/test/worker', (req, res) => {
-    res.json({ message: 'Worker test route working', body: req.body });
+app.listen(PORT, () => {
+  console.log(`Test server running on port ${PORT}`);
+  console.log('Routes available:');
+  console.log('  GET /test');
+  console.log('  POST /api/image-classifier/analyze');
 });
-
-// Define Routes
-app.use('/api/auth', require('./routes/auth'));
-console.log('Loading reports routes...');
-try {
-    app.use('/api/reports', require('./routes/reports'));
-    console.log('Reports routes loaded successfully');
-} catch (error) {
-    console.error('Error loading reports routes:', error);
-}
-app.use('/api/admin', require('./routes/admin'));
-app.use('/api/admin/departments', require('./routes/departments'));
-app.use('/api/worker', require('./routes/worker'));
-
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => console.log(`Server started on port ${PORT}`));

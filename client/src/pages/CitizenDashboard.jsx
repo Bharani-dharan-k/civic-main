@@ -228,14 +228,173 @@ const CitizenDashboard = () => {
       setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleImageUpload = (e) => {
+    const handleImageUpload = async (e) => {
       const files = Array.from(e.target.files);
       if (files.length > 1) {
         toast.error('Please upload only one image');
         return;
       }
       if (files.length > 0) {
-        setFormData(prev => ({ ...prev, images: [files[0]] }));
+        const file = files[0];
+        setFormData(prev => ({ ...prev, images: [file] }));
+
+        // Call image classifier API for auto-detection
+        try {
+          toast.info('🔍 Analyzing image for auto-detection...');
+
+          const formData = new FormData();
+          formData.append('image', file);
+
+          const response = await fetch('http://localhost:5001/api/image-classifier/analyze', {
+            method: 'POST',
+            body: formData
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            console.log('Image classification result:', result);
+
+            // Map API response to form fields
+            let autoFillData = {};
+            let fieldsDetected = [];
+
+            // Generate title from issue_type
+            if (result.issue_type) {
+              const issueTypeMap = {
+                'damaged_road': 'Road Damage Detected',
+                'pothole': 'Pothole Identified',
+                'street_light': 'Street Light Issue',
+                'streetlight_not_working': 'Street Light Not Working',
+                'garbage': 'Garbage Collection Issue',
+                'garbage_collection': 'Garbage Collection Issue',
+                'water_leak': 'Water Leak Detected',
+                'drainage': 'Drainage Problem',
+                'traffic': 'Traffic Issue',
+                'water': 'Water Supply Problem',
+                'electricity': 'Electrical Issue',
+                'general_infrastructure': 'Infrastructure Issue'
+              };
+
+              autoFillData.title = issueTypeMap[result.issue_type] || `${result.issue_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} Issue Detected`;
+              fieldsDetected.push('title');
+            }
+
+            // Use description from API
+            if (result.description) {
+              autoFillData.description = result.description;
+              fieldsDetected.push('description');
+            }
+
+            // Map issue_type to our form categories
+            const categoryMapping = {
+              'damaged_road': 'pothole',
+              'pothole': 'pothole',
+              'road_damage': 'pothole',
+              'street_light': 'streetlight',
+              'streetlight': 'streetlight',
+              'streetlight_not_working': 'streetlight',
+              'lighting': 'streetlight',
+              'garbage': 'garbage',
+              'garbage_collection': 'garbage',
+              'waste': 'garbage',
+              'trash': 'garbage',
+              'garbage_overflow': 'garbage',
+              'drainage': 'drainage',
+              'drain': 'drainage',
+              'water_supply': 'water',
+              'water_leak': 'water',
+              'water': 'water',
+              'traffic': 'traffic',
+              'electricity': 'electricity',
+              'electrical': 'electricity',
+              'power': 'electricity',
+              'general_infrastructure': 'garbage'  // Changed this to map to garbage by default if image shows infrastructure
+            };
+
+            // Map to correct department names
+            const departmentMapping = {
+              'Electrical': 'Street Lighting',
+              'electrical': 'Street Lighting',
+              'electricity': 'Street Lighting',
+              'streetlight': 'Street Lighting',
+              'street_light': 'Street Lighting',
+              'streetlight_not_working': 'Street Lighting',
+              'Public Works': 'Waste Management',  // Map Public Works to Waste Management
+              'public_works': 'Waste Management',
+              'Municipal': 'Waste Management',
+              'Infrastructure': 'Waste Management'
+            };
+
+            if (result.issue_type) {
+              const detectedCategory = result.issue_type.toLowerCase();
+              
+              // Check description for garbage-related keywords if it's marked as general infrastructure
+              let mappedCategory = categoryMapping[detectedCategory] || 'other';
+              if (detectedCategory === 'general_infrastructure' && result.description) {
+                const garbageKeywords = ['garbage', 'waste', 'trash', 'overflow', 'disposal', 'collection'];
+                const descriptionLower = result.description.toLowerCase();
+                if (garbageKeywords.some(keyword => descriptionLower.includes(keyword))) {
+                  mappedCategory = 'garbage';
+                }
+              }
+              
+              autoFillData.category = mappedCategory;
+              fieldsDetected.push('category');
+            }
+
+            // Map department if present
+            if (result.department) {
+              const detectedDepartment = result.department.toLowerCase();
+              // Check description for waste-related keywords if department is Public Works
+              let mappedDepartment = departmentMapping[detectedDepartment] || result.department;
+              if (detectedDepartment === 'public works' && result.description) {
+                const wasteKeywords = ['garbage', 'waste', 'trash', 'overflow', 'disposal', 'collection'];
+                const descriptionLower = result.description.toLowerCase();
+                if (wasteKeywords.some(keyword => descriptionLower.includes(keyword))) {
+                  mappedDepartment = 'Waste Management';
+                }
+              }
+              autoFillData.department = mappedDepartment;
+              fieldsDetected.push('department');
+            }
+
+            // Map severity to priority
+            if (result.severity) {
+              const severityToPriority = {
+                'high': 'high',
+                'medium': 'medium',
+                'low': 'low',
+                'critical': 'high',
+                'moderate': 'medium',
+                'minor': 'low'
+              };
+
+              const detectedSeverity = result.severity.toLowerCase();
+              if (severityToPriority[detectedSeverity]) {
+                autoFillData.priority = severityToPriority[detectedSeverity];
+                fieldsDetected.push('priority');
+              }
+            }
+
+            // Auto-fill form if any fields were detected
+            if (fieldsDetected.length > 0) {
+              setFormData(prev => ({
+                ...prev,
+                ...autoFillData
+              }));
+
+              toast.success(`✅ Auto-filled: ${fieldsDetected.join(', ')} based on image analysis!\nDetected: ${result.issue_type} (${result.severity} severity)`);
+            } else {
+              toast.info('Image uploaded successfully, but no auto-detection available');
+            }
+          } else {
+            console.error('Image classification failed:', response.statusText);
+            toast.info('Image uploaded successfully, auto-detection unavailable');
+          }
+        } catch (error) {
+          console.error('Error calling image classifier:', error);
+          toast.info('Image uploaded successfully, auto-detection unavailable');
+        }
       }
     };
 

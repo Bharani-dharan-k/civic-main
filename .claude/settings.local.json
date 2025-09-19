@@ -19,7 +19,12 @@
       "Bash(sed:*)",
       "Bash(npm run:*)",
       "Read(//d/**)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(npm install:*)",
+      "Bash(wmic process where \"name='node.exe'\" get commandline,processid:*)",
+      "Bash(cmd /c:*)",
+      "Bash(wmic:*)",
+      "WebFetch(domain:imageclassifier-wk4u.onrender.com)"
     ],
     "deny": [],
     "ask": []
