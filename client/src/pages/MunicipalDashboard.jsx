@@ -1,91 +1,54 @@
 import React, { useState, useEffect } from 'react';
-import {
-    Box,
-    Grid,
-    Card,
-    CardContent,
-    Typography,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Paper,
-    Chip,
-    Button,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField,
-    Tab,
-    Tabs,
-    Avatar,
-    List,
-    ListItem,
-    ListItemAvatar,
-    ListItemText,
-    ListItemSecondaryAction,
-    AppBar,
-    Toolbar,
-    IconButton,
-    Badge,
-    LinearProgress,
-    Accordion,
-    AccordionSummary,
-    AccordionDetails,
-    Divider,
-    Alert,
-    Switch,
-    FormControlLabel
-} from '@mui/material';
-import {
-    TrendingUp,
-    Assignment,
-    CheckCircle,
-    Schedule,
-    LocationCity,
-    Person,
-    Analytics,
-    TableChart,
-    Dashboard,
-    ExitToApp,
-    Business,
-    Group,
-    Assessment,
-    People,
-    Build,
-    AccountBalance,
-    Engineering,
-    Warning,
-    Notifications,
-    Water,
-    ElectricalServices,
-    LocalShipping,
-    Park,
-    Security,
-    AttachMoney,
-    Receipt,
-    Construction,
-    Campaign,
-    ExpandMore,
-    Add,
-    Edit,
-    Visibility,
-    Phone,
-    Email,
-    LocationOn,
-    CalendarToday,
-    TrendingDown
-} from '@mui/icons-material';
-import { useAuth } from '../context/AuthContext';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
+import { toast } from 'react-toastify';
+import {
+  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  LineChart, Line, AreaChart, Area
+} from 'recharts';
+import {
+  Shield,
+  Users,
+  FileText,
+  BarChart3,
+  Settings,
+  Bell,
+  TrendingUp,
+  User,
+  LogOut,
+  Home,
+  Search,
+  Filter,
+  Eye,
+  Menu,
+  X,
+  CheckCircle,
+  Clock,
+  Activity,
+  AlertTriangle,
+  Building,
+  Wrench,
+  DollarSign,
+  Calendar,
+  MapPin,
+  RefreshCw,
+  Plus,
+  Edit3,
+  Trash2,
+  Phone,
+  Mail,
+  Navigation,
+  ChevronDown,
+  Star,
+  Award,
+  Zap,
+  Target,
+  Heart,
+  Flame
+} from 'lucide-react';
+
+// Import services and utilities
+import { useAuth } from '../context/AuthContext';
 import {
     getMunicipalStats,
     getCitizenComplaints,
@@ -98,2474 +61,901 @@ import {
     getFinanceData,
     getProjectsData,
     getEmergencyAlerts,
-    getDepartments,
-    getNotifications,
-    getServiceRequests
-} from '../api/api';
+    getServiceRequests,
+    updateReportStatus,
+    getWardData,
+    createAnnouncement,
+    getAnnouncementStats
+} from '../services/municipalService';
 
 const MunicipalDashboard = () => {
-    const { user, logout } = useAuth();
-    const navigate = useNavigate();
-    const [tabValue, setTabValue] = useState(0);
-    const [selectedWard, setSelectedWard] = useState('all');
-    const [selectedLanguage, setSelectedLanguage] = useState('en');
-    const [urgentAlerts, setUrgentAlerts] = useState([]);
-    
-    // State for different sections
-    const [citizenComplaints, setCitizenComplaints] = useState([]);
-    const [serviceRequests, setServiceRequests] = useState([]);
-    const [staffData, setStaffData] = useState([]);
-    const [infrastructureStatus, setInfrastructureStatus] = useState({});
-    const [financeData, setFinanceData] = useState({});
-    const [projects, setProjects] = useState([]);
-    const [emergencyAlerts, setEmergencyAlerts] = useState([]);
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
-    // Dialogs
-    const [newComplaintDialog, setNewComplaintDialog] = useState(false);
-    const [taskAssignDialog, setTaskAssignDialog] = useState({ open: false, staff: null });
-    const [addStaffDialog, setAddStaffDialog] = useState(false);
-    const [emergencyDialog, setEmergencyDialog] = useState(false);
-    const [announcementDialog, setAnnouncementDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [selectedWard, setSelectedWard] = useState('all');
 
-    // Task assignment form data
-    const [taskForm, setTaskForm] = useState({
-        title: '',
-        description: '',
-        priority: 'medium',
-        deadline: ''
-    });
+  // State for different sections
+  const [citizenComplaints, setCitizenComplaints] = useState([]);
+  const [serviceRequests, setServiceRequests] = useState([]);
+  const [staffData, setStaffData] = useState([]);
+  const [infrastructureStatus, setInfrastructureStatus] = useState({});
+  const [financeData, setFinanceData] = useState({});
+  const [projects, setProjects] = useState([]);
+  const [emergencyAlerts, setEmergencyAlerts] = useState([]);
+  const [municipalStats, setMunicipalStats] = useState({
+    totalComplaints: 0,
+    resolvedComplaints: 0,
+    pendingComplaints: 0,
+    staffCount: 0,
+    activeProjects: 0,
+    budget: 0
+  });
 
-    // Pending reports and assignment type
-    const [pendingReports, setPendingReports] = useState([]);
-    const [assignmentType, setAssignmentType] = useState('existing'); // 'existing' or 'new'
-    const [selectedReport, setSelectedReport] = useState('');
+  // Admin user data
+  const [adminUser] = useState(user || {
+    name: 'Municipal Admin',
+    email: 'admin@municipal.gov.in',
+    role: 'municipal_admin'
+  });
 
-    // Staff addition form data
-    const [staffForm, setStaffForm] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        role: 'field_staff',
-        department: '',
-        ward: ''
-    });
+  // Sidebar items
+  const sidebarItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: BarChart3, color: 'text-orange-600', badge: 0 },
+    { id: 'complaints', label: 'Complaints', icon: FileText, color: 'text-blue-600', badge: citizenComplaints.filter(c => c.status === 'pending').length },
+    { id: 'staff', label: 'Staff Management', icon: Users, color: 'text-green-600', badge: 0 },
+    { id: 'infrastructure', label: 'Infrastructure', icon: Building, color: 'text-purple-600', badge: 0 },
+    { id: 'finance', label: 'Finance', icon: DollarSign, color: 'text-yellow-600', badge: 0 },
+    { id: 'projects', label: 'Projects', icon: Wrench, color: 'text-indigo-600', badge: projects.filter(p => p.status === 'active').length },
+    { id: 'emergency', label: 'Emergency', icon: AlertTriangle, color: 'text-red-600', badge: emergencyAlerts.length },
+    { id: 'settings', label: 'Settings', icon: Settings, color: 'text-gray-600', badge: 0 }
+  ];
 
-    useEffect(() => {
-        loadDashboardData();
-        loadUrgentAlerts();
-    }, [selectedWard]);
+  useEffect(() => {
+    loadDashboardData();
+    loadUrgentAlerts();
+  }, [selectedWard]);
 
-    const loadDashboardData = async () => {
-        try {
-            // Load all data in parallel for better performance
-            const [
-                complaintsResponse,
-                staffResponse,
-                infrastructureResponse,
-                financeResponse,
-                projectsResponse,
-                alertsResponse,
-                serviceResponse
-            ] = await Promise.all([
-                getCitizenComplaints({ 
-                    // Remove strict filtering to get all reports first
-                    // status: 'submitted,acknowledged,assigned,in_progress',
-                    // category: 'water,roads,streetlights,waste,sewage,drainage,parks,public_transport'
-                }),
-                getStaffData(),
-                getInfrastructureStatus(),
-                getFinanceData(),
-                getProjectsData(),
-                getEmergencyAlerts(),
-                getServiceRequests().catch(err => {
-                    console.log('⚠️ Service requests API error:', err.message);
-                    return { data: { success: false, data: [] } };
-                })
-            ]);
+  const loadDashboardData = async () => {
+    setLoading(true);
+    try {
+      // Load all data in parallel for better performance
+      const [
+        complaintsResponse,
+        staffResponse,
+        infrastructureResponse,
+        financeResponse,
+        projectsResponse,
+        alertsResponse,
+        serviceResponse,
+        statsResponse
+      ] = await Promise.all([
+        getCitizenComplaints({
+          // Remove strict filtering to get all reports first
+        }),
+        getStaffData(),
+        getInfrastructureStatus(),
+        getFinanceData(),
+        getProjectsData(),
+        getEmergencyAlerts(),
+        getServiceRequests().catch(err => {
+          console.log('⚠️ Service requests API error:', err.message);
+          return { data: { success: false, data: [] } };
+        }),
+        getMunicipalStats().catch(err => {
+          console.log('⚠️ Municipal stats API error:', err.message);
+          return { data: { success: false, data: {} } };
+        })
+      ]);
 
-            console.log('🔍 API Responses:', {
-                complaints: complaintsResponse.data,
-                staff: staffResponse.data,
-                infrastructure: infrastructureResponse.data,
-                service: serviceResponse.data
-            });
+      console.log('🔍 API Responses:', {
+        complaints: complaintsResponse.data,
+        staff: staffResponse.data,
+        infrastructure: infrastructureResponse.data,
+        service: serviceResponse.data
+      });
 
-            // Set citizen complaints from reports
-            if (complaintsResponse.data.success) {
-                const reports = complaintsResponse.data.reports || complaintsResponse.data.data || [];
-                console.log('📊 Raw reports:', reports);
-                
-                // Define municipal categories (matching the actual schema enum values)
-                const municipalCategories = [
-                    'pothole', 'streetlight', 'garbage', 'drainage', 'maintenance', 
-                    'electrical', 'plumbing', 'cleaning', 'other'
-                ];
-                
-                // Filter and format complaints for municipal only
-                const filteredReports = reports.filter(report => {
-                    const category = report.category?.toLowerCase();
-                    const isMatch = municipalCategories.includes(category);
-                    console.log(`📋 Report category '${category}' matches municipal: ${isMatch}`);
-                    return isMatch;
-                });
-                
-                console.log('🎯 Filtered reports:', filteredReports.length);
-                
-                const formattedComplaints = filteredReports.map(report => ({
-                    id: report._id,
-                    title: report.title,
-                    type: report.category,
-                    ward: report.ward || 'Unknown',
-                    priority: report.priority?.toLowerCase() || 'medium',
-                    status: report.status,
-                    citizen: report.reportedBy?.name || 'Anonymous',
-                    phone: report.reportedBy?.phone || '',
-                    createdAt: report.createdAt,
-                    description: report.description
-                }));
-                
-                console.log('✅ Final formatted complaints:', formattedComplaints);
-                setCitizenComplaints(formattedComplaints);
-            } else {
-                console.error('❌ Complaints API failed:', complaintsResponse.data);
-                setCitizenComplaints([]);
-            }
+      // Set citizen complaints from reports
+      if (complaintsResponse.data.success) {
+        const reports = complaintsResponse.data.reports || complaintsResponse.data.data || [];
+        console.log('📊 Raw reports:', reports);
 
-            // Set staff data
-            if (staffResponse.data.success) {
-                const staff = staffResponse.data.data || [];
-                const formattedStaff = staff.map(member => ({
-                    id: member._id,
-                    name: member.name,
-                    role: member.role.replace('_', ' ').toUpperCase(),
-                    ward: member.ward || 'All Wards',
-                    status: member.isActive ? 'active' : 'inactive',
-                    attendance: member.attendance || 0,
-                    tasks_completed: member.tasks_completed || 0,
-                    phone: member.phone || ''
-                }));
-                setStaffData(formattedStaff);
-            }
+        // Define municipal categories (matching the actual schema enum values)
+        const municipalCategories = [
+          'pothole', 'streetlight', 'garbage', 'drainage', 'maintenance',
+          'electrical', 'plumbing', 'cleaning', 'other'
+        ];
 
-            // Set infrastructure status
-            if (infrastructureResponse.data.success) {
-                setInfrastructureStatus(infrastructureResponse.data.data);
-            }
+        // Filter and format complaints for municipal only
+        const filteredReports = reports.filter(report => {
+          return municipalCategories.includes(report.category) ||
+                 (report.category && report.category.toLowerCase().includes('municipal'));
+        });
 
-            // Set finance data
-            if (financeResponse.data.success) {
-                setFinanceData(financeResponse.data.data);
-            }
+        console.log('🏛️ Municipal reports:', filteredReports);
+        setCitizenComplaints(filteredReports);
+      }
 
-            // Set projects data
-            if (projectsResponse.data.success) {
-                setProjects(projectsResponse.data.data);
-            }
+      // Set staff data
+      if (staffResponse.data.success) {
+        setStaffData(staffResponse.data.data || []);
+      }
 
-            // Set emergency alerts
-            if (alertsResponse.data.success) {
-                setEmergencyAlerts(alertsResponse.data.data);
-            }
+      // Set infrastructure status
+      if (infrastructureResponse.data.success) {
+        setInfrastructureStatus(infrastructureResponse.data.data || {});
+      }
 
-            // Set service requests
-            if (serviceResponse.data.success) {
-                setServiceRequests(serviceResponse.data.data || []);
-                console.log('✅ Service requests loaded:', serviceResponse.data.data);
-            } else {
-                setServiceRequests([]);
-                console.log('ℹ️ No service requests available');
-            }
+      // Set finance data
+      if (financeResponse.data.success) {
+        setFinanceData(financeResponse.data.data || {});
+      }
 
-        } catch (error) {
-            console.error('Error loading dashboard data:', error);
-            // Fallback to empty arrays if API fails
-            setCitizenComplaints([]);
-            setStaffData([]);
-            setInfrastructureStatus({});
-            setFinanceData({});
-            setProjects([]);
-            setEmergencyAlerts([]);
-        }
-    };
+      // Set projects data
+      if (projectsResponse.data.success) {
+        setProjects(projectsResponse.data.data || []);
+      }
 
-    const loadUrgentAlerts = async () => {
-        try {
-            const [statsResponse, alertsResponse] = await Promise.all([
-                getMunicipalStats(),
-                getEmergencyAlerts()
-            ]);
+      // Set emergency alerts
+      if (alertsResponse.data.success) {
+        setEmergencyAlerts(alertsResponse.data.data || []);
+      }
 
-            const alerts = [];
-            
-            if (statsResponse.data.success) {
-                const stats = statsResponse.data.data;
-                
-                // Create alerts based on real data
-                if (stats.pendingReports > 10) {
-                    alerts.push({
-                        id: 1,
-                        message: `${stats.pendingReports} reports pending resolution`,
-                        type: 'complaints'
-                    });
-                }
-                
-                if (stats.inProgressReports > 5) {
-                    alerts.push({
-                        id: 2,
-                        message: `${stats.inProgressReports} reports in progress`,
-                        type: 'work'
-                    });
-                }
-            }
+      // Set service requests
+      if (serviceResponse.data.success) {
+        setServiceRequests(serviceResponse.data.data || []);
+      }
 
-            if (alertsResponse.data.success && alertsResponse.data.data.length > 0) {
-                const emergencyCount = alertsResponse.data.data.filter(alert => 
-                    alert.severity === 'high' || alert.severity === 'critical'
-                ).length;
-                
-                if (emergencyCount > 0) {
-                    alerts.push({
-                        id: 3,
-                        message: `${emergencyCount} emergency alerts require attention`,
-                        type: 'emergency'
-                    });
-                }
-            }
+      // Set municipal stats
+      if (statsResponse.data.success) {
+        setMunicipalStats(statsResponse.data.data || {
+          totalComplaints: 0,
+          resolvedComplaints: 0,
+          pendingComplaints: 0,
+          staffCount: 0,
+          activeProjects: 0,
+          budget: 0
+        });
+      }
 
-            setUrgentAlerts(alerts);
-        } catch (error) {
-            console.error('Error loading urgent alerts:', error);
-            setUrgentAlerts([]);
-        }
-    };
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      toast.error('Failed to load dashboard data');
 
-    const handleTabChange = (event, newValue) => {
-        setTabValue(newValue);
-    };
-
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
-
-    // Fetch pending reports for task assignment
-    const fetchPendingReports = async () => {
-        try {
-            console.log('📋 Fetching pending reports...');
-            const response = await getMunicipalReports({ 
-                status: 'submitted,acknowledged',
-                limit: 50 
-            });
-            
-            if (response.data.success) {
-                setPendingReports(response.data.data || []);
-                console.log('✅ Pending reports loaded:', response.data.data?.length || 0);
-            } else {
-                console.error('❌ Failed to load pending reports:', response.data.message);
-                setPendingReports([]);
-            }
-        } catch (error) {
-            console.error('❌ Error fetching pending reports:', error);
-            setPendingReports([]);
-        }
-    };
-
-    // Open task assignment dialog and fetch reports
-    const openTaskAssignDialog = (staff) => {
-        setTaskAssignDialog({ open: true, staff });
-        fetchPendingReports();
-    };
-
-    const handleAssignTask = async () => {
-        try {
-            if (assignmentType === 'existing') {
-                // Assigning existing report
-                if (!selectedReport) {
-                    alert('Please select a report to assign');
-                    return;
-                }
-
-                console.log('🎯 Assigning existing report to:', taskAssignDialog.staff?.name);
-                console.log('📋 Report ID:', selectedReport);
-
-                const response = await assignWorker(selectedReport, taskAssignDialog.staff?.id || taskAssignDialog.staff?._id);
-                
-                if (response.data.success) {
-                    const reportData = pendingReports.find(r => r._id === selectedReport);
-                    console.log('✅ Report assigned successfully');
-                    alert(`Report "${reportData?.title || 'Selected report'}" has been assigned to ${taskAssignDialog.staff?.name} successfully!`);
-                    
-                    // Refresh pending reports
-                    fetchPendingReports();
-                } else {
-                    alert('Failed to assign report: ' + (response.data.message || 'Unknown error'));
-                }
-            } else {
-                // Creating new task
-                if (!taskForm.title || !taskForm.description) {
-                    alert(t('Please fill in all required fields'));
-                    return;
-                }
-
-                console.log('🎯 Assigning new task to:', taskAssignDialog.staff?.name);
-                console.log('📝 Task details:', taskForm);
-
-                const taskData = {
-                    staffId: taskAssignDialog.staff?.id || taskAssignDialog.staff?._id,
-                    title: taskForm.title,
-                    description: taskForm.description,
-                    priority: taskForm.priority,
-                    deadline: taskForm.deadline
-                };
-
-                const response = await assignTask(taskData);
-                
-                if (response.data.success) {
-                    console.log('✅ Task assigned successfully:', response.data.data);
-                    alert(`Task "${taskForm.title}" has been assigned to ${taskAssignDialog.staff?.name} successfully!`);
-                } else {
-                    alert('Failed to assign task: ' + (response.data.message || 'Unknown error'));
-                }
-            }
-
-            // Reset form and close dialog
-            setTaskForm({
-                title: '',
-                description: '',
-                priority: 'medium',
-                deadline: ''
-            });
-            setSelectedReport('');
-            setTaskAssignDialog({ open: false, staff: null });
-
-        } catch (error) {
-            console.error('❌ Error assigning task:', error);
-            const errorMessage = error.response?.data?.message || 'Failed to assign task';
-            alert(errorMessage);
-        }
-    };
-
-    const handleAddStaff = async () => {
-        try {
-            if (!staffForm.name || !staffForm.email || !staffForm.department) {
-                alert(t('Please fill in all required fields'));
-                return;
-            }
-
-            console.log('👤 Adding new staff member:', staffForm);
-
-            const response = await addStaffMember(staffForm);
-            
-            if (response.data.success) {
-                console.log('✅ Staff member added successfully:', response.data.data);
-                alert(`Staff member "${staffForm.name}" has been added successfully.\nDefault password: ${response.data.data.defaultPassword}`);
-                
-                // Reload staff data
-                loadDashboardData();
-                
-                // Reset form and close dialog
-                setStaffForm({
-                    name: '',
-                    email: '',
-                    phone: '',
-                    role: 'field_staff',
-                    department: '',
-                    ward: ''
-                });
-                setAddStaffDialog(false);
-            } else {
-                alert('Failed to add staff member: ' + (response.data.message || 'Unknown error'));
-            }
-        } catch (error) {
-            console.error('❌ Error adding staff member:', error);
-            const errorMessage = error.response?.data?.message || 'Failed to add staff member';
-            alert(errorMessage);
-        }
-    };
-
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'resolved':
-            case 'completed':
-            case 'approved': return 'success';
-            case 'in_progress':
-            case 'active': return 'info';
-            case 'pending':
-            case 'pending_approval': return 'warning';
-            case 'rejected':
-            case 'on_leave': return 'error';
-            default: return 'default';
-        }
-    };
-
-    const getPriorityColor = (priority) => {
-        switch (priority) {
-            case 'high': return 'error';
-            case 'medium': return 'warning';
-            case 'low': return 'success';
-            default: return 'default';
-        }
-    };
-
-    // Theme colors - India Flag Inspired
-    const theme = {
-        primary: '#FF9933', // Saffron
-        secondary: '#138808', // Green
-        accent: '#000080', // Navy Blue (Chakra color)
-        success: '#138808', // Green
-        warning: '#FF9933', // Saffron
-        danger: '#DC3545',
-        background: '#FFFFFF', // White
-        text: '#000080', // Navy Blue
-        saffron: '#FF9933',
-        white: '#FFFFFF',
-        green: '#138808',
-        navyBlue: '#000080'
-    };
-
-    // Translation object
-    const translations = {
-        en: {
-            title: "Municipal Administration Dashboard",
-            welcome: "Welcome",
-            citizenComplaints: "Citizen Complaints",
-            serviceRequests: "Service Requests",
-            activeStaff: "Active Staff",
-            revenueCollected: "Revenue Collected",
-            activeProjects: "Active Projects",
-            overview: "Overview",
-            citizensServices: "Citizens & Services",
-            infrastructure: "Infrastructure",
-            staffManagement: "Staff Management",
-            financeRevenue: "Finance & Revenue",
-            projects: "Projects",
-            emergency: "Emergency",
-            reportsAnalytics: "Reports & Analytics",
-            communication: "Communication",
-            infrastructureStatus: "Infrastructure Status",
-            waterSupply: "Water Supply Coverage",
-            streetLights: "Street Lights",
-            roads: "Roads in Good Condition",
-            recentComplaints: "Recent Complaints",
-            revenueCollection: "Revenue Collection",
-            assignTaskTo: "Assign Task to",
-            taskTitle: "Task Title",
-            taskDescription: "Task Description",
-            deadline: "Deadline",
-            priority: "Priority",
-            high: "High",
-            medium: "Medium",
-            low: "Low",
-            cancel: "Cancel",
-            assignTask: "Assign Task",
-            addNewStaffMember: "Add New Staff Member",
-            fullName: "Full Name",
-            email: "Email",
-            phoneNumber: "Phone Number",
-            role: "Role",
-            department: "Department",
-            ward: "Ward",
-            fieldStaff: "Field Staff",
-            fieldHead: "Field Head",
-            departmentHead: "Department Head",
-            addStaffMember: "Add Staff Member"
+      // Set fallback data
+      setCitizenComplaints([
+        {
+          _id: '1',
+          title: 'Pothole on Main Street',
+          category: 'pothole',
+          status: 'pending',
+          priority: 'high',
+          location: 'Main Street, Ward 5',
+          createdAt: new Date().toISOString(),
+          description: 'Large pothole causing traffic issues'
         },
-        hi: {
-            title: "नगर निगम प्रशासन डैशबोर्ड",
-            welcome: "स्वागत",
-            citizenComplaints: "नागरिक शिकायतें",
-            serviceRequests: "सेवा अनुरोध",
-            activeStaff: "सक्रिय कर्मचारी",
-            revenueCollected: "राजस्व संग्रह",
-            activeProjects: "सक्रिय परियोजनाएं",
-            overview: "अवलोकन",
-            citizensServices: "नागरिक सेवा",
-            infrastructure: "अवसंरचना",
-            staffManagement: "कर्मचारी प्रबंधन",
-            financeRevenue: "वित्त और राजस्व",
-            projects: "परियोजनाएं",
-            emergency: "आपातकाल",
-            reportsAnalytics: "रिपोर्ट और विश्लेषण",
-            communication: "संचार",
-            infrastructureStatus: "अवसंरचना स्थिति",
-            waterSupply: "जल आपूर्ति कवरेज",
-            streetLights: "स्ट्रीट लाइट्स",
-            roads: "अच्छी स्थिति में सड़कें",
-            recentComplaints: "हाल की शिकायतें",
-            revenueCollection: "राजस्व संग्रह",
-            assignTaskTo: "कार्य सौंपें",
-            taskTitle: "कार्य शीर्षक",
-            taskDescription: "कार्य विवरण",
-            deadline: "समय सीमा",
-            priority: "प्राथमिकता",
-            high: "उच्च",
-            medium: "मध्यम",
-            low: "निम्न",
-            cancel: "रद्द करें",
-            assignTask: "कार्य सौंपें",
-            addNewStaffMember: "नया कर्मचारी जोड़ें",
-            fullName: "पूरा नाम",
-            email: "ईमेल",
-            phoneNumber: "फोन नंबर",
-            role: "पद",
-            department: "विभाग",
-            ward: "वार्ड",
-            fieldStaff: "फील्ड कर्मचारी",
-            fieldHead: "फील्ड प्रमुख",
-            departmentHead: "विभाग प्रमुख",
-            addStaffMember: "कर्मचारी जोड़ें"
-        },
-        ta: {
-            title: "நகராட்சி நிர்வாக டாஷ்போர்டு",
-            welcome: "வரவேற்கிறோம்",
-            citizenComplaints: "குடிமக்கள் புகார்கள்",
-            serviceRequests: "சேவை கோரிக்கைகள்",
-            activeStaff: "செயலில் பணியாளர்கள்",
-            revenueCollected: "வருவாய் சேகரிப்பு",
-            activeProjects: "செயலில் திட்டங்கள்",
-            overview: "மேலோட்டம்",
-            citizensServices: "குடிமக்கள் மற்றும் சேவைகள்",
-            infrastructure: "உள்கட்டமைப்பு",
-            staffManagement: "பணியாளர் மேலாண்மை",
-            financeRevenue: "நிதி மற்றும் வருவாய்",
-            projects: "திட்டங்கள்",
-            emergency: "அவசரநிலை",
-            reportsAnalytics: "அறிக்கைகள் மற்றும் பகுப்பாய்வு",
-            communication: "தொடர்பு",
-            infrastructureStatus: "உள்கட்டமைப்பு நிலை",
-            waterSupply: "நீர் விநியோக கவரேஜ்",
-            streetLights: "தெரு விளக்குகள்",
-            roads: "நல்ல நிலையில் உள்ள சாலைகள்",
-            recentComplaints: "சமீபத்திய புகார்கள்",
-            revenueCollection: "வருவாய் சேகரிப்பு",
-            assignTaskTo: "பணி ஒப்படைக்க",
-            taskTitle: "பணி தலைப்பு",
-            taskDescription: "பணி விளக்கம்",
-            deadline: "கடைசி தேதி",
-            priority: "முன்னுரிமை",
-            high: "உயர்",
-            medium: "நடுத்தர",
-            low: "குறைந்த",
-            cancel: "ரத்து செய்",
-            assignTask: "பணி ஒப்படை",
-            addNewStaffMember: "புதிய பணியாளர் சேர்க்க",
-            fullName: "முழு பெயர்",
-            email: "மின்னஞ்சல்",
-            phoneNumber: "தொலைபேசி எண்",
-            role: "பதவி",
-            department: "துறை",
-            ward: "வார்டு",
-            fieldStaff: "கள பணியாளர்",
-            fieldHead: "கள தலைவர்",
-            departmentHead: "துறை தலைவர்",
-            addStaffMember: "பணியாளர் சேர்க்க"
+        {
+          _id: '2',
+          title: 'Streetlight Not Working',
+          category: 'streetlight',
+          status: 'in_progress',
+          priority: 'medium',
+          location: 'Park Avenue, Ward 3',
+          createdAt: new Date().toISOString(),
+          description: 'Streetlight has been out for 3 days'
         }
-    };
+      ]);
 
-    // Translation helper function
-    const t = (key) => translations[selectedLanguage][key] || translations.en[key];
+      setStaffData([
+        {
+          _id: '1',
+          name: 'Rajesh Kumar',
+          role: 'field_supervisor',
+          department: 'Roads',
+          ward: 'Ward 5',
+          phone: '+91-9876543210',
+          status: 'active'
+        },
+        {
+          _id: '2',
+          name: 'Priya Singh',
+          role: 'maintenance_engineer',
+          department: 'Electrical',
+          ward: 'Ward 3',
+          phone: '+91-9876543211',
+          status: 'active'
+        }
+      ]);
 
+      setProjects([
+        {
+          _id: '1',
+          name: 'Road Repair Project',
+          status: 'active',
+          progress: 65,
+          budget: 500000,
+          deadline: '2024-12-31'
+        },
+        {
+          _id: '2',
+          name: 'Street Light Upgrade',
+          status: 'active',
+          progress: 30,
+          budget: 200000,
+          deadline: '2024-11-30'
+        }
+      ]);
+
+      setMunicipalStats({
+        totalComplaints: 145,
+        resolvedComplaints: 98,
+        pendingComplaints: 47,
+        staffCount: 25,
+        activeProjects: 6,
+        budget: 2500000
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadUrgentAlerts = async () => {
+    try {
+      const response = await getEmergencyAlerts();
+      if (response.data.success) {
+        const alerts = response.data.data || [];
+        setEmergencyAlerts(alerts.filter(alert => alert.priority === 'urgent' || alert.priority === 'high'));
+      }
+    } catch (error) {
+      console.error('Error loading urgent alerts:', error);
+      // Set fallback emergency alerts
+      setEmergencyAlerts([
+        {
+          _id: '1',
+          title: 'Water Pipeline Burst',
+          description: 'Major water pipeline burst in Ward 7',
+          priority: 'urgent',
+          status: 'active',
+          createdAt: new Date().toISOString()
+        }
+      ]);
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  // Dashboard Overview Section
+  const DashboardOverview = () => (
+    <div className="max-w-7xl mx-auto space-y-8">
+      {/* Header */}
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="h-1 bg-gradient-to-r from-orange-500 via-white to-green-600"></div>
+        <div className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                <Building className="w-8 h-8 text-orange-600" />
+                Municipal Dashboard
+              </h2>
+              <p className="text-gray-700 mt-1">Digital India Municipal Management</p>
+            </div>
+            <button
+              onClick={loadDashboardData}
+              disabled={loading}
+              className="px-4 py-2 bg-gradient-to-r from-orange-500 to-green-500 text-white rounded-lg hover:from-orange-600 hover:to-green-600 flex items-center gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              {loading ? 'Refreshing...' : 'Refresh Data'}
+            </button>
+          </div>
+        </div>
+        <div className="h-1 bg-gradient-to-r from-orange-500 via-white to-green-600"></div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {[
+          { title: 'Total Complaints', value: municipalStats.totalComplaints || citizenComplaints.length, icon: FileText, color: 'text-blue-600', bg: 'from-blue-400 to-blue-600' },
+          { title: 'Resolved', value: municipalStats.resolvedComplaints || citizenComplaints.filter(c => c.status === 'resolved').length, icon: CheckCircle, color: 'text-green-600', bg: 'from-green-400 to-green-600' },
+          { title: 'Active Staff', value: municipalStats.staffCount || staffData.length, icon: Users, color: 'text-purple-600', bg: 'from-purple-400 to-purple-600' },
+          { title: 'Active Projects', value: municipalStats.activeProjects || projects.filter(p => p.status === 'active').length, icon: Wrench, color: 'text-orange-600', bg: 'from-orange-400 to-orange-600' }
+        ].map((stat, index) => (
+          <motion.div
+            key={index}
+            className="bg-white rounded-xl shadow-lg overflow-hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            <div className="h-1 bg-gradient-to-r from-orange-500 via-white to-green-600"></div>
+            <div className="p-6 text-center">
+              <div className={`w-12 h-12 mx-auto mb-4 rounded-full bg-gradient-to-r ${stat.bg} flex items-center justify-center`}>
+                <stat.icon className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-2xl font-bold text-gray-900 mb-1">
+                {loading ? (
+                  <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin mx-auto"></div>
+                ) : (
+                  stat.value
+                )}
+              </div>
+              <div className="text-sm text-gray-600 font-medium">{stat.title}</div>
+            </div>
+            <div className="h-1 bg-gradient-to-r from-orange-500 via-white to-green-600"></div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-orange-500 via-white to-green-600"></div>
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Complaints</h3>
+            <div className="space-y-3">
+              {citizenComplaints.slice(0, 3).map((complaint, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="font-medium text-gray-900">{complaint.title}</p>
+                    <p className="text-sm text-gray-600">
+                      {typeof complaint.location === 'string' ? complaint.location :
+                       complaint.address || complaint.location?.address || 'Location not specified'}
+                    </p>
+                  </div>
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    complaint.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                    complaint.status === 'in_progress' ? 'bg-orange-100 text-orange-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {complaint.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="h-1 bg-gradient-to-r from-orange-500 via-white to-green-600"></div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-orange-500 via-white to-green-600"></div>
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Active Staff</h3>
+            <div className="space-y-4">
+              {staffData.slice(0, 3).map((staff, index) => (
+                <div key={index} className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                    {staff.name?.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{staff.name}</p>
+                    <p className="text-sm text-gray-600">{staff.department}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="h-1 bg-gradient-to-r from-orange-500 via-white to-green-600"></div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-orange-500 via-white to-green-600"></div>
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+            <div className="space-y-3">
+              <button
+                onClick={() => setActiveTab('complaints')}
+                className="w-full p-3 text-left bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <FileText className="w-5 h-5 text-orange-600" />
+                  <span className="font-medium">View Complaints</span>
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab('staff')}
+                className="w-full p-3 text-left bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Users className="w-5 h-5 text-green-600" />
+                  <span className="font-medium">Manage Staff</span>
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab('projects')}
+                className="w-full p-3 text-left bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Wrench className="w-5 h-5 text-blue-600" />
+                  <span className="font-medium">View Projects</span>
+                </div>
+              </button>
+            </div>
+          </div>
+          <div className="h-1 bg-gradient-to-r from-orange-500 via-white to-green-600"></div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Complaints Management Component
+  const ComplaintsManagement = () => (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">Complaints Management</h2>
+          <p className="text-gray-600">Monitor and manage citizen complaints across all wards.</p>
+        </div>
+        <button
+          onClick={loadDashboardData}
+          disabled={loading}
+          className="flex items-center px-4 py-2 border border-orange-500 text-orange-600 rounded-lg hover:bg-orange-50 transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh
+        </button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-xl text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-3xl font-bold mb-1">{citizenComplaints.length}</div>
+              <div className="text-blue-100">Total Complaints</div>
+            </div>
+            <FileText className="w-12 h-12 text-blue-200" />
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 p-6 rounded-xl text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-3xl font-bold mb-1">
+                {citizenComplaints.filter(c => c.status === 'pending').length}
+              </div>
+              <div className="text-yellow-100">Pending</div>
+            </div>
+            <Clock className="w-12 h-12 text-yellow-200" />
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-6 rounded-xl text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-3xl font-bold mb-1">
+                {citizenComplaints.filter(c => c.status === 'in_progress').length}
+              </div>
+              <div className="text-orange-100">In Progress</div>
+            </div>
+            <Activity className="w-12 h-12 text-orange-200" />
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-xl text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-3xl font-bold mb-1">
+                {citizenComplaints.filter(c => c.status === 'resolved').length}
+              </div>
+              <div className="text-green-100">Resolved</div>
+            </div>
+            <CheckCircle className="w-12 h-12 text-green-200" />
+          </div>
+        </div>
+      </div>
+
+      {/* Complaints Table */}
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        <div className="p-6 border-b border-gray-200">
+          <h3 className="text-xl font-semibold">Recent Complaints</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Complaint</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {citizenComplaints.slice(0, 10).map((complaint, index) => (
+                <tr key={index} className="hover:bg-gray-50">
+                  <td className="px-6 py-4">
+                    <div>
+                      <div className="font-medium text-gray-900">{complaint.title}</div>
+                      <div className="text-sm text-gray-500 truncate max-w-xs">{complaint.description}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900 capitalize">{complaint.category}</td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {typeof complaint.location === 'string' ? complaint.location :
+                     complaint.address || complaint.location?.address || 'Location not specified'}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      complaint.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                      complaint.status === 'in_progress' ? 'bg-orange-100 text-orange-800' :
+                      complaint.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {complaint.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      complaint.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                      complaint.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                      complaint.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {complaint.priority || 'medium'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {new Date(complaint.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 text-sm font-medium">
+                    <div className="flex space-x-2">
+                      <button className="text-blue-600 hover:text-blue-900">
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button className="text-green-600 hover:text-green-900">
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Staff Management Component
+  const StaffManagement = () => (
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">Staff Management</h2>
+          <p className="text-gray-600">Manage municipal staff and assignments.</p>
+        </div>
+        <button className="flex items-center px-4 py-2 bg-gradient-to-r from-orange-500 to-green-500 text-white rounded-lg hover:from-orange-600 hover:to-green-600 transition-colors">
+          <Plus className="w-4 h-4 mr-2" />
+          Add Staff
+        </button>
+      </div>
+
+      {/* Staff Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {staffData.map((staff, index) => (
+          <div key={index} className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-shadow">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                {staff.name?.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900">{staff.name}</h3>
+                <p className="text-sm text-gray-600">{staff.role}</p>
+              </div>
+            </div>
+
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center text-sm text-gray-600">
+                <Building className="w-4 h-4 mr-2" />
+                {staff.department}
+              </div>
+              <div className="flex items-center text-sm text-gray-600">
+                <MapPin className="w-4 h-4 mr-2" />
+                {staff.ward}
+              </div>
+              {staff.phone && (
+                <div className="flex items-center text-sm text-gray-600">
+                  <Phone className="w-4 h-4 mr-2" />
+                  {staff.phone}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-between items-center">
+              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                staff.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+              }`}>
+                {staff.status}
+              </span>
+              <div className="flex space-x-2">
+                <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                  <Edit3 className="w-4 h-4" />
+                </button>
+                <button className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors">
+                  <User className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Other section components (simplified for now)
+  const InfrastructureSection = () => (
+    <div className="p-6">
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">Infrastructure Management</h2>
+      <div className="bg-white p-6 rounded-xl shadow-lg">
+        <p className="text-gray-600">Infrastructure monitoring and management tools.</p>
+      </div>
+    </div>
+  );
+
+  const FinanceSection = () => (
+    <div className="p-6">
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">Finance Management</h2>
+      <div className="bg-white p-6 rounded-xl shadow-lg">
+        <p className="text-gray-600">Municipal finance and budget management.</p>
+      </div>
+    </div>
+  );
+
+  const ProjectsSection = () => (
+    <div className="p-6">
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">Projects Management</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {projects.map((project, index) => (
+          <div key={index} className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+            <h3 className="font-semibold text-gray-900 mb-2">{project.name}</h3>
+            <div className="flex justify-between items-center mb-4">
+              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                project.status === 'active' ? 'bg-green-100 text-green-800' :
+                project.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                'bg-yellow-100 text-yellow-800'
+              }`}>
+                {project.status}
+              </span>
+              <span className="text-sm text-gray-600">
+                Progress: {project.progress}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+              <div
+                className="bg-gradient-to-r from-orange-500 to-green-500 h-2 rounded-full"
+                style={{ width: `${project.progress}%` }}
+              ></div>
+            </div>
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Budget: ₹{project.budget?.toLocaleString()}</span>
+              <span>Deadline: {new Date(project.deadline).toLocaleDateString()}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const EmergencySection = () => (
+    <div className="p-6">
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">Emergency Alerts</h2>
+      <div className="space-y-4">
+        {emergencyAlerts.map((alert, index) => (
+          <div key={index} className="bg-red-50 border border-red-200 p-4 rounded-xl">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-6 h-6 text-red-600 mt-1" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-red-900">{alert.title}</h3>
+                <p className="text-red-700">{alert.description}</p>
+                <p className="text-sm text-red-600 mt-1">
+                  {new Date(alert.createdAt).toLocaleString()}
+                </p>
+              </div>
+              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                alert.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                'bg-yellow-100 text-yellow-800'
+              }`}>
+                {alert.priority}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const SettingsSection = () => (
+    <div className="p-6">
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">Settings</h2>
+      <div className="bg-white p-6 rounded-xl shadow-lg">
+        <p className="text-gray-600">Municipal system settings and configuration.</p>
+      </div>
+    </div>
+  );
+
+  // Loading state
+  if (loading) {
     return (
-        <Box sx={{ flexGrow: 1, bgcolor: theme.background, minHeight: '100vh' }}>
-            {/* Header */}
-            <AppBar position="static" sx={{ 
-                backgroundColor: theme.navyBlue,
-                mb: 2,
-                boxShadow: '0 4px 12px rgba(0,0,128,0.3)'
-            }}>
-                <Toolbar>
-                    <Business sx={{ mr: 2, color: 'white', fontSize: 30 }} />
-                    <Typography variant="h6" component="div" sx={{ 
-                        flexGrow: 1, 
-                        color: 'white', 
-                        fontWeight: 'bold',
-                        fontSize: '1.3rem'
-                    }}>
-                        {t('title')}
-                    </Typography>
-                    
-                    {/* Language Selector */}
-                    <FormControl size="small" sx={{ mr: 2, minWidth: 100 }}>
-                        <InputLabel sx={{ 
-                            color: 'white',
-                            fontWeight: 'bold'
-                        }}>Language</InputLabel>
-                        <Select
-                            value={selectedLanguage}
-                            label="Language"
-                            onChange={(e) => setSelectedLanguage(e.target.value)}
-                            sx={{ 
-                                color: 'white', 
-                                fontWeight: 'bold',
-                                '& .MuiOutlinedInput-notchedOutline': { 
-                                    borderColor: 'white',
-                                    borderWidth: '1px'
-                                },
-                                '& .MuiSvgIcon-root': { color: 'white' },
-                                '&:hover .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: theme.saffron
-                                },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: theme.saffron
-                                }
-                            }}
-                        >
-                            <MenuItem value="en">English</MenuItem>
-                            <MenuItem value="hi">हिन्दी</MenuItem>
-                            <MenuItem value="ta">தமிழ்</MenuItem>
-                        </Select>
-                    </FormControl>
-                    
-                    {/* Urgent Alerts */}
-                    <Badge badgeContent={urgentAlerts.length} color="error" sx={{ mr: 2 }}>
-                        <Notifications sx={{ color: 'white' }} />
-                    </Badge>
-                    
-                    <FormControl size="small" sx={{ mr: 2, minWidth: 120 }}>
-                        <InputLabel sx={{ 
-                            color: 'white',
-                            fontWeight: 'bold'
-                        }}>Ward</InputLabel>
-                        <Select
-                            value={selectedWard}
-                            label="Ward"
-                            onChange={(e) => setSelectedWard(e.target.value)}
-                            sx={{ 
-                                color: 'white', 
-                                fontWeight: 'bold',
-                                '& .MuiOutlinedInput-notchedOutline': { 
-                                    borderColor: 'white',
-                                    borderWidth: '1px'
-                                },
-                                '& .MuiSvgIcon-root': { color: 'white' },
-                                '&:hover .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: theme.saffron
-                                },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: theme.saffron
-                                }
-                            }}
-                        >
-                            <MenuItem value="all">All Wards</MenuItem>
-                            <MenuItem value="ward1">Ward 1</MenuItem>
-                            <MenuItem value="ward2">Ward 2</MenuItem>
-                            <MenuItem value="ward3">Ward 3</MenuItem>
-                            <MenuItem value="ward4">Ward 4</MenuItem>
-                        </Select>
-                    </FormControl>
-                    
-                    <Typography variant="body2" sx={{ 
-                        mr: 2, 
-                        color: 'white', 
-                        fontWeight: 'bold',
-                        fontSize: '0.95rem'
-                    }}>
-                        {t('welcome')}, {user?.name || 'Municipal Admin'}
-                    </Typography>
-                    <IconButton sx={{ 
-                        color: 'white',
-                        '&:hover': {
-                            backgroundColor: 'rgba(255,255,255,0.1)',
-                            color: theme.saffron
-                        }
-                    }} onClick={handleLogout}>
-                        <ExitToApp />
-                    </IconButton>
-                </Toolbar>
-            </AppBar>
-
-            {/* Urgent Alerts Bar */}
-            {urgentAlerts.length > 0 && (
-                <Box sx={{ px: 3, pb: 2 }}>
-                    <Alert severity="warning" sx={{ mb: 1 }}>
-                        <Typography variant="body2">
-                            <strong>Urgent Attention Required:</strong> {urgentAlerts.length} items need immediate action
-                        </Typography>
-                    </Alert>
-                </Box>
-            )}
-
-            <Box sx={{ p: 3 }}>
-                {/* Quick Stats Cards */}
-                <Grid container spacing={3} sx={{ mb: 3 }}>
-                    <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-                        <Card sx={{ 
-                            height: '100%', 
-                            background: `linear-gradient(135deg, ${theme.saffron} 0%, #FF7A00 100%)`,
-                            boxShadow: '0 8px 16px rgba(255,153,51,0.3)',
-                            transform: 'translateY(0)',
-                            transition: 'transform 0.3s ease',
-                            '&:hover': { transform: 'translateY(-5px)' }
-                        }}>
-                            <CardContent sx={{ textAlign: 'center' }}>
-                                <People sx={{ fontSize: 40, color: 'white', mb: 1 }} />
-                                <Typography color="white" variant="h6" fontWeight="bold">
-                                    {citizenComplaints.length}
-                                </Typography>
-                                <Typography color="white" variant="body2">
-                                    {t('citizenComplaints')}
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-
-                    <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-                        <Card sx={{ 
-                            height: '100%', 
-                            background: `linear-gradient(135deg, ${theme.green} 0%, #0A6B0D 100%)`,
-                            boxShadow: '0 8px 16px rgba(19,136,8,0.3)',
-                            transform: 'translateY(0)',
-                            transition: 'transform 0.3s ease',
-                            '&:hover': { transform: 'translateY(-5px)' }
-                        }}>
-                            <CardContent sx={{ textAlign: 'center' }}>
-                                <Build sx={{ fontSize: 40, color: 'white', mb: 1 }} />
-                                <Typography color="white" variant="h6" fontWeight="bold">
-                                    {serviceRequests.length}
-                                </Typography>
-                                <Typography color="white" variant="body2">
-                                    {t('serviceRequests')}
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-
-                    <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-                        <Card sx={{ 
-                            height: '100%', 
-                            background: `linear-gradient(135deg, ${theme.navyBlue} 0%, #000066 100%)`,
-                            boxShadow: '0 8px 16px rgba(0,0,128,0.3)',
-                            transform: 'translateY(0)',
-                            transition: 'transform 0.3s ease',
-                            '&:hover': { transform: 'translateY(-5px)' }
-                        }}>
-                            <CardContent sx={{ textAlign: 'center' }}>
-                                <Group sx={{ fontSize: 40, color: 'white', mb: 1 }} />
-                                <Typography color="white" variant="h6" fontWeight="bold">
-                                    {staffData.filter(s => s.status === 'active').length}
-                                </Typography>
-                                <Typography color="white" variant="body2">
-                                    {t('activeStaff')}
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-
-                    <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-                        <Card sx={{ 
-                            height: '100%', 
-                            background: `linear-gradient(135deg, ${theme.saffron} 30%, ${theme.green} 100%)`,
-                            boxShadow: '0 8px 16px rgba(255,153,51,0.3)',
-                            transform: 'translateY(0)',
-                            transition: 'transform 0.3s ease',
-                            '&:hover': { transform: 'translateY(-5px)' }
-                        }}>
-                            <CardContent sx={{ textAlign: 'center' }}>
-                                <AttachMoney sx={{ fontSize: 40, color: 'white', mb: 1 }} />
-                                <Typography color="white" variant="h6" fontWeight="bold">
-                                    ₹{((financeData.propertyTax?.collected || 0) / 10000000).toFixed(1)}Cr
-                                </Typography>
-                                <Typography color="white" variant="body2">
-                                    {t('revenueCollected')}
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-
-                    <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-                        <Card sx={{ 
-                            height: '100%', 
-                            background: `linear-gradient(135deg, ${theme.green} 30%, ${theme.saffron} 100%)`,
-                            boxShadow: '0 8px 16px rgba(19,136,8,0.3)',
-                            transform: 'translateY(0)',
-                            transition: 'transform 0.3s ease',
-                            '&:hover': { transform: 'translateY(-5px)' }
-                        }}>
-                            <CardContent sx={{ textAlign: 'center' }}>
-                                <Engineering sx={{ fontSize: 40, color: 'white', mb: 1 }} />
-                                <Typography color="white" variant="h6" fontWeight="bold">
-                                    {projects.filter(p => p.status === 'in_progress').length}
-                                </Typography>
-                                <Typography color="white" variant="body2">
-                                    {t('activeProjects')}
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                </Grid>
-
-                {/* Main Navigation Tabs */}
-                <Paper sx={{ 
-                    width: '100%', 
-                    mb: 3,
-                    background: `linear-gradient(to right, ${theme.saffron}, ${theme.white}, ${theme.green})`,
-                    border: `2px solid ${theme.navyBlue}`,
-                    borderRadius: 2
-                }}>
-                    <Tabs
-                        value={tabValue}
-                        onChange={handleTabChange}
-                        indicatorColor="primary"
-                        variant="scrollable"
-                        scrollButtons="auto"
-                        sx={{
-                            '& .MuiTab-root': {
-                                color: theme.navyBlue,
-                                fontWeight: 'bold',
-                                '&.Mui-selected': {
-                                    color: theme.navyBlue,
-                                    backgroundColor: 'rgba(255,255,255,0.8)',
-                                    borderRadius: 1
-                                }
-                            },
-                            '& .MuiTabs-indicator': {
-                                backgroundColor: theme.navyBlue,
-                                height: 3
-                            }
-                        }}
-                    >
-                        <Tab icon={<Dashboard />} label={t('overview')} />
-                        <Tab icon={<People />} label={t('citizensServices')} />
-                        <Tab icon={<Build />} label={t('infrastructure')} />
-                        <Tab icon={<Group />} label={t('staffManagement')} />
-                        <Tab icon={<AttachMoney />} label={t('financeRevenue')} />
-                        <Tab icon={<Engineering />} label={t('projects')} />
-                        <Tab icon={<Security />} label={t('emergency')} />
-                        <Tab icon={<Analytics />} label={t('reportsAnalytics')} />
-                        <Tab icon={<Campaign />} label={t('communication')} />
-                    </Tabs>
-                </Paper>
-
-                {/* Tab Content */}
-                
-                {/* Overview Tab */}
-                {tabValue === 0 && (
-                    <Grid container spacing={3}>
-                        {/* Infrastructure Status Overview */}
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <Card sx={{ 
-                                border: `2px solid ${theme.navyBlue}`,
-                                borderRadius: 2,
-                                boxShadow: `0 4px 8px rgba(0,0,128,0.1)`
-                            }}>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom sx={{ color: theme.navyBlue, fontWeight: 'bold' }}>
-                                        <Build sx={{ mr: 1, verticalAlign: 'middle', color: theme.saffron }} />
-                                        {t('infrastructureStatus')}
-                                    </Typography>
-                                    
-                                    <Box sx={{ mb: 2 }}>
-                                        <Typography variant="body2" gutterBottom>{t('waterSupply')}</Typography>
-                                        <LinearProgress 
-                                            variant="determinate" 
-                                            value={infrastructureStatus.waterSupply?.operational || 0} 
-                                            sx={{ 
-                                                height: 8, 
-                                                borderRadius: 4,
-                                                backgroundColor: theme.white,
-                                                '& .MuiLinearProgress-bar': {
-                                                    backgroundColor: theme.green
-                                                }
-                                            }}
-                                        />
-                                        <Typography variant="caption">{infrastructureStatus.waterSupply?.operational || 0}% Operational</Typography>
-                                    </Box>
-                                    
-                                    <Box sx={{ mb: 2 }}>
-                                        <Typography variant="body2" gutterBottom>{t('streetLights')}</Typography>
-                                        <LinearProgress 
-                                            variant="determinate" 
-                                            value={infrastructureStatus.streetLights?.coverage || 0} 
-                                            sx={{ 
-                                                height: 8, 
-                                                borderRadius: 4,
-                                                backgroundColor: theme.white,
-                                                '& .MuiLinearProgress-bar': {
-                                                    backgroundColor: theme.saffron
-                                                }
-                                            }}
-                                        />
-                                        <Typography variant="caption">{infrastructureStatus.streetLights?.coverage || 0}% Coverage</Typography>
-                                    </Box>
-                                    
-                                    <Box sx={{ mb: 2 }}>
-                                        <Typography variant="body2" gutterBottom>{t('roads')}</Typography>
-                                        <LinearProgress 
-                                            variant="determinate" 
-                                            value={infrastructureStatus.roads?.good_condition || 0} 
-                                            sx={{ 
-                                                height: 8, 
-                                                borderRadius: 4,
-                                                backgroundColor: theme.white,
-                                                '& .MuiLinearProgress-bar': {
-                                                    backgroundColor: theme.navyBlue
-                                                }
-                                            }}
-                                        />
-                                        <Typography variant="caption">{infrastructureStatus.roads?.good_condition || 0}% Good Condition</Typography>
-                                    </Box>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Recent Citizen Complaints */}
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <Card sx={{ 
-                                border: `2px solid ${theme.navyBlue}`,
-                                borderRadius: 2,
-                                boxShadow: `0 4px 8px rgba(0,0,128,0.1)`
-                            }}>
-                                <CardContent>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                        <Typography variant="h6" sx={{ color: theme.navyBlue, fontWeight: 'bold' }}>
-                                            <People sx={{ mr: 1, verticalAlign: 'middle', color: theme.green }} />
-                                            {t('recentComplaints')}
-                                        </Typography>
-                                        <Button 
-                                            size="small" 
-                                            onClick={() => setNewComplaintDialog(true)}
-                                            sx={{
-                                                backgroundColor: theme.saffron,
-                                                color: 'white',
-                                                '&:hover': { backgroundColor: '#FF7A00' }
-                                            }}
-                                        >
-                                            <Add sx={{ mr: 1 }} /> नई | New
-                                        </Button>
-                                    </Box>
-                                    
-                                    <List>
-                                        {citizenComplaints.slice(0, 4).map(complaint => (
-                                            <ListItem key={complaint.id} divider>
-                                                <ListItemAvatar>
-                                                    <Avatar sx={{ 
-                                                        bgcolor: complaint.type === 'water' ? theme.navyBlue : 
-                                                                complaint.type === 'roads' ? theme.saffron : theme.green
-                                                    }}>
-                                                        {complaint.type === 'water' ? <Water /> : 
-                                                         complaint.type === 'roads' ? <Construction /> : <LocalShipping />}
-                                                    </Avatar>
-                                                </ListItemAvatar>
-                                                <ListItemText
-                                                    primary={complaint.title}
-                                                    secondary={`${complaint.citizen} • ${complaint.ward}`}
-                                                />
-                                                <Chip
-                                                    label={complaint.priority}
-                                                    color={getPriorityColor(complaint.priority)}
-                                                    size="small"
-                                                />
-                                            </ListItem>
-                                        ))}
-                                    </List>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Finance Overview */}
-                        <Grid size={{ xs: 12, md: 4 }}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        <AttachMoney sx={{ mr: 1, verticalAlign: 'middle' }} />
-                                        {t('revenueCollection')}
-                                    </Typography>
-                                    
-                                    <Box sx={{ mb: 2 }}>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                            <Typography variant="body2">Property Tax</Typography>
-                                            <Typography variant="body2" color="primary">
-                                                {financeData.propertyTax?.collection_rate || 0}%
-                                            </Typography>
-                                        </Box>
-                                        <LinearProgress 
-                                            variant="determinate" 
-                                            value={financeData.propertyTax?.collection_rate || 0} 
-                                            sx={{ height: 6, borderRadius: 3 }}
-                                        />
-                                    </Box>
-                                    
-                                    <Box>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                            <Typography variant="body2">Water Bills</Typography>
-                                            <Typography variant="body2" color="success.main">
-                                                {financeData.waterBills?.collection_rate || 0}%
-                                            </Typography>
-                                        </Box>
-                                        <LinearProgress 
-                                            variant="determinate" 
-                                            value={financeData.waterBills?.collection_rate || 0} 
-                                            sx={{ height: 6, borderRadius: 3 }}
-                                            color="success"
-                                        />
-                                    </Box>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Active Projects */}
-                        <Grid size={{ xs: 12, md: 4 }}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        <Engineering sx={{ mr: 1, verticalAlign: 'middle' }} />
-                                        Active Projects
-                                    </Typography>
-                                    
-                                    {projects.filter(p => p.status === 'in_progress').map(project => (
-                                        <Box key={project.id} sx={{ mb: 2 }}>
-                                            <Typography variant="body2" gutterBottom>{project.name}</Typography>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <LinearProgress 
-                                                    variant="determinate" 
-                                                    value={project.progress || 0} 
-                                                    sx={{ flexGrow: 1, height: 6, borderRadius: 3 }}
-                                                />
-                                                <Typography variant="caption">{project.progress || 0}%</Typography>
-                                            </Box>
-                                        </Box>
-                                    ))}
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Emergency Alerts */}
-                        <Grid size={{ xs: 12, md: 4 }}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        <Warning sx={{ mr: 1, verticalAlign: 'middle' }} />
-                                        Emergency Alerts
-                                    </Typography>
-                                    
-                                    {emergencyAlerts.map(alert => (
-                                        <Alert 
-                                            key={alert.id} 
-                                            severity={alert.severity} 
-                                            sx={{ mb: 1 }}
-                                            action={
-                                                <Button size="small">View</Button>
-                                            }
-                                        >
-                                            <Typography variant="body2" fontWeight="bold">
-                                                {alert.title}
-                                            </Typography>
-                                            <Typography variant="caption">
-                                                {alert.description}
-                                            </Typography>
-                                        </Alert>
-                                    ))}
-                                    
-                                    <Button 
-                                        fullWidth 
-                                        variant="outlined" 
-                                        startIcon={<Add />}
-                                        onClick={() => setEmergencyDialog(true)}
-                                        sx={{ mt: 1 }}
-                                    >
-                                        Create Alert
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    </Grid>
-                )}
-
-                {/* Citizens & Services Tab */}
-                {tabValue === 1 && (
-                    <Grid container spacing={3}>
-                        {/* Citizen Complaints Management */}
-                        <Grid size={{ xs: 12, md: 8 }}>
-                            <Card>
-                                <CardContent>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                        <Typography variant="h6">
-                                            <People sx={{ mr: 1, verticalAlign: 'middle' }} />
-                                            Citizen Complaints & Grievances
-                                        </Typography>
-                                        <Button variant="contained" startIcon={<Add />} onClick={() => setNewComplaintDialog(true)}>
-                                            Add Complaint
-                                        </Button>
-                                    </Box>
-                                    
-                                    <TableContainer>
-                                        <Table>
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell>Title</TableCell>
-                                                    <TableCell>Type</TableCell>
-                                                    <TableCell>Citizen</TableCell>
-                                                    <TableCell>Ward</TableCell>
-                                                    <TableCell>Priority</TableCell>
-                                                    <TableCell>Status</TableCell>
-                                                    <TableCell>Actions</TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {citizenComplaints.length === 0 ? (
-                                                    <TableRow>
-                                                        <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                                                            <Typography variant="body1" color="textSecondary">
-                                                                No municipal complaints found. 
-                                                                {/* Add a button to create test data */}
-                                                                <Button 
-                                                                    variant="outlined" 
-                                                                    onClick={() => setNewComplaintDialog(true)}
-                                                                    sx={{ ml: 2 }}
-                                                                >
-                                                                    Add First Complaint
-                                                                </Button>
-                                                            </Typography>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ) : (
-                                                    citizenComplaints.map(complaint => (
-                                                        <TableRow key={complaint.id}>
-                                                            <TableCell>{complaint.title}</TableCell>
-                                                            <TableCell>
-                                                                <Chip 
-                                                                    label={complaint.type} 
-                                                                    size="small"
-                                                                    icon={
-                                                                        complaint.type === 'streetlight' ? <ElectricalServices /> :
-                                                                        complaint.type === 'pothole' ? <Construction /> :
-                                                                        complaint.type === 'garbage' ? <LocalShipping /> :
-                                                                        complaint.type === 'drainage' ? <Water /> :
-                                                                        complaint.type === 'electrical' ? <ElectricalServices /> :
-                                                                        complaint.type === 'plumbing' ? <Build /> :
-                                                                        complaint.type === 'cleaning' ? <LocalShipping /> :
-                                                                        <Engineering />
-                                                                    }
-                                                                />
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Box>
-                                                                    <Typography variant="body2">{complaint.citizen}</Typography>
-                                                                    <Typography variant="caption" color="textSecondary">
-                                                                        <Phone sx={{ fontSize: 12, mr: 0.5 }} />
-                                                                        {complaint.phone}
-                                                                    </Typography>
-                                                                </Box>
-                                                            </TableCell>
-                                                            <TableCell>{complaint.ward}</TableCell>
-                                                            <TableCell>
-                                                                <Chip
-                                                                    label={complaint.priority}
-                                                                    color={getPriorityColor(complaint.priority)}
-                                                                    size="small"
-                                                                />
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Chip
-                                                                    label={complaint.status.replace('_', ' ')}
-                                                                    color={getStatusColor(complaint.status)}
-                                                                    size="small"
-                                                                />
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Box sx={{ display: 'flex', gap: 1 }}>
-                                                                    <Button size="small" startIcon={<Visibility />}>View</Button>
-                                                                    <Button size="small" startIcon={<Edit />}>Edit</Button>
-                                                                </Box>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Service Requests & Citizen Satisfaction */}
-                        <Grid size={{ xs: 12, md: 4 }}>
-                            <Card sx={{ mb: 2 }}>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        <Build sx={{ mr: 1, verticalAlign: 'middle' }} />
-                                        Service Requests
-                                    </Typography>
-                                    
-                                    {serviceRequests.map(request => (
-                                        <Box key={request.id} sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                                            <Typography variant="body2" fontWeight="bold">{request.title}</Typography>
-                                            <Typography variant="caption" color="textSecondary">
-                                                {request.applicant} • {request.ward}
-                                            </Typography>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-                                                <Chip
-                                                    label={request.status.replace('_', ' ')}
-                                                    color={getStatusColor(request.status)}
-                                                    size="small"
-                                                />
-                                                {request.fee > 0 && (
-                                                    <Typography variant="caption" color="primary">
-                                                        ₹{request.fee}
-                                                    </Typography>
-                                                )}
-                                            </Box>
-                                        </Box>
-                                    ))}
-                                </CardContent>
-                            </Card>
-
-                            {/* Citizen Satisfaction */}
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        <TrendingUp sx={{ mr: 1, verticalAlign: 'middle' }} />
-                                        Citizen Satisfaction
-                                    </Typography>
-                                    
-                                    <Box sx={{ mb: 2 }}>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                            <Typography variant="body2">Overall Rating</Typography>
-                                            <Typography variant="body2" color="success.main">4.2/5</Typography>
-                                        </Box>
-                                        <LinearProgress variant="determinate" value={84} color="success" sx={{ height: 8, borderRadius: 4 }} />
-                                    </Box>
-                                    
-                                    <Box sx={{ mb: 2 }}>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                            <Typography variant="body2">Response Time</Typography>
-                                            <Typography variant="body2" color="warning.main">3.8/5</Typography>
-                                        </Box>
-                                        <LinearProgress variant="determinate" value={76} color="warning" sx={{ height: 8, borderRadius: 4 }} />
-                                    </Box>
-                                    
-                                    <Box>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                            <Typography variant="body2">Service Quality</Typography>
-                                            <Typography variant="body2" color="success.main">4.5/5</Typography>
-                                        </Box>
-                                        <LinearProgress variant="determinate" value={90} color="success" sx={{ height: 8, borderRadius: 4 }} />
-                                    </Box>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    </Grid>
-                )}
-
-                {/* Infrastructure & Utility Monitoring Tab */}
-                {tabValue === 2 && (
-                    <Grid container spacing={3}>
-                        {/* Water Supply Management */}
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        <Water sx={{ mr: 1, verticalAlign: 'middle' }} />
-                                        Water Supply Management
-                                    </Typography>
-                                    
-                                    <Grid container spacing={2}>
-                                        <Grid size={6}>
-                                            <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'primary.50', borderRadius: 1 }}>
-                                                <Typography variant="h4" color="primary">{infrastructureStatus.waterSupply?.dailySupply || 0}</Typography>
-                                                <Typography variant="caption">Liters/Day (000s)</Typography>
-                                            </Box>
-                                        </Grid>
-                                        <Grid size={6}>
-                                            <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'success.50', borderRadius: 1 }}>
-                                                <Typography variant="h4" color="success.main">{infrastructureStatus.waterSupply?.avgPressure || 0}</Typography>
-                                                <Typography variant="caption">Avg Pressure (PSI)</Typography>
-                                            </Box>
-                                        </Grid>
-                                    </Grid>
-                                    
-                                    <Divider sx={{ my: 2 }} />
-                                    
-                                    <Typography variant="body2" gutterBottom>Supply Status by Area</Typography>
-                                    <Box sx={{ mb: 1 }}>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <Typography variant="caption">Operational</Typography>
-                                            <Typography variant="caption">{infrastructureStatus.waterSupply?.operational}%</Typography>
-                                        </Box>
-                                        <LinearProgress variant="determinate" value={infrastructureStatus.waterSupply?.operational || 0} color="success" />
-                                    </Box>
-                                    
-                                    <Box sx={{ mb: 1 }}>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <Typography variant="caption">Under Maintenance</Typography>
-                                            <Typography variant="caption">{infrastructureStatus.waterSupply?.maintenance}%</Typography>
-                                        </Box>
-                                        <LinearProgress variant="determinate" value={infrastructureStatus.waterSupply?.maintenance || 0} color="warning" />
-                                    </Box>
-                                    
-                                    <Box>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <Typography variant="caption">Outage</Typography>
-                                            <Typography variant="caption">{infrastructureStatus.waterSupply?.outage}%</Typography>
-                                        </Box>
-                                        <LinearProgress variant="determinate" value={infrastructureStatus.waterSupply?.outage || 0} color="error" />
-                                    </Box>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Waste Management */}
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        <LocalShipping sx={{ mr: 1, verticalAlign: 'middle' }} />
-                                        Waste Management
-                                    </Typography>
-                                    
-                                    <Grid container spacing={2}>
-                                        <Grid size={4}>
-                                            <Box sx={{ textAlign: 'center', p: 1, bgcolor: 'success.50', borderRadius: 1 }}>
-                                                <Typography variant="h5" color="success.main">{infrastructureStatus.wasteManagement?.routes_covered || 0}</Typography>
-                                                <Typography variant="caption">Routes Covered</Typography>
-                                            </Box>
-                                        </Grid>
-                                        <Grid size={4}>
-                                            <Box sx={{ textAlign: 'center', p: 1, bgcolor: 'warning.50', borderRadius: 1 }}>
-                                                <Typography variant="h5" color="warning.main">{infrastructureStatus.wasteManagement?.routes_pending || 0}</Typography>
-                                                <Typography variant="caption">Pending</Typography>
-                                            </Box>
-                                        </Grid>
-                                        <Grid size={4}>
-                                            <Box sx={{ textAlign: 'center', p: 1, bgcolor: 'info.50', borderRadius: 1 }}>
-                                                <Typography variant="h5" color="info.main">{infrastructureStatus.wasteManagement?.recycling_rate || 0}%</Typography>
-                                                <Typography variant="caption">Recycling</Typography>
-                                            </Box>
-                                        </Grid>
-                                    </Grid>
-                                    
-                                    <Divider sx={{ my: 2 }} />
-                                    
-                                    <Typography variant="body2" gutterBottom>Collection Schedule</Typography>
-                                    <List dense>
-                                        <ListItem>
-                                            <ListItemText primary="Ward 1-2" secondary="Monday, Wednesday, Friday" />
-                                            <Chip label="On Track" color="success" size="small" />
-                                        </ListItem>
-                                        <ListItem>
-                                            <ListItemText primary="Ward 3-4" secondary="Tuesday, Thursday, Saturday" />
-                                            <Chip label="Delayed" color="warning" size="small" />
-                                        </ListItem>
-                                    </List>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Street Lights & Roads */}
-                        <Grid size={12}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        <ElectricalServices sx={{ mr: 1, verticalAlign: 'middle' }} />
-                                        Street Lights & Road Infrastructure
-                                    </Typography>
-                                    
-                                    <Grid container spacing={3}>
-                                        <Grid size={{ xs: 12, md: 6 }}>
-                                            <Typography variant="subtitle2" gutterBottom>Street Lighting Status</Typography>
-                                            <Grid container spacing={1}>
-                                                <Grid size={4}>
-                                                    <Box sx={{ textAlign: 'center', p: 1, bgcolor: 'success.50', borderRadius: 1 }}>
-                                                        <Typography variant="h6" color="success.main">{infrastructureStatus.streetLights?.working || 0}</Typography>
-                                                        <Typography variant="caption">Working</Typography>
-                                                    </Box>
-                                                </Grid>
-                                                <Grid size={4}>
-                                                    <Box sx={{ textAlign: 'center', p: 1, bgcolor: 'error.50', borderRadius: 1 }}>
-                                                        <Typography variant="h6" color="error.main">{infrastructureStatus.streetLights?.faulty || 0}</Typography>
-                                                        <Typography variant="caption">Faulty</Typography>
-                                                    </Box>
-                                                </Grid>
-                                                <Grid size={4}>
-                                                    <Box sx={{ textAlign: 'center', p: 1, bgcolor: 'warning.50', borderRadius: 1 }}>
-                                                        <Typography variant="h6" color="warning.main">{infrastructureStatus.streetLights?.maintenance || 0}</Typography>
-                                                        <Typography variant="caption">Maintenance</Typography>
-                                                    </Box>
-                                                </Grid>
-                                            </Grid>
-                                        </Grid>
-                                        
-                                        <Grid size={{ xs: 12, md: 6 }}>
-                                            <Typography variant="subtitle2" gutterBottom>Road Conditions ({infrastructureStatus.roads?.total_km || 0} km total)</Typography>
-                                            <Box sx={{ mb: 1 }}>
-                                                <Typography variant="caption">Good Condition: {infrastructureStatus.roads?.good_condition}%</Typography>
-                                                <LinearProgress variant="determinate" value={infrastructureStatus.roads?.good_condition || 0} color="success" />
-                                            </Box>
-                                            <Box sx={{ mb: 1 }}>
-                                                <Typography variant="caption">Needs Repair: {infrastructureStatus.roads?.needs_repair}%</Typography>
-                                                <LinearProgress variant="determinate" value={infrastructureStatus.roads?.needs_repair || 0} color="warning" />
-                                            </Box>
-                                            <Box>
-                                                <Typography variant="caption">Under Construction: {infrastructureStatus.roads?.under_construction}%</Typography>
-                                                <LinearProgress variant="determinate" value={infrastructureStatus.roads?.under_construction || 0} color="info" />
-                                            </Box>
-                                        </Grid>
-                                    </Grid>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    </Grid>
-                )}
-
-                {/* Staff & Department Management Tab */}
-                {tabValue === 3 && (
-                    <Grid container spacing={3}>
-                        <Grid size={12}>
-                            <Card>
-                                <CardContent>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                        <Typography variant="h6">
-                                            <Group sx={{ mr: 1, verticalAlign: 'middle' }} />
-                                            Municipal Staff Management
-                                        </Typography>
-                                        <Button variant="contained" startIcon={<Add />} onClick={() => setAddStaffDialog(true)}>
-                                            Add Staff Member
-                                        </Button>
-                                    </Box>
-                                    
-                                    <TableContainer>
-                                        <Table>
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell>Staff Member</TableCell>
-                                                    <TableCell>Role</TableCell>
-                                                    <TableCell>Coverage Area</TableCell>
-                                                    <TableCell>Status</TableCell>
-                                                    <TableCell>Attendance</TableCell>
-                                                    <TableCell>Tasks Completed</TableCell>
-                                                    <TableCell>Contact</TableCell>
-                                                    <TableCell>Actions</TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {staffData.map(staff => (
-                                                    <TableRow key={staff.id}>
-                                                        <TableCell>
-                                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                                <Avatar sx={{ mr: 2, bgcolor: theme.primary }}>
-                                                                    <Person />
-                                                                </Avatar>
-                                                                <Typography variant="body2">{staff.name}</Typography>
-                                                            </Box>
-                                                        </TableCell>
-                                                        <TableCell>{staff.role}</TableCell>
-                                                        <TableCell>{staff.ward}</TableCell>
-                                                        <TableCell>
-                                                            <Chip
-                                                                label={staff.status.replace('_', ' ')}
-                                                                color={getStatusColor(staff.status)}
-                                                                size="small"
-                                                            />
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                                <LinearProgress 
-                                                                    variant="determinate" 
-                                                                    value={staff.attendance || 0} 
-                                                                    sx={{ width: 60, height: 6 }}
-                                                                />
-                                                                <Typography variant="caption">{staff.attendance || 0}%</Typography>
-                                                            </Box>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Chip label={staff.tasks_completed} color="info" size="small" />
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Typography variant="caption">
-                                                                <Phone sx={{ fontSize: 12, mr: 0.5 }} />
-                                                                {staff.phone}
-                                                            </Typography>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Button 
-                                                                size="small" 
-                                                                onClick={() => openTaskAssignDialog(staff)}
-                                                            >
-                                                                Assign Task
-                                                            </Button>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    </Grid>
-                )}
-
-                {/* Finance & Revenue Tab */}
-                {tabValue === 4 && (
-                    <Grid container spacing={3}>
-                        {/* Revenue Overview */}
-                        <Grid size={{ xs: 12, md: 8 }}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        <AttachMoney sx={{ mr: 1, verticalAlign: 'middle' }} />
-                                        Monthly Revenue Trend
-                                    </Typography>
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <AreaChart data={financeData.monthlyRevenue}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="month" />
-                                            <YAxis />
-                                            <Tooltip formatter={(value) => `₹${(value/100000).toFixed(1)}L`} />
-                                            <Area type="monotone" dataKey="property" stackId="1" stroke="#8884d8" fill="#8884d8" name="Property Tax" />
-                                            <Area type="monotone" dataKey="water" stackId="1" stroke="#82ca9d" fill="#82ca9d" name="Water Bills" />
-                                            <Area type="monotone" dataKey="other" stackId="1" stroke="#ffc658" fill="#ffc658" name="Other" />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Collection Status */}
-                        <Grid size={{ xs: 12, md: 4 }}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        <Receipt sx={{ mr: 1, verticalAlign: 'middle' }} />
-                                        Collection Status
-                                    </Typography>
-                                    
-                                    <Box sx={{ mb: 3 }}>
-                                        <Typography variant="body2" gutterBottom>Property Tax Collection</Typography>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                            <Typography variant="caption">₹{(financeData.propertyTax?.collected / 10000000).toFixed(1)}Cr / ₹{(financeData.propertyTax?.target / 10000000).toFixed(1)}Cr</Typography>
-                                            <Typography variant="caption" color="primary">{financeData.propertyTax?.collection_rate}%</Typography>
-                                        </Box>
-                                        <LinearProgress 
-                                            variant="determinate" 
-                                            value={financeData.propertyTax?.collection_rate || 0} 
-                                            sx={{ height: 8, borderRadius: 4 }}
-                                        />
-                                    </Box>
-                                    
-                                    <Box sx={{ mb: 3 }}>
-                                        <Typography variant="body2" gutterBottom>Water Bills Collection</Typography>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                            <Typography variant="caption">₹{(financeData.waterBills?.collected / 1000000).toFixed(1)}L / ₹{(financeData.waterBills?.target / 1000000).toFixed(1)}L</Typography>
-                                            <Typography variant="caption" color="success.main">{financeData.waterBills?.collection_rate}%</Typography>
-                                        </Box>
-                                        <LinearProgress 
-                                            variant="determinate" 
-                                            value={financeData.waterBills?.collection_rate || 0} 
-                                            sx={{ height: 8, borderRadius: 4 }}
-                                            color="success"
-                                        />
-                                    </Box>
-                                    
-                                    <Divider sx={{ my: 2 }} />
-                                    
-                                    <Typography variant="body2" gutterBottom>Monthly Expenses</Typography>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                        <Typography variant="caption">Salaries</Typography>
-                                        <Typography variant="caption">₹{(financeData.expenses?.salaries / 1000000).toFixed(1)}L</Typography>
-                                    </Box>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                        <Typography variant="caption">Maintenance</Typography>
-                                        <Typography variant="caption">₹{(financeData.expenses?.maintenance / 1000000).toFixed(1)}L</Typography>
-                                    </Box>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                        <Typography variant="caption">Development</Typography>
-                                        <Typography variant="caption">₹{(financeData.expenses?.development / 1000000).toFixed(1)}L</Typography>
-                                    </Box>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <Typography variant="caption">Utilities</Typography>
-                                        <Typography variant="caption">₹{(financeData.expenses?.utilities / 1000000).toFixed(1)}L</Typography>
-                                    </Box>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    </Grid>
-                )}
-
-                {/* Projects & Development Tab */}
-                {tabValue === 5 && (
-                    <Grid container spacing={3}>
-                        <Grid size={12}>
-                            <Card>
-                                <CardContent>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                        <Typography variant="h6">
-                                            <Engineering sx={{ mr: 1, verticalAlign: 'middle' }} />
-                                            Municipal Projects & Development
-                                        </Typography>
-                                        <Button variant="contained" startIcon={<Add />}>
-                                            New Project
-                                        </Button>
-                                    </Box>
-                                    
-                                    {projects.map(project => (
-                                        <Accordion key={project.id}>
-                                            <AccordionSummary expandIcon={<ExpandMore />}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 2 }}>
-                                                    <Box sx={{ flexGrow: 1 }}>
-                                                        <Typography variant="subtitle1">{project.name}</Typography>
-                                                        <Typography variant="caption" color="textSecondary">
-                                                            {project.ward} • {project.contractor}
-                                                        </Typography>
-                                                    </Box>
-                                                    <Box sx={{ minWidth: 100 }}>
-                                                        <LinearProgress 
-                                                            variant="determinate" 
-                                                            value={project.progress || 0} 
-                                                            sx={{ mb: 0.5 }}
-                                                        />
-                                                        <Typography variant="caption">{project.progress || 0}% Complete</Typography>
-                                                    </Box>
-                                                    <Chip
-                                                        label={project.status.replace('_', ' ')}
-                                                        color={getStatusColor(project.status)}
-                                                        size="small"
-                                                    />
-                                                </Box>
-                                            </AccordionSummary>
-                                            <AccordionDetails>
-                                                <Grid container spacing={3}>
-                                                    <Grid size={{ xs: 12, md: 6 }}>
-                                                        <Typography variant="body2" gutterBottom><strong>Budget Details</strong></Typography>
-                                                        <Box sx={{ mb: 1 }}>
-                                                            <Typography variant="caption">Total Budget: ₹{(project.budget / 100000).toFixed(1)}L</Typography>
-                                                        </Box>
-                                                        <Box sx={{ mb: 1 }}>
-                                                            <Typography variant="caption">Amount Spent: ₹{(project.spent / 100000).toFixed(1)}L</Typography>
-                                                        </Box>
-                                                        <Box sx={{ mb: 2 }}>
-                                                            <Typography variant="caption">Remaining: ₹{((project.budget - project.spent) / 100000).toFixed(1)}L</Typography>
-                                                        </Box>
-                                                        <LinearProgress 
-                                                            variant="determinate" 
-                                                            value={((project.spent || 0) / (project.budget || 1)) * 100} 
-                                                            sx={{ height: 8, borderRadius: 4 }}
-                                                        />
-                                                    </Grid>
-                                                    <Grid size={{ xs: 12, md: 6 }}>
-                                                        <Typography variant="body2" gutterBottom><strong>Project Timeline</strong></Typography>
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                                            <CalendarToday sx={{ fontSize: 16, mr: 1 }} />
-                                                            <Typography variant="caption">Deadline: {project.deadline}</Typography>
-                                                        </Box>
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                                            <LocationOn sx={{ fontSize: 16, mr: 1 }} />
-                                                            <Typography variant="caption">Location: {project.ward}</Typography>
-                                                        </Box>
-                                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                            <Business sx={{ fontSize: 16, mr: 1 }} />
-                                                            <Typography variant="caption">Contractor: {project.contractor}</Typography>
-                                                        </Box>
-                                                    </Grid>
-                                                </Grid>
-                                                
-                                                <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
-                                                    <Button size="small" startIcon={<Visibility />}>View Details</Button>
-                                                    <Button size="small" startIcon={<Edit />}>Edit</Button>
-                                                    {project.status === 'in_progress' && (
-                                                        <Button size="small" startIcon={<Assessment />}>Performance Report</Button>
-                                                    )}
-                                                </Box>
-                                            </AccordionDetails>
-                                        </Accordion>
-                                    ))}
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    </Grid>
-                )}
-
-                {/* Emergency & Public Safety Tab */}
-                {tabValue === 6 && (
-                    <Grid container spacing={3}>
-                        {/* Emergency Alerts */}
-                        <Grid size={{ xs: 12, md: 8 }}>
-                            <Card>
-                                <CardContent>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                        <Typography variant="h6">
-                                            <Security sx={{ mr: 1, verticalAlign: 'middle' }} />
-                                            Emergency Management System
-                                        </Typography>
-                                        <Button variant="contained" color="error" startIcon={<Warning />} onClick={() => setEmergencyDialog(true)}>
-                                            Create Alert
-                                        </Button>
-                                    </Box>
-                                    
-                                    {emergencyAlerts.map(alert => (
-                                        <Card key={alert.id} sx={{ mb: 2, border: alert.severity === 'high' ? '2px solid #f44336' : '1px solid #ddd' }}>
-                                            <CardContent>
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
-                                                    <Typography variant="subtitle1" color={alert.severity === 'high' ? 'error' : 'textPrimary'}>
-                                                        {alert.title}
-                                                    </Typography>
-                                                    <Box sx={{ display: 'flex', gap: 1 }}>
-                                                        <Chip
-                                                            label={alert.severity}
-                                                            color={alert.severity === 'high' ? 'error' : 'warning'}
-                                                            size="small"
-                                                        />
-                                                        <Chip
-                                                            label={alert.status}
-                                                            color={alert.status === 'active' ? 'success' : 'default'}
-                                                            size="small"
-                                                        />
-                                                    </Box>
-                                                </Box>
-                                                
-                                                <Typography variant="body2" color="textSecondary" gutterBottom>
-                                                    {alert.description}
-                                                </Typography>
-                                                
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-                                                    <Typography variant="caption">
-                                                        <LocationOn sx={{ fontSize: 12, mr: 0.5 }} />
-                                                        {alert.ward} • Created: {new Date(alert.createdAt).toLocaleString()}
-                                                    </Typography>
-                                                    <Box>
-                                                        <Button size="small">Update</Button>
-                                                        <Button size="small" color="error">Resolve</Button>
-                                                    </Box>
-                                                </Box>
-                                            </CardContent>
-                                        </Card>
-                                    ))}
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Emergency Contacts & Actions */}
-                        <Grid size={{ xs: 12, md: 4 }}>
-                            <Card sx={{ mb: 2 }}>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        <Phone sx={{ mr: 1, verticalAlign: 'middle' }} />
-                                        Emergency Contacts
-                                    </Typography>
-                                    
-                                    <List dense>
-                                        <ListItem>
-                                            <ListItemAvatar>
-                                                <Avatar sx={{ bgcolor: 'error.main' }}>
-                                                    <Security />
-                                                </Avatar>
-                                            </ListItemAvatar>
-                                            <ListItemText 
-                                                primary="Police Control Room" 
-                                                secondary="+91-100 | +91-9876543200"
-                                            />
-                                        </ListItem>
-                                        <ListItem>
-                                            <ListItemAvatar>
-                                                <Avatar sx={{ bgcolor: 'warning.main' }}>
-                                                    <Build />
-                                                </Avatar>
-                                            </ListItemAvatar>
-                                            <ListItemText 
-                                                primary="Fire Department" 
-                                                secondary="+91-101 | +91-9876543201"
-                                            />
-                                        </ListItem>
-                                        <ListItem>
-                                            <ListItemAvatar>
-                                                <Avatar sx={{ bgcolor: 'info.main' }}>
-                                                    <Water />
-                                                </Avatar>
-                                            </ListItemAvatar>
-                                            <ListItemText 
-                                                primary="Water Emergency" 
-                                                secondary="+91-9876543202"
-                                            />
-                                        </ListItem>
-                                        <ListItem>
-                                            <ListItemAvatar>
-                                                <Avatar sx={{ bgcolor: 'success.main' }}>
-                                                    <LocationCity />
-                                                </Avatar>
-                                            </ListItemAvatar>
-                                            <ListItemText 
-                                                primary="District Admin" 
-                                                secondary="+91-9876543203"
-                                            />
-                                        </ListItem>
-                                    </List>
-                                </CardContent>
-                            </Card>
-
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        Quick Actions
-                                    </Typography>
-                                    
-                                    <Button fullWidth variant="outlined" color="error" sx={{ mb: 1 }}>
-                                        <Warning sx={{ mr: 1 }} />
-                                        Disaster Alert
-                                    </Button>
-                                    <Button fullWidth variant="outlined" color="warning" sx={{ mb: 1 }}>
-                                        <Build sx={{ mr: 1 }} />
-                                        Service Disruption
-                                    </Button>
-                                    <Button fullWidth variant="outlined" color="info">
-                                        <Notifications sx={{ mr: 1 }} />
-                                        Public Announcement
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    </Grid>
-                )}
-
-                {/* Reports & Analytics Tab */}
-                {tabValue === 7 && (
-                    <Grid container spacing={3}>
-                        {/* Ward Performance */}
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        Ward-wise Performance Report
-                                    </Typography>
-                                    
-                                    <TableContainer>
-                                        <Table size="small">
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell>Ward</TableCell>
-                                                    <TableCell>Complaints</TableCell>
-                                                    <TableCell>Resolved</TableCell>
-                                                    <TableCell>Response Time</TableCell>
-                                                    <TableCell>Rating</TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                <TableRow>
-                                                    <TableCell>Ward 1</TableCell>
-                                                    <TableCell>45</TableCell>
-                                                    <TableCell>42</TableCell>
-                                                    <TableCell>2.3 hrs</TableCell>
-                                                    <TableCell><Chip label="4.2" color="success" size="small" /></TableCell>
-                                                </TableRow>
-                                                <TableRow>
-                                                    <TableCell>Ward 2</TableCell>
-                                                    <TableCell>52</TableCell>
-                                                    <TableCell>48</TableCell>
-                                                    <TableCell>3.1 hrs</TableCell>
-                                                    <TableCell><Chip label="3.8" color="warning" size="small" /></TableCell>
-                                                </TableRow>
-                                                <TableRow>
-                                                    <TableCell>Ward 3</TableCell>
-                                                    <TableCell>38</TableCell>
-                                                    <TableCell>36</TableCell>
-                                                    <TableCell>1.9 hrs</TableCell>
-                                                    <TableCell><Chip label="4.5" color="success" size="small" /></TableCell>
-                                                </TableRow>
-                                                <TableRow>
-                                                    <TableCell>Ward 4</TableCell>
-                                                    <TableCell>41</TableCell>
-                                                    <TableCell>35</TableCell>
-                                                    <TableCell>4.2 hrs</TableCell>
-                                                    <TableCell><Chip label="3.2" color="error" size="small" /></TableCell>
-                                                </TableRow>
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Service Delivery KPIs */}
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        Service Delivery KPIs
-                                    </Typography>
-                                    
-                                    <ResponsiveContainer width="100%" height={250}>
-                                        <BarChart data={[
-                                            { service: 'Water', target: 95, actual: 88 },
-                                            { service: 'Sanitation', target: 90, actual: 92 },
-                                            { service: 'Roads', target: 85, actual: 78 },
-                                            { service: 'Electricity', target: 98, actual: 96 }
-                                        ]}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="service" />
-                                            <YAxis />
-                                            <Tooltip />
-                                            <Bar dataKey="target" fill="#e0e0e0" name="Target %" />
-                                            <Bar dataKey="actual" fill="#4caf50" name="Actual %" />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Monthly Review */}
-                        <Grid size={12}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        Monthly Municipal Services Review
-                                    </Typography>
-                                    
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <LineChart data={financeData.monthlyRevenue}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="month" />
-                                            <YAxis />
-                                            <Tooltip />
-                                            <Line type="monotone" dataKey="property" stroke="#8884d8" strokeWidth={2} name="Service Requests" />
-                                            <Line type="monotone" dataKey="water" stroke="#82ca9d" strokeWidth={2} name="Completed Tasks" />
-                                        </LineChart>
-                                    </ResponsiveContainer>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    </Grid>
-                )}
-
-                {/* Communication & Transparency Tab */}
-                {tabValue === 8 && (
-                    <Grid container spacing={3}>
-                        {/* Notifications & Announcements */}
-                        <Grid size={{ xs: 12, md: 8 }}>
-                            <Card>
-                                <CardContent>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                        <Typography variant="h6">
-                                            <Campaign sx={{ mr: 1, verticalAlign: 'middle' }} />
-                                            Public Communications
-                                        </Typography>
-                                        <Button variant="contained" startIcon={<Add />} onClick={() => setAnnouncementDialog(true)}>
-                                            New Announcement
-                                        </Button>
-                                    </Box>
-                                    
-                                    <Card sx={{ mb: 2, bgcolor: 'primary.50' }}>
-                                        <CardContent>
-                                            <Typography variant="subtitle1" color="primary">
-                                                Water Supply Maintenance Notice
-                                            </Typography>
-                                            <Typography variant="body2" gutterBottom>
-                                                Scheduled maintenance work on main water supply line. Water supply will be disrupted in Ward 2 from 6 AM to 2 PM tomorrow.
-                                            </Typography>
-                                            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                                                <Chip label="Active" color="success" size="small" />
-                                                <Chip label="Ward 2" size="small" />
-                                                <Chip label="Water" size="small" />
-                                            </Box>
-                                        </CardContent>
-                                    </Card>
-                                    
-                                    <Card sx={{ mb: 2, bgcolor: 'warning.50' }}>
-                                        <CardContent>
-                                            <Typography variant="subtitle1" color="warning.main">
-                                                Road Closure - Main Street
-                                            </Typography>
-                                            <Typography variant="body2" gutterBottom>
-                                                Emergency pipe repair work in progress. Main Street will be partially closed from 2 PM to 6 PM today. Alternative routes available via Park Road.
-                                            </Typography>
-                                            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                                                <Chip label="Urgent" color="warning" size="small" />
-                                                <Chip label="Ward 1" size="small" />
-                                                <Chip label="Roads" size="small" />
-                                            </Box>
-                                        </CardContent>
-                                    </Card>
-                                    
-                                    <Card sx={{ mb: 2, bgcolor: 'success.50' }}>
-                                        <CardContent>
-                                            <Typography variant="subtitle1" color="success.main">
-                                                Property Tax Deadline Reminder
-                                            </Typography>
-                                            <Typography variant="body2" gutterBottom>
-                                                Last date for property tax payment without penalty is January 31st, 2025. Pay online or visit municipal office during working hours.
-                                            </Typography>
-                                            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                                                <Chip label="Info" color="info" size="small" />
-                                                <Chip label="All Wards" size="small" />
-                                                <Chip label="Tax" size="small" />
-                                            </Box>
-                                        </CardContent>
-                                    </Card>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Quick Communication Tools */}
-                        <Grid size={{ xs: 12, md: 4 }}>
-                            <Card sx={{ mb: 2 }}>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        <Email sx={{ mr: 1, verticalAlign: 'middle' }} />
-                                        Quick Communication
-                                    </Typography>
-                                    
-                                    <Button fullWidth variant="outlined" sx={{ mb: 1 }}>
-                                        <Notifications sx={{ mr: 1 }} />
-                                        Send SMS Alert
-                                    </Button>
-                                    <Button fullWidth variant="outlined" sx={{ mb: 1 }}>
-                                        <Email sx={{ mr: 1 }} />
-                                        Email Newsletter
-                                    </Button>
-                                    <Button fullWidth variant="outlined" sx={{ mb: 1 }}>
-                                        <Campaign sx={{ mr: 1 }} />
-                                        WhatsApp Broadcast
-                                    </Button>
-                                    <Button fullWidth variant="outlined">
-                                        <LocationCity sx={{ mr: 1 }} />
-                                        Connect District Admin
-                                    </Button>
-                                </CardContent>
-                            </Card>
-
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" gutterBottom>
-                                        Transparency Portal
-                                    </Typography>
-                                    
-                                    <List dense>
-                                        <ListItem>
-                                            <ListItemText primary="Budget Documents" secondary="2024-25 Municipal Budget" />
-                                            <Button size="small">Publish</Button>
-                                        </ListItem>
-                                        <ListItem>
-                                            <ListItemText primary="Tender Notices" secondary="3 Active Tenders" />
-                                            <Button size="small">View</Button>
-                                        </ListItem>
-                                        <ListItem>
-                                            <ListItemText primary="Project Updates" secondary="5 Ongoing Projects" />
-                                            <Button size="small">Update</Button>
-                                        </ListItem>
-                                        <ListItem>
-                                            <ListItemText primary="Meeting Minutes" secondary="Last Council Meeting" />
-                                            <Button size="small">Upload</Button>
-                                        </ListItem>
-                                    </List>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    </Grid>
-                )}
-            </Box>
-
-            {/* Dialogs */}
-            
-            {/* New Complaint Dialog */}
-            <Dialog open={newComplaintDialog} onClose={() => setNewComplaintDialog(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>Add New Citizen Complaint</DialogTitle>
-                <DialogContent>
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
-                        <Grid size={12}>
-                            <TextField fullWidth label="Complaint Title" />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <FormControl fullWidth>
-                                <InputLabel>Type</InputLabel>
-                                <Select label="Type">
-                                    <MenuItem value="water">Water Supply</MenuItem>
-                                    <MenuItem value="sanitation">Sanitation</MenuItem>
-                                    <MenuItem value="roads">Roads</MenuItem>
-                                    <MenuItem value="electricity">Electricity</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <FormControl fullWidth>
-                                <InputLabel>Priority</InputLabel>
-                                <Select label="Priority">
-                                    <MenuItem value="high">High</MenuItem>
-                                    <MenuItem value="medium">Medium</MenuItem>
-                                    <MenuItem value="low">Low</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid size={12}>
-                            <TextField fullWidth label="Citizen Name" />
-                        </Grid>
-                        <Grid size={12}>
-                            <TextField fullWidth label="Phone Number" />
-                        </Grid>
-                        <Grid size={12}>
-                            <TextField fullWidth multiline rows={3} label="Description" />
-                        </Grid>
-                    </Grid>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setNewComplaintDialog(false)}>Cancel</Button>
-                    <Button variant="contained">Add Complaint</Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* Task Assignment Dialog */}
-            <Dialog open={taskAssignDialog.open} onClose={() => setTaskAssignDialog({ open: false, staff: null })} maxWidth="md" fullWidth>
-                <DialogTitle>{t('Assign Task to')} {taskAssignDialog.staff?.name}</DialogTitle>
-                <DialogContent>
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
-                        {/* Assignment Type Selection */}
-                        <Grid size={12}>
-                            <FormControl fullWidth>
-                                <InputLabel>Assignment Type</InputLabel>
-                                <Select 
-                                    label="Assignment Type"
-                                    value={assignmentType}
-                                    onChange={(e) => setAssignmentType(e.target.value)}
-                                >
-                                    <MenuItem value="existing">Assign Existing Report</MenuItem>
-                                    <MenuItem value="new">Create New Task</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-
-                        {/* Existing Reports Selection */}
-                        {assignmentType === 'existing' && (
-                            <>
-                                <Grid size={12}>
-                                    <FormControl fullWidth required>
-                                        <InputLabel>Select Pending Report</InputLabel>
-                                        <Select 
-                                            label="Select Pending Report"
-                                            value={selectedReport}
-                                            onChange={(e) => setSelectedReport(e.target.value)}
-                                        >
-                                            {pendingReports.length > 0 ? (
-                                                pendingReports.map((report) => (
-                                                    <MenuItem key={report._id} value={report._id}>
-                                                        <Box>
-                                                            <Typography variant="body2" fontWeight="bold">
-                                                                {report.title}
-                                                            </Typography>
-                                                            <Typography variant="caption" color="text.secondary">
-                                                                {report.category} • {report.address} • Status: {report.status}
-                                                            </Typography>
-                                                        </Box>
-                                                    </MenuItem>
-                                                ))
-                                            ) : (
-                                                <MenuItem disabled>No pending reports available</MenuItem>
-                                            )}
-                                        </Select>
-                                    </FormControl>
-                                </Grid>
-                                
-                                {/* Show selected report details */}
-                                {selectedReport && (
-                                    <Grid size={12}>
-                                        <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                                            {(() => {
-                                                const report = pendingReports.find(r => r._id === selectedReport);
-                                                return report ? (
-                                                    <>
-                                                        <Typography variant="h6">{report.title}</Typography>
-                                                        <Typography variant="body2" sx={{ mb: 1 }}>
-                                                            <strong>Category:</strong> {report.category}
-                                                        </Typography>
-                                                        <Typography variant="body2" sx={{ mb: 1 }}>
-                                                            <strong>Address:</strong> {report.address}
-                                                        </Typography>
-                                                        {report.ward && (
-                                                            <Typography variant="body2" sx={{ mb: 1 }}>
-                                                                <strong>Ward:</strong> {report.ward}
-                                                            </Typography>
-                                                        )}
-                                                        <Typography variant="body2" sx={{ mb: 1 }}>
-                                                            <strong>Description:</strong> {report.description}
-                                                        </Typography>
-                                                        <Typography variant="body2" sx={{ mb: 1 }}>
-                                                            <strong>Priority:</strong> {report.priority}
-                                                        </Typography>
-                                                        <Typography variant="body2">
-                                                            <strong>Submitted:</strong> {new Date(report.createdAt).toLocaleDateString()}
-                                                        </Typography>
-                                                    </>
-                                                ) : null;
-                                            })()}
-                                        </Box>
-                                    </Grid>
-                                )}
-                            </>
-                        )}
-
-                        {/* New Task Creation */}
-                        {assignmentType === 'new' && (
-                            <>
-                                <Grid size={12}>
-                                    <TextField 
-                                        fullWidth 
-                                        label={t('Task Title')}
-                                        value={taskForm.title}
-                                        onChange={(e) => setTaskForm({...taskForm, title: e.target.value})}
-                                        required
-                                    />
-                                </Grid>
-                                <Grid size={12}>
-                                    <TextField 
-                                        fullWidth 
-                                        multiline 
-                                        rows={3} 
-                                        label={t('Task Description')}
-                                        value={taskForm.description}
-                                        onChange={(e) => setTaskForm({...taskForm, description: e.target.value})}
-                                        required
-                                    />
-                                </Grid>
-                                <Grid size={{ xs: 12, sm: 6 }}>
-                                    <FormControl fullWidth>
-                                        <InputLabel>{t('Priority')}</InputLabel>
-                                        <Select 
-                                            label={t('Priority')}
-                                            value={taskForm.priority}
-                                            onChange={(e) => setTaskForm({...taskForm, priority: e.target.value})}
-                                        >
-                                            <MenuItem value="high">{t('High')}</MenuItem>
-                                            <MenuItem value="medium">{t('Medium')}</MenuItem>
-                                            <MenuItem value="low">{t('Low')}</MenuItem>
-                                        </Select>
-                                    </FormControl>
-                                </Grid>
-                                <Grid size={{ xs: 12, sm: 6 }}>
-                                    <TextField 
-                                        fullWidth 
-                                        label={t('Deadline')} 
-                                        type="date" 
-                                        InputLabelProps={{ shrink: true }}
-                                        value={taskForm.deadline}
-                                        onChange={(e) => setTaskForm({...taskForm, deadline: e.target.value})}
-                                    />
-                                </Grid>
-                            </>
-                        )}
-                    </Grid>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => {
-                        setTaskAssignDialog({ open: false, staff: null });
-                        setTaskForm({ title: '', description: '', priority: 'medium', deadline: '' });
-                        setSelectedReport('');
-                        setAssignmentType('existing');
-                    }}>
-                        {t('Cancel')}
-                    </Button>
-                    <Button 
-                        variant="contained" 
-                        onClick={handleAssignTask}
-                        disabled={assignmentType === 'existing' ? !selectedReport : (!taskForm.title || !taskForm.description)}
-                    >
-                        {assignmentType === 'existing' ? 'Assign Report' : t('Assign Task')}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* Add Staff Dialog */}
-            <Dialog open={addStaffDialog} onClose={() => setAddStaffDialog(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>{t('addNewStaffMember')}</DialogTitle>
-                <DialogContent>
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField 
-                                fullWidth 
-                                label={t('full_name')}
-                                value={staffForm.name}
-                                onChange={(e) => setStaffForm({...staffForm, name: e.target.value})}
-                                required
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField 
-                                fullWidth 
-                                label={t('email')}
-                                type="email"
-                                value={staffForm.email}
-                                onChange={(e) => setStaffForm({...staffForm, email: e.target.value})}
-                                required
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField 
-                                fullWidth 
-                                label={t('phone')}
-                                value={staffForm.phone}
-                                onChange={(e) => setStaffForm({...staffForm, phone: e.target.value})}
-                                placeholder="Phone Number"
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <FormControl fullWidth required>
-                                <InputLabel>{t('role')}</InputLabel>
-                                <Select 
-                                    label={t('role')}
-                                    value={staffForm.role}
-                                    onChange={(e) => setStaffForm({...staffForm, role: e.target.value})}
-                                >
-                                    <MenuItem value="field_staff">{t('fieldStaff')}</MenuItem>
-                                    <MenuItem value="field_head">{t('fieldHead')}</MenuItem>
-                                    <MenuItem value="department_head">{t('departmentHead')}</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <FormControl fullWidth required>
-                                <InputLabel>Department</InputLabel>
-                                <Select 
-                                    label="Department"
-                                    value={staffForm.department}
-                                    onChange={(e) => setStaffForm({...staffForm, department: e.target.value})}
-                                >
-                                    <MenuItem value="Public Works">Public Works</MenuItem>
-                                    <MenuItem value="Water Department">Water Department</MenuItem>
-                                    <MenuItem value="Sanitation">Sanitation</MenuItem>
-                                    <MenuItem value="Road Maintenance">Road Maintenance</MenuItem>
-                                    <MenuItem value="Electricity">Electricity</MenuItem>
-                                    <MenuItem value="Health & Safety">Health & Safety</MenuItem>
-                                    <MenuItem value="Parks & Recreation">Parks & Recreation</MenuItem>
-                                    <MenuItem value="Traffic Management">Traffic Management</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField 
-                                fullWidth 
-                                label="Ward"
-                                value={staffForm.ward}
-                                onChange={(e) => setStaffForm({...staffForm, ward: e.target.value})}
-                            />
-                        </Grid>
-                    </Grid>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => {
-                        setAddStaffDialog(false);
-                        setStaffForm({ name: '', email: '', phone: '', role: 'field_staff', department: '', ward: '' });
-                    }}>
-                        {t('cancel')}
-                    </Button>
-                    <Button 
-                        variant="contained" 
-                        onClick={handleAddStaff}
-                        disabled={!staffForm.name || !staffForm.email || !staffForm.department}
-                    >
-                        {t('addStaffMember')}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* Emergency Alert Dialog */}
-            <Dialog open={emergencyDialog} onClose={() => setEmergencyDialog(false)} maxWidth="sm" fullWidth>
-                <DialogTitle sx={{ color: 'error.main' }}>
-                    <Warning sx={{ mr: 1, verticalAlign: 'middle' }} />
-                    Create Emergency Alert
-                </DialogTitle>
-                <DialogContent>
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
-                        <Grid size={12}>
-                            <TextField fullWidth label="Alert Title" />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <FormControl fullWidth>
-                                <InputLabel>Alert Type</InputLabel>
-                                <Select label="Alert Type">
-                                    <MenuItem value="water_outage">Water Outage</MenuItem>
-                                    <MenuItem value="road_closure">Road Closure</MenuItem>
-                                    <MenuItem value="disaster">Natural Disaster</MenuItem>
-                                    <MenuItem value="health">Health Emergency</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <FormControl fullWidth>
-                                <InputLabel>Severity</InputLabel>
-                                <Select label="Severity">
-                                    <MenuItem value="high">High</MenuItem>
-                                    <MenuItem value="medium">Medium</MenuItem>
-                                    <MenuItem value="low">Low</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid size={12}>
-                            <TextField fullWidth multiline rows={3} label="Alert Description" />
-                        </Grid>
-                        <Grid size={12}>
-                            <FormControlLabel
-                                control={<Switch />}
-                                label="Send SMS to all citizens"
-                            />
-                        </Grid>
-                        <Grid size={12}>
-                            <FormControlLabel
-                                control={<Switch />}
-                                label="Notify District Admin"
-                            />
-                        </Grid>
-                    </Grid>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setEmergencyDialog(false)}>Cancel</Button>
-                    <Button variant="contained" color="error">Create Alert</Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* Announcement Dialog */}
-            <Dialog open={announcementDialog} onClose={() => setAnnouncementDialog(false)} maxWidth="md" fullWidth>
-                <DialogTitle>Create Public Announcement</DialogTitle>
-                <DialogContent>
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
-                        <Grid size={{ xs: 12, sm: 8 }}>
-                            <TextField fullWidth label="Announcement Title" />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <FormControl fullWidth>
-                                <InputLabel>Category</InputLabel>
-                                <Select label="Category">
-                                    <MenuItem value="water">Water</MenuItem>
-                                    <MenuItem value="roads">Roads</MenuItem>
-                                    <MenuItem value="tax">Tax</MenuItem>
-                                    <MenuItem value="festival">Festival</MenuItem>
-                                    <MenuItem value="general">General</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid size={12}>
-                            <TextField fullWidth multiline rows={4} label="Announcement Content" />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <FormControl fullWidth>
-                                <InputLabel>Target Audience</InputLabel>
-                                <Select label="Target Audience">
-                                    <MenuItem value="all">All Wards</MenuItem>
-                                    <MenuItem value="ward1">Ward 1</MenuItem>
-                                    <MenuItem value="ward2">Ward 2</MenuItem>
-                                    <MenuItem value="ward3">Ward 3</MenuItem>
-                                    <MenuItem value="ward4">Ward 4</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <TextField fullWidth label="Valid Until" type="date" InputLabelProps={{ shrink: true }} />
-                        </Grid>
-                        <Grid size={12}>
-                            <FormControlLabel
-                                control={<Switch defaultChecked />}
-                                label="Publish on website"
-                            />
-                        </Grid>
-                        <Grid size={12}>
-                            <FormControlLabel
-                                control={<Switch />}
-                                label="Send SMS notification"
-                            />
-                        </Grid>
-                    </Grid>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setAnnouncementDialog(false)}>Cancel</Button>
-                    <Button variant="contained">Publish Announcement</Button>
-                </DialogActions>
-            </Dialog>
-        </Box>
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-green-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-orange-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Loading Municipal Dashboard</h2>
+          <p className="text-gray-600">Please wait...</p>
+        </div>
+      </div>
     );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-green-50 flex">
+      {/* Mobile Sidebar Overlay */}
+      {isMobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setIsMobileSidebarOpen(false)}
+        />
+      )}
+
+      {/* Enhanced Sidebar with Indian Theme */}
+      <div className={`
+        fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white shadow-xl transform transition-transform duration-300 ease-in-out border-r border-gray-200
+        ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        <div className="flex flex-col h-full">
+          {/* Sidebar Header with Indian Flag Theme */}
+          <div className="px-6 py-6 border-b border-gray-200 bg-white overflow-hidden">
+            {/* Indian Flag Border */}
+            <div className="h-1 bg-gradient-to-r from-orange-500 via-white to-green-600 mb-4"></div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-orange-600 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                  <Building className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold text-gray-900">Municipal Portal</h1>
+                  <p className="text-xs text-gray-600">Digital India</p>
+                </div>
+              </div>
+              <button
+                className="lg:hidden p-2 rounded-md text-gray-600 hover:bg-gray-100 transition-colors"
+                onClick={() => setIsMobileSidebarOpen(false)}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Indian Flag Border */}
+            <div className="h-1 bg-gradient-to-r from-orange-500 via-white to-green-600 mt-4"></div>
+          </div>
+
+          {/* Enhanced Navigation */}
+          <nav className="flex-1 px-4 py-6 overflow-y-auto">
+            <div className="space-y-2">
+              {sidebarItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setIsMobileSidebarOpen(false);
+                  }}
+                  className={`w-full group flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
+                    activeTab === item.id
+                      ? 'bg-gradient-to-r from-orange-500 to-green-500 text-white shadow-lg transform scale-105'
+                      : 'text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-green-50 hover:text-gray-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <item.icon className={`w-5 h-5 ${
+                      activeTab === item.id ? 'text-white' : item.color
+                    }`} />
+                    <span className="font-semibold">{item.label}</span>
+                  </div>
+                  {item.badge > 0 && (
+                    <span className={`inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none rounded-full ${
+                      activeTab === item.id
+                        ? 'bg-white/20 text-white'
+                        : 'bg-red-500 text-white'
+                    }`}>
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </nav>
+
+          {/* Enhanced Sidebar Footer */}
+          <div className="px-4 py-6 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50 overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-gray-400 to-blue-500 mb-4"></div>
+
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 rounded-xl transition-all duration-200 group"
+            >
+              <LogOut className="w-5 h-5 text-red-500 group-hover:text-red-600" />
+              <span>Logout</span>
+            </button>
+
+            <div className="h-1 bg-gradient-to-r from-gray-400 to-blue-500 mt-4"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-h-screen">
+        {/* Enhanced Header with Tricolor Theme */}
+        <header className="bg-white shadow-xl overflow-hidden">
+          {/* Top stripe */}
+          <div className="h-1 bg-gradient-to-r from-orange-500 via-white to-green-600"></div>
+
+          <div className="px-6 py-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                <button
+                  className="lg:hidden p-3 rounded-xl text-gray-700 hover:bg-white/50 transition-colors"
+                  onClick={() => setIsMobileSidebarOpen(true)}
+                >
+                  <Menu className="w-6 h-6" />
+                </button>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Building className="w-8 h-8 text-orange-600" />
+                    <div>
+                      <p className="text-lg font-semibold text-gray-800">
+                        Welcome, <span className="text-orange-700">{adminUser?.name || 'Municipal Admin'}</span>
+                      </p>
+                      <p className="text-sm text-gray-600">Managing Municipal Services</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Enhanced Stats Overview */}
+              <div className="hidden lg:flex items-center gap-8">
+                <div className="flex items-center gap-6">
+                  <div className="text-center p-3 bg-white/80 rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="h-1 bg-gradient-to-r from-orange-400 to-orange-600 mb-2"></div>
+                    <div className="text-2xl font-bold text-orange-600">{citizenComplaints.length}</div>
+                    <div className="text-xs text-gray-600 font-medium">Complaints</div>
+                  </div>
+                  <div className="w-px h-12 bg-gray-300"></div>
+                  <div className="text-center p-3 bg-white/80 rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="h-1 bg-gradient-to-r from-green-400 to-green-600 mb-2"></div>
+                    <div className="text-2xl font-bold text-green-600">{staffData.length}</div>
+                    <div className="text-xs text-gray-600 font-medium">Staff</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom stripe */}
+          <div className="h-1 bg-gradient-to-r from-orange-500 via-white to-green-600"></div>
+        </header>
+
+        {/* Main Content Area */}
+        <main className="flex-1 p-6 bg-gradient-to-br from-orange-50/30 via-white to-green-50/30 overflow-auto">
+          {activeTab === 'dashboard' && <DashboardOverview />}
+          {activeTab === 'complaints' && <ComplaintsManagement />}
+          {activeTab === 'staff' && <StaffManagement />}
+          {activeTab === 'infrastructure' && <InfrastructureSection />}
+          {activeTab === 'finance' && <FinanceSection />}
+          {activeTab === 'projects' && <ProjectsSection />}
+          {activeTab === 'emergency' && <EmergencySection />}
+          {activeTab === 'settings' && <SettingsSection />}
+        </main>
+      </div>
+    </div>
+  );
 };
 
 export default MunicipalDashboard;
