@@ -15,9 +15,99 @@ import {
   Calendar,
   Languages
 } from 'lucide-react';
+
+// Indian flag theme colors
+const COLORS = {
+  saffron: '#FF9933',
+  white: '#FFFFFF',
+  green: '#138808',
+  navy: '#000080',
+  chakraBlue: '#000080',
+  saffronLight: '#FFB366',
+  greenLight: '#26A65B',
+  border: '#DDDDDD'
+};
 import AshokaChakra from '../components/Common/AshokaChakra';
 import WorkCompletionForm from '../components/FieldAdmin/WorkCompletionForm';
 import '../components/Common/GoogleTranslateStyles.css';
+
+// Enhanced styled components for Indian flag theme
+const styles = {
+  container: {
+    position: 'relative',
+    minHeight: '100vh',
+    background: `linear-gradient(135deg, ${COLORS.white} 0%, ${COLORS.saffronLight}10 100%)`,
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: '4px',
+      background: `linear-gradient(to right, ${COLORS.saffron}, ${COLORS.white}, ${COLORS.green})`
+    }
+  },
+  header: {
+    position: 'relative',
+    padding: '1.5rem',
+    background: `linear-gradient(135deg, ${COLORS.saffron}20 0%, ${COLORS.white} 50%, ${COLORS.green}20 100%)`,
+    borderBottom: `2px solid ${COLORS.navy}`,
+    overflow: 'hidden',
+    '&::after': {
+      content: '""',
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: '2px',
+      background: COLORS.navy
+    }
+  },
+  statsCard: {
+    background: COLORS.white,
+    borderRadius: '12px',
+    padding: '1.5rem',
+    border: `1px solid ${COLORS.border}`,
+    transition: 'all 0.3s ease',
+    position: 'relative',
+    overflow: 'hidden',
+    '&:hover': {
+      transform: 'translateY(-5px)',
+      boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
+    },
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '4px',
+      height: '100%',
+      background: 'var(--card-accent-color)'
+    }
+  },
+  button: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.5rem 1rem',
+    borderRadius: '8px',
+    transition: 'all 0.3s ease',
+    '&:hover': {
+      transform: 'translateY(-2px)'
+    }
+  },
+  primaryButton: {
+    background: COLORS.navy,
+    color: COLORS.white,
+    '&:hover': {
+      background: `${COLORS.navy}e6`
+    }
+  },
+  tableHeader: {
+    background: `linear-gradient(135deg, ${COLORS.saffron}20 0%, ${COLORS.white} 100%)`,
+    borderBottom: `2px solid ${COLORS.border}`
+  }
+};
 
 const FieldAdminDashboard = () => {
   const navigate = useNavigate();
@@ -347,66 +437,206 @@ const FieldAdminDashboard = () => {
   const deptInfo = getDepartmentInfo(fieldAdmin.department);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Enhanced header stripe with Indian flag colors */}
-      <div className="h-2 bg-gradient-to-r from-orange-600 via-white via-blue-800 to-green-700 shadow-sm"></div>
+    <div style={styles.container}>
+      {/* Enhanced header with Indian flag colors */}
+      <div style={{
+        height: '4px',
+        background: `linear-gradient(to right, ${COLORS.saffron} 33%, ${COLORS.white} 33% 66%, ${COLORS.green} 66%)`,
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+      }}></div>
 
-      {/* Enhanced Google Translate Bar */}
-      <div className="bg-gradient-to-r from-white via-blue-50 to-white shadow-md border-b-2 border-orange-200 px-4 py-4">
+      {/* Enhanced Google Translate Bar with Indian theme */}
+      <div style={{
+        background: `linear-gradient(135deg, ${COLORS.white} 0%, ${COLORS.saffronLight}10 100%)`,
+        borderBottom: `2px solid ${COLORS.saffronLight}`,
+        padding: '1rem',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+      }}>
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-            <div className="p-2 bg-blue-100 rounded-full">
-              <Languages className="w-5 h-5 text-blue-600" />
+          <div className="flex items-center space-x-4">
+            <div style={{
+              padding: '0.5rem',
+              background: `${COLORS.navy}10`,
+              borderRadius: '50%',
+              border: `2px solid ${COLORS.navy}30`
+            }}>
+              <Languages className="w-5 h-5" style={{ color: COLORS.navy }} />
             </div>
-            <span className="text-sm font-semibold text-gray-800">Choose Language:</span>
+            <span style={{ 
+              color: COLORS.navy,
+              fontWeight: 600
+            }}>Choose Language:</span>
 
             <div className="relative">
-              <div className="flex items-center bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg px-4 py-2 space-x-2 shadow-md hover:shadow-lg transition-shadow">
-                <span className="text-sm">🌐</span>
-                <span className="text-sm font-medium">{translateLabel}</span>
-                <span className="text-xs opacity-90">▾</span>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                background: `linear-gradient(135deg, ${COLORS.navy} 0%, ${COLORS.chakraBlue} 100%)`,
+                color: COLORS.white,
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                gap: '0.5rem'
+              }}>
+                <span>🌐</span>
+                <span style={{ fontWeight: 500 }}>{translateLabel}</span>
+                <span style={{ opacity: 0.8 }}>▾</span>
               </div>
               <div id="google_translate_element_dashboard" className="absolute inset-0 opacity-0" aria-hidden="true"></div>
             </div>
           </div>
-          <div className="flex items-center space-x-3 text-xs text-gray-600">
-            <span className="bg-gradient-to-r from-orange-600 to-orange-700 text-white px-3 py-2 rounded-lg font-semibold shadow-sm">🇮🇳 Government of India</span>
-            <span className="text-gray-500">Digital India</span>
+          <div className="flex items-center space-x-4">
+            <div style={{
+              background: `linear-gradient(135deg, ${COLORS.saffron} 0%, ${COLORS.saffronLight} 100%)`,
+              color: COLORS.white,
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              fontWeight: 600,
+              boxShadow: '0 2px 8px rgba(255, 153, 51, 0.2)'
+            }}>
+              🇮🇳 Government of India
+            </div>
+            <div style={{
+              color: COLORS.navy,
+              fontSize: '0.875rem',
+              fontWeight: 500
+            }}>Digital India Initiative</div>
           </div>
         </div>
       </div>
 
-      {/* Enhanced Professional Header */}
-      <div className="bg-gradient-to-r from-white via-orange-50 to-white shadow-lg border-b-4 border-gradient-to-r from-orange-600 via-blue-600 to-green-600">
+      {/* Enhanced Professional Header with Indian theme */}
+      <div style={{
+        background: `linear-gradient(135deg, ${COLORS.white} 0%, ${COLORS.saffronLight}10 100%)`,
+        borderBottom: `4px solid ${COLORS.navy}`,
+        boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+      }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-8">
             <div className="flex items-center space-x-6">
               <div className="relative">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center shadow-lg ring-4 ring-white">
-                  <AshokaChakra size={24} className="text-white" />
+                <div style={{
+                  width: '64px',
+                  height: '64px',
+                  background: `linear-gradient(135deg, ${COLORS.navy} 0%, ${COLORS.chakraBlue} 100%)`,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 12px rgba(0,0,128,0.2)',
+                  border: `4px solid ${COLORS.white}`
+                }}>
+                  <AshokaChakra size={24} style={{ color: COLORS.white }} />
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-gradient-to-r from-orange-500 to-green-600 rounded-full ring-2 ring-white"></div>
+                <div style={{
+                  position: 'absolute',
+                  bottom: '-4px',
+                  right: '-4px',
+                  width: '20px',
+                  height: '20px',
+                  background: `linear-gradient(135deg, ${COLORS.saffron} 0%, ${COLORS.green} 100%)`,
+                  borderRadius: '50%',
+                  border: `2px solid ${COLORS.white}`,
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}></div>
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-1">
+                <h1 style={{
+                  fontSize: '1.875rem',
+                  fontWeight: 700,
+                  color: COLORS.navy,
+                  marginBottom: '0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  background: `linear-gradient(135deg, ${COLORS.navy} 0%, ${COLORS.chakraBlue} 100%)`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}>
                   {deptInfo.icon} {fieldAdmin.departmentName || deptInfo.name}
                 </h1>
-                <p className="text-gray-600 text-sm font-medium flex items-center space-x-2">
-                  <span>🏛️ Field Administration Portal</span>
-                  <span className="text-orange-600">|</span>
-                  <span className="text-blue-600">Government Dashboard</span>
-                </p>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  color: COLORS.navy
+                }}>
+                  <span style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                    padding: '0.25rem 0.75rem',
+                    background: `linear-gradient(135deg, ${COLORS.saffronLight}20 0%, ${COLORS.white} 100%)`,
+                    borderRadius: '16px',
+                    border: `1px solid ${COLORS.saffronLight}`,
+                    fontSize: '0.875rem'
+                  }}>
+                    🏛️ Field Administration Portal
+                  </span>
+                  <span style={{
+                    width: '2px',
+                    height: '1rem',
+                    background: COLORS.saffron
+                  }}></span>
+                  <span style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                    padding: '0.25rem 0.75rem',
+                    background: `linear-gradient(135deg, ${COLORS.greenLight}20 0%, ${COLORS.white} 100%)`,
+                    borderRadius: '16px',
+                    border: `1px solid ${COLORS.greenLight}`,
+                    fontSize: '0.875rem'
+                  }}>
+                    Government Dashboard
+                  </span>
+                </div>
               </div>
             </div>
             <div className="flex items-center space-x-6">
-              <div className="text-right bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border border-gray-200 shadow-sm">
-                <p className="text-sm text-gray-600 font-medium">Welcome back,</p>
-                <p className="font-bold text-gray-900 text-lg">{fieldAdmin.name}</p>
-                <p className="text-xs text-orange-600 mt-1">Field Administrator</p>
+              <div style={{
+                padding: '1rem',
+                background: `linear-gradient(135deg, ${COLORS.white} 0%, ${COLORS.saffronLight}10 100%)`,
+                borderRadius: '12px',
+                border: `1px solid ${COLORS.border}`,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                textAlign: 'right'
+              }}>
+                <p style={{ color: COLORS.navy, fontSize: '0.875rem', fontWeight: 500 }}>Welcome back,</p>
+                <p style={{ 
+                  color: COLORS.navy,
+                  fontSize: '1.125rem',
+                  fontWeight: 700,
+                  margin: '0.25rem 0'
+                }}>{fieldAdmin.name}</p>
+                <p style={{
+                  color: COLORS.saffron,
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  marginTop: '0.25rem'
+                }}>Field Administrator</p>
               </div>
               <button
                 onClick={handleLogout}
-                className="flex items-center space-x-2 px-5 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg transition-all shadow-md hover:shadow-lg"
+                style={{
+                  ...styles.button,
+                  background: '#000080',
+                  color: COLORS.white,
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 128, 0.2)',
+                  transition: 'all 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontWeight: 600,
+                  border: '2px solid #000080',
+                  '&:hover': {
+                    background: '#000066',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 6px 16px rgba(0, 0, 128, 0.3)'
+                  }
+                }}
               >
                 <LogOut className="w-5 h-5" />
                 <span className="font-medium">Logout</span>

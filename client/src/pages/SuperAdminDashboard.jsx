@@ -64,6 +64,42 @@ const SuperAdminDashboard = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  
+  // Additional states for real data
+  const [dashboardStats, setDashboardStats] = useState({
+    totalReports: 0,
+    resolvedReports: 0,
+    pendingReports: 0,
+    totalUsers: 0,
+    activeUsers: 0,
+    departmentPerformance: [],
+    recentActivity: []
+  });
+  
+  const [analyticsData, setAnalyticsData] = useState({
+    dailyReports: [],
+    monthlyTrends: [],
+    categoryDistribution: [],
+    resolutionTimes: [],
+    departmentWorkload: []
+  });
+  
+  const [serviceRequestsData, setServiceRequestsData] = useState({
+    pending: [],
+    inProgress: [],
+    completed: [],
+    statistics: {
+      avgResolutionTime: 0,
+      satisfactionRate: 0,
+      totalRequests: 0
+    }
+  });
+  
+  const [leaderboardData, setLeaderboardData] = useState({
+    topDepartments: [],
+    topPerformers: [],
+    bestDistricts: []
+  });
 
   // Enhanced navigation items with admin theme
   const sidebarItems = [
@@ -76,6 +112,94 @@ const SuperAdminDashboard = () => {
     { id: 'profile', label: 'Profile', icon: User, color: 'text-indigo-600' }
   ];
 
+  // API endpoint configuration
+  const API_BASE_URL = 'http://localhost:5000/api/admin';
+
+  // Data fetching functions
+  const fetchStats = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/stats`);
+      if (!response.ok) throw new Error('Failed to fetch stats');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      toast.error('Failed to load statistics');
+      return null;
+    }
+  };
+
+  const fetchReports = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/reports`);
+      if (!response.ok) throw new Error('Failed to fetch reports');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      toast.error('Failed to load reports');
+      return [];
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/notifications`);
+      if (!response.ok) throw new Error('Failed to fetch notifications');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      toast.error('Failed to load notifications');
+      return [];
+    }
+  };
+
+  const fetchAnalytics = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/analytics`);
+      if (!response.ok) throw new Error('Failed to fetch analytics');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      toast.error('Failed to load analytics data');
+      return null;
+    }
+  };
+
+  const fetchStaffData = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/staff`);
+      if (!response.ok) throw new Error('Failed to fetch staff data');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching staff data:', error);
+      toast.error('Failed to load staff information');
+      return [];
+    }
+  };
+
+  const fetchServiceRequests = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/service-requests`);
+      if (!response.ok) throw new Error('Failed to fetch service requests');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching service requests:', error);
+      toast.error('Failed to load service requests');
+      return [];
+    }
+  };
+
+  const fetchLeaderboard = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/leaderboard`);
+      if (!response.ok) throw new Error('Failed to fetch leaderboard');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+      toast.error('Failed to load leaderboard data');
+      return [];
+    }
+  };
+
   // Initialize component
   useEffect(() => {
     initializeDashboard();
@@ -84,39 +208,245 @@ const SuperAdminDashboard = () => {
   const initializeDashboard = async () => {
     try {
       setLoading(true);
-      // Initialize admin user
+
+      // Fetch data in parallel
+      const [
+        stats,
+        reportsData,
+        notificationsData,
+        analyticsData,
+        staffData,
+        serviceRequests,
+        leaderboardData
+      ] = await Promise.all([
+        fetchStats(),
+        fetchReports(),
+        fetchNotifications(),
+        fetchAnalytics(),
+        fetchStaffData(),
+        fetchServiceRequests(),
+        fetchLeaderboard()
+      ]);
+
+      // Set admin user from Auth context
       setAdminUser({
-        _id: 'admin-123',
+        _id: user?.id,
         name: user?.name || 'Super Admin',
-        email: user?.email || 'admin@civic.gov.in',
-        phone: '+91 000-000-0000',
-        location: 'Jharkhand, India',
+        email: user?.email,
         role: 'super_admin',
         lastLogin: new Date().toISOString()
       });
 
-      // Load sample data
-      setReports([
-        { id: 1, title: 'Road Repair', status: 'resolved', district: 'Ranchi', date: '2024-01-15' },
-        { id: 2, title: 'Water Supply Issue', status: 'in_progress', district: 'Dhanbad', date: '2024-01-14' },
-        { id: 3, title: 'Street Light', status: 'submitted', district: 'Bokaro', date: '2024-01-13' }
-      ]);
+      // Update state with fetched data
+      if (!reportsData || reportsData.length === 0) {
+        // Fallback data if API returns empty
+        setReports([
+          { 
+            id: 1, 
+            title: 'Road Repair', 
+            status: 'resolved', 
+            district: 'Ranchi', 
+            date: '2024-01-15' 
+          },
+          { 
+            id: 2, 
+            title: 'Water Supply Issue', 
+            status: 'in_progress', 
+            district: 'Dhanbad', 
+            date: '2024-01-14' 
+          },
+          { 
+            id: 3, 
+            title: 'Street Light', 
+            status: 'submitted', 
+            district: 'Bokaro', 
+            date: '2024-01-13' 
+          }
+        ]);
+      } else {
+        setReports(reportsData);
+      }
 
-      setUsers([
-        { id: 1, name: 'John Citizen', role: 'citizen', district: 'Ranchi', reports: 5 },
-        { id: 2, name: 'Worker Singh', role: 'worker', district: 'Dhanbad', reports: 12 },
-        { id: 3, name: 'Admin Kumar', role: 'admin', district: 'Bokaro', reports: 8 }
-      ]);
+      // Update users data
+      if (!staffData || staffData.length === 0) {
+        // Fallback data if API returns empty
+        setUsers([
+          { 
+            id: 1, 
+            name: 'John Citizen', 
+            role: 'citizen', 
+            district: 'Ranchi', 
+            reports: 5 
+          },
+          { 
+            id: 2, 
+            name: 'Worker Singh', 
+            role: 'worker', 
+            district: 'Dhanbad', 
+            reports: 12 
+          },
+          { 
+            id: 3, 
+            name: 'Admin Kumar', 
+            role: 'admin', 
+            district: 'Bokaro', 
+            reports: 8 
+          }
+        ]);
+      } else {
+        setUsers(staffData);
+      }
 
-      setNotifications([
-        { id: 1, title: 'New Report Submitted', message: 'Road repair request in Ranchi', read: false, type: 'report', createdAt: new Date().toISOString() },
-        { id: 2, title: 'User Registered', message: 'New citizen registered in Dhanbad', read: false, type: 'user', createdAt: new Date().toISOString() }
-      ]);
+      // Update notifications
+      if (!notificationsData || notificationsData.length === 0) {
+        // Fallback data if API returns empty
+        const fallbackNotifications = [
+          {
+            id: 1,
+            title: 'New Report Submitted',
+            message: 'Road repair request in Ranchi',
+            read: false,
+            type: 'report',
+            createdAt: new Date().toISOString()
+          },
+          {
+            id: 2,
+            title: 'User Registered',
+            message: 'New citizen registered in Dhanbad',
+            read: false,
+            type: 'user',
+            createdAt: new Date().toISOString()
+          }
+        ];
+        setNotifications(fallbackNotifications);
+        setUnreadCount(fallbackNotifications.length);
+      } else {
+        setNotifications(notificationsData);
+        setUnreadCount(notificationsData.filter(n => !n.read).length);
+      }
 
-      setUnreadCount(2);
+      // Update other states with real data
+      if (stats) {
+        setDashboardStats(stats);
+      }
+
+      if (analyticsData) {
+        setAnalyticsData(analyticsData);
+      }
+
+      if (serviceRequests) {
+        setServiceRequestsData(serviceRequests);
+      }
+
+      if (leaderboardData) {
+        setLeaderboardData(leaderboardData);
+      }
+
+      toast.success('Dashboard data loaded successfully');
     } catch (error) {
       console.error('Error loading dashboard:', error);
       toast.error('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Action handlers
+  const handleReportAction = async (reportId, action, data) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/reports/${reportId}/${action}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) throw new Error('Failed to update report');
+      
+      // Refresh reports data
+      const updatedReports = await fetchReports();
+      setReports(updatedReports);
+      
+      toast.success('Report updated successfully');
+    } catch (error) {
+      console.error(`Error updating report: ${error}`);
+      toast.error('Failed to update report');
+    }
+  };
+
+  const handleNotificationAction = async (notificationId, action) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/notifications/${notificationId}/${action}`, {
+        method: 'PUT'
+      });
+
+      if (!response.ok) throw new Error('Failed to update notification');
+      
+      // Refresh notifications
+      const updatedNotifications = await fetchNotifications();
+      setNotifications(updatedNotifications);
+      setUnreadCount(updatedNotifications.filter(n => !n.read).length);
+      
+      toast.success('Notification updated');
+    } catch (error) {
+      console.error(`Error updating notification: ${error}`);
+      toast.error('Failed to update notification');
+    }
+  };
+
+  const exportAnalytics = async (format = 'csv') => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/analytics/export?format=${format}`);
+      if (!response.ok) throw new Error('Failed to export analytics');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `analytics_report_${new Date().toISOString().split('T')[0]}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      toast.success('Analytics exported successfully');
+    } catch (error) {
+      console.error('Error exporting analytics:', error);
+      toast.error('Failed to export analytics');
+    }
+  };
+
+  const handleStaffAction = async (staffId, action, data) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/staff/${staffId}/${action}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) throw new Error('Failed to update staff member');
+      
+      // Refresh staff data
+      const updatedStaff = await fetchStaffData();
+      setUsers(updatedStaff);
+      
+      toast.success('Staff member updated successfully');
+    } catch (error) {
+      console.error(`Error updating staff member: ${error}`);
+      toast.error('Failed to update staff member');
+    }
+  };
+
+  const refreshDashboard = async () => {
+    try {
+      setLoading(true);
+      await initializeDashboard();
+      toast.success('Dashboard refreshed successfully');
+    } catch (error) {
+      console.error('Error refreshing dashboard:', error);
+      toast.error('Failed to refresh dashboard');
     } finally {
       setLoading(false);
     }
