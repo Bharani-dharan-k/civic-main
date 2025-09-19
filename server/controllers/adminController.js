@@ -20,36 +20,53 @@ const getAdminUser = async (adminId) => {
 // @route   GET /api/admin/stats
 exports.getStats = async (req, res) => {
     try {
-        const totalReports = await Report.countDocuments();
-        const resolvedReports = await Report.countDocuments({ status: 'Resolved' });
-        const inProgressReports = await Report.countDocuments({ status: 'In Progress' });
-        const acknowledgedReports = await Report.countDocuments({ status: 'Acknowledged' });
-        const submittedReports = await Report.countDocuments({ status: 'Submitted' });
+        // Get admin user data to check district
+        const adminUser = await getAdminUser(req.user.id);
+        const userDistrict = adminUser?.district;
+        
+        // Build base query filter for district filtering
+        let baseFilter = {};
+        if (userDistrict) {
+            baseFilter.district = userDistrict;
+        }
+        
+        const totalReports = await Report.countDocuments(baseFilter);
+        const resolvedReports = await Report.countDocuments({ ...baseFilter, status: 'resolved' });
+        const inProgressReports = await Report.countDocuments({ ...baseFilter, status: 'in_progress' });
+        const acknowledgedReports = await Report.countDocuments({ ...baseFilter, status: 'acknowledged' });
+        const submittedReports = await Report.countDocuments({ ...baseFilter, status: 'submitted' });
         const pendingReports = totalReports - resolvedReports;
-        const totalCitizens = await User.countDocuments({ role: 'citizen' });
-        const activeUsers = await User.countDocuments({ role: 'citizen', isActive: true });
+        
+        // Only count citizens in the same district if district admin
+        let citizenFilter = { role: 'citizen' };
+        if (userDistrict) {
+            citizenFilter.district = userDistrict;
+        }
+        const totalCitizens = await User.countDocuments(citizenFilter);
+        const activeUsers = await User.countDocuments({ ...citizenFilter, isActive: true });
 
-        // Reports by category with more details
+        // Reports by category with more details - district filtered
         const reportsByCategory = await Report.aggregate([
+            { $match: baseFilter },
             { 
                 $group: { 
                     _id: '$category', 
                     count: { $sum: 1 },
                     resolved: { 
                         $sum: { 
-                            $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] 
+                            $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] 
                         } 
                     }
                 } 
             }
         ]);
 
-        // Monthly trends for the last 6 months
+        // Monthly trends for the last 6 months - district filtered
         const sixMonthsAgo = new Date();
         sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
         const monthlyTrends = await Report.aggregate([
-            { $match: { createdAt: { $gte: sixMonthsAgo } } },
+            { $match: { ...baseFilter, createdAt: { $gte: sixMonthsAgo } } },
             { 
                 $group: {
                     _id: { 
@@ -59,7 +76,7 @@ exports.getStats = async (req, res) => {
                     totalReports: { $sum: 1 },
                     resolvedReports: { 
                         $sum: { 
-                            $cond: [{ $eq: ['$status', 'Resolved'] }, 1, 0] 
+                            $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] 
                         } 
                     }
                 }
@@ -67,8 +84,9 @@ exports.getStats = async (req, res) => {
             { $sort: { '_id.year': 1, '_id.month': 1 } }
         ]);
 
-        // Status distribution
+        // Status distribution - district filtered
         const statusDistribution = await Report.aggregate([
+            { $match: baseFilter },
             { 
                 $group: { 
                     _id: '$status', 
@@ -77,9 +95,9 @@ exports.getStats = async (req, res) => {
             }
         ]);
 
-        // Average resolution time (for resolved reports)
+        // Average resolution time (for resolved reports) - district filtered
         const avgResolutionTime = await Report.aggregate([
-            { $match: { status: 'Resolved', resolvedAt: { $exists: true } } },
+            { $match: { ...baseFilter, status: 'resolved', resolvedAt: { $exists: true } } },
             { 
                 $project: {
                     resolutionTime: {
@@ -99,18 +117,27 @@ exports.getStats = async (req, res) => {
         ]);
 
         res.json({
-            totalReports,
-            resolvedReports,
-            inProgressReports,
-            acknowledgedReports,
-            submittedReports,
-            pendingReports,
-            totalCitizens,
-            activeUsers,
-            reportsByCategory,
-            monthlyTrends,
-            statusDistribution,
-            averageResolutionDays: avgResolutionTime.length > 0 ? Math.round(avgResolutionTime[0].averageDays * 10) / 10 : 0
+            success: true,
+            stats: {
+                totalReports,
+                resolvedReports,
+                inProgressReports,
+                acknowledgedReports,
+                submittedReports,
+                pendingReports,
+                totalCitizens,
+                activeUsers,
+                reportsByCategory,
+                monthlyTrends,
+                statusDistribution,
+                avgResolutionTime: avgResolutionTime.length > 0 ? Math.round(avgResolutionTime[0].averageDays * 10) / 10 : 0,
+                district: userDistrict || null,
+                // Additional metrics for district admin
+                activeMunicipalities: userDistrict ? 1 : 0, // District admin manages their own district
+                departmentPerformance: [], // Will be populated by separate API if needed
+                municipalityPerformance: [] // Will be populated by separate API if needed
+            },
+            message: userDistrict ? `Statistics for ${userDistrict} district` : 'Global statistics'
         });
     } catch (err) {
         console.error(err.message);
@@ -145,11 +172,11 @@ exports.assignWorkerToReport = async (req, res) => {
         } else {
             // Check if it's a database User (staff member)
             const staffMember = await User.findById(employeeId);
-            if (staffMember && ['field_staff', 'field_head', 'department_head'].includes(staffMember.role)) {
+            if (staffMember && ['field_staff', 'field_head', 'department_head', 'municipality_admin'].includes(staffMember.role)) {
                 worker = {
                     employeeId: staffMember._id.toString(),
                     name: staffMember.name,
-                    specialization: staffMember.department || 'General',
+                    specialization: staffMember.department || staffMember.municipality || 'General',
                     phone: staffMember.phone || 'N/A'
                 };
                 assignedToValue = staffMember._id.toString();
@@ -248,8 +275,18 @@ exports.getAllReports = async (req, res) => {
     try {
         const { status, category, sortBy = 'createdAt', order = 'desc', page = 1, limit = 20 } = req.query;
         
+        // Get admin user data to check district
+        const adminUser = await getAdminUser(req.user.id);
+        const userDistrict = adminUser?.district;
+        
         // Build filter object
         const filter = {};
+        
+        // Add district filter for district admins
+        if (userDistrict) {
+            filter.district = userDistrict;
+        }
+        
         if (status && status !== 'all') {
             // Handle multiple statuses separated by comma
             if (status.includes(',')) {
@@ -277,11 +314,15 @@ exports.getAllReports = async (req, res) => {
         
         res.json({
             success: true,
+            reports: reports, // Use 'reports' key for consistency with frontend
             data: reports,
             totalReports,
             currentPage: parseInt(page),
             totalPages: Math.ceil(totalReports / parseInt(limit)),
-            message: `Retrieved ${reports.length} reports successfully`
+            district: userDistrict || null,
+            message: userDistrict ? 
+                `Retrieved ${reports.length} reports for ${userDistrict} district` : 
+                `Retrieved ${reports.length} reports successfully`
         });
     } catch (err) {
         console.error(err.message);
@@ -1079,69 +1120,49 @@ exports.getNotifications = async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        // Get admin user ID from the token
+        // Get admin user data to check district
+        const adminUser = await getAdminUser(req.user.id);
         const adminId = req.user.id;
+        const userDistrict = adminUser?.district;
 
-        // For hardcoded admins, return system notifications only
-        if (!isDatabaseAdmin(adminId)) {
-            const notifications = await Notification.find({ 
-                type: 'system' // System notifications for all admins
-            })
+        let filter = {};
+        
+        // For hardcoded admins without district info, return system notifications only
+        if (!isDatabaseAdmin(adminId) && !userDistrict) {
+            filter = { type: 'system' }; // System notifications for all admins
+        } else if (userDistrict) {
+            // For district admins, get district-specific and system notifications
+            filter = {
+                $or: [
+                    { district: userDistrict }, // District-specific notifications
+                    { type: 'system' }, // System notifications for all admins
+                    { userId: adminId } // Personal notifications
+                ]
+            };
+        } else {
+            // For database admins without district restriction, get personal and system notifications
+            filter = {
+                $or: [
+                    { userId: adminId },
+                    { type: 'system' } // System notifications for all admins
+                ]
+            };
+        }
+
+        const notifications = await Notification.find(filter)
             .populate('relatedReport', 'title category')
             .sort({ createdAt: -1 })
             .limit(limit)
             .skip(skip);
 
-            const total = await Notification.countDocuments({
-                type: 'system'
-            });
+        const total = await Notification.countDocuments(filter);
 
-            const unreadCount = await Notification.countDocuments({
-                type: 'system',
-                read: false
-            });
+        const unreadFilter = { ...filter, read: false };
+        const unreadCount = await Notification.countDocuments(unreadFilter);
 
-            return res.json({
-                success: true,
-                notifications,
-                pagination: {
-                    current: page,
-                    total: Math.ceil(total / limit),
-                    hasNext: page < Math.ceil(total / limit),
-                    hasPrev: page > 1
-                },
-                unreadCount
-            });
-        }
+        console.log(`✅ Admin notifications loaded for district: ${userDistrict || 'all'} (${notifications.length} notifications, ${unreadCount} unread)`);
 
-        // For database admins, get personal and system notifications
-        const notifications = await Notification.find({ 
-            $or: [
-                { userId: adminId },
-                { type: 'system' } // System notifications for all admins
-            ]
-        })
-        .populate('relatedReport', 'title category')
-        .sort({ createdAt: -1 })
-        .limit(limit)
-        .skip(skip);
-
-        const total = await Notification.countDocuments({
-            $or: [
-                { userId: adminId },
-                { type: 'system' }
-            ]
-        });
-
-        const unreadCount = await Notification.countDocuments({
-            $or: [
-                { userId: adminId },
-                { type: 'system' }
-            ],
-            read: false
-        });
-
-        res.json({
+        return res.json({
             success: true,
             notifications,
             pagination: {
@@ -1150,7 +1171,8 @@ exports.getNotifications = async (req, res) => {
                 hasNext: page < Math.ceil(total / limit),
                 hasPrev: page > 1
             },
-            unreadCount
+            unreadCount,
+            district: userDistrict
         });
     } catch (error) {
         console.error('Error fetching notifications:', error);
@@ -1556,13 +1578,30 @@ exports.updateSystemSettings = async (req, res) => {
 // @route   GET /api/admin/users
 exports.getDistrictUsers = async (req, res) => {
     try {
-        const users = await User.find({ 
-            role: { $in: ['department_head', 'municipality_admin', 'field_head'] }
-        }).select('-password').sort({ createdAt: -1 });
+        // Get admin user data to check district
+        const adminUser = await getAdminUser(req.user.id);
+        const userDistrict = adminUser?.district;
+        
+        // Build filter for district-specific users
+        const filter = { 
+            role: { $in: ['department_head', 'municipality_admin', 'field_head', 'citizen'] }
+        };
+        
+        // Add district filter for district admins
+        if (userDistrict) {
+            filter.district = userDistrict;
+        }
+
+        const users = await User.find(filter)
+            .select('-password')
+            .sort({ createdAt: -1 });
+
+        console.log(`✅ District users loaded for district: ${userDistrict || 'all'} (${users.length} users)`);
 
         res.json({
             success: true,
-            users
+            users,
+            district: userDistrict
         });
     } catch (error) {
         console.error('Error fetching district users:', error);
@@ -1577,6 +1616,10 @@ exports.getDistrictUsers = async (req, res) => {
 // @route   POST /api/admin/users
 exports.createDepartmentAdmin = async (req, res) => {
     try {
+        console.log('🔍 CREATE USER REQUEST - Full body:', req.body);
+        console.log('🔍 CREATE USER REQUEST - Body keys:', Object.keys(req.body));
+        console.log('🔍 CREATE USER REQUEST - User info:', req.user);
+        
         const { 
             name, 
             email, 
@@ -1588,13 +1631,39 @@ exports.createDepartmentAdmin = async (req, res) => {
             phone 
         } = req.body;
 
+        console.log('🔍 Extracted values:', {
+            name, email, role, department, municipality, district, phone,
+            passwordProvided: !!password
+        });
+
         // Validate required fields
-        if (!name || !email || !password || !role || !department) {
+        if (!name || !email || !password || !role) {
+            console.log('❌ Validation failed - missing basic fields');
             return res.status(400).json({
                 success: false,
-                message: 'Name, email, password, role, and department are required'
+                message: 'Name, email, password, and role are required'
             });
         }
+
+        // Role-specific validation
+        if (role === 'department_head' && !department) {
+            console.log('❌ Department Head validation failed - no department provided');
+            return res.status(400).json({
+                success: false,
+                message: 'Department is required for Department Head role'
+            });
+        }
+
+        if (role === 'municipality_admin' && !municipality) {
+            console.log('❌ Municipality Admin validation failed - no municipality provided');
+            console.log('❌ Municipality value received:', municipality);
+            return res.status(400).json({
+                success: false,
+                message: 'Municipality is required for Municipality Admin role'
+            });
+        }
+
+        console.log('✅ Basic validation passed');
 
         // Check if user already exists
         const existingUser = await User.findOne({ email });
@@ -1611,22 +1680,34 @@ exports.createDepartmentAdmin = async (req, res) => {
         const userMunicipality = municipality || currentAdmin?.municipality || 'Bokaro Municipality';
 
         // Create new user with all required fields
-        const newUser = new User({
+        const userData = {
             name,
             email,
             password, // The User model should hash this
             role: role || 'department_head',
             adminRole: role || 'department_head', // Set adminRole same as role
-            department,
             district: userDistrict,
-            municipality: userMunicipality,
             phone: phone || '',
             isActive: true,
             createdBy: req.user.id,
             createdAt: new Date()
-        });
+        };
+
+        // Add role-specific fields
+        if (role === 'department_head') {
+            userData.department = department;
+            userData.municipality = userMunicipality; // Department heads belong to a municipality
+        } else if (role === 'municipality_admin') {
+            userData.municipality = municipality || userMunicipality;
+            // Municipality admins don't have a specific department
+        }
+
+        console.log('🔍 Creating user with data:', userData);
+        const newUser = new User(userData);
+        console.log('🔍 User model created, saving...');
 
         await newUser.save();
+        console.log('✅ User saved successfully with ID:', newUser._id);
 
         // Return user without password
         const userResponse = await User.findById(newUser._id).select('-password');
@@ -2180,6 +2261,352 @@ exports.getServiceRequests = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to fetch service requests'
+        });
+    }
+};
+
+// @desc    Get municipalities for district admin
+// @route   GET /api/admin/municipalities  
+exports.getMunicipalities = async (req, res) => {
+    try {
+        console.log('🔍 Getting municipalities for district:', req.user.district);
+        
+        // Get municipality admins from the current district
+        const municipalityAdmins = await User.find({
+            role: 'municipality_admin',
+            district: req.user.district
+        }).select('name email municipality district createdAt');
+
+        // Get some basic stats for each municipality
+        const municipalityData = await Promise.all(municipalityAdmins.map(async (admin) => {
+            // Get reports for this municipality
+            let reportStats = { total: 0, resolved: 0, pending: 0 };
+            
+            try {
+                const reports = await Report.find({ 
+                    municipality: admin.municipality 
+                });
+                
+                reportStats = {
+                    total: reports.length,
+                    resolved: reports.filter(r => r.status === 'resolved').length,
+                    pending: reports.filter(r => ['new', 'in_progress'].includes(r.status)).length
+                };
+            } catch (err) {
+                console.log('Could not load report stats:', err.message);
+            }
+
+            return {
+                _id: admin._id,
+                name: admin.municipality,
+                district: admin.district,
+                adminName: admin.name,
+                adminEmail: admin.email,
+                totalReports: reportStats.total,
+                resolvedReports: reportStats.resolved,
+                pendingReports: reportStats.pending,
+                createdAt: admin.createdAt
+            };
+        }));
+
+        console.log('✅ Found municipalities:', municipalityData);
+        res.json({
+            success: true,
+            municipalities: municipalityData,
+            count: municipalityData.length
+        });
+        
+    } catch (error) {
+        console.error('❌ Error getting municipalities:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get municipalities: ' + (error.message || error)
+        });
+    }
+};
+
+// @desc    Send announcement/notification to users
+// @route   POST /api/admin/announcements
+exports.sendAnnouncement = async (req, res) => {
+    try {
+        const { title, message, sendTo, priority = 'medium' } = req.body;
+        
+        if (!title || !message) {
+            return res.status(400).json({
+                success: false,
+                message: 'Title and message are required'
+            });
+        }
+
+        const adminUser = await getAdminUser(req.user.id);
+        const adminDistrict = adminUser?.district;
+        
+        let targetUsers = [];
+        let createdNotifications = 0;
+
+        // Determine target users based on sendTo parameter
+        switch (sendTo) {
+            case 'all':
+                // Send to all users in the district (if admin has district) or all users
+                const allFilter = adminDistrict ? { district: adminDistrict } : {};
+                targetUsers = await User.find(allFilter);
+                break;
+                
+            case 'municipality_admins':
+                const muniFilter = { role: 'municipality_admin' };
+                if (adminDistrict) muniFilter.district = adminDistrict;
+                targetUsers = await User.find(muniFilter);
+                break;
+                
+            case 'department_heads':
+                const deptFilter = { role: 'department_head' };
+                if (adminDistrict) deptFilter.district = adminDistrict;
+                targetUsers = await User.find(deptFilter);
+                break;
+                
+            case 'citizens':
+                const citizenFilter = { role: 'citizen' };
+                if (adminDistrict) citizenFilter.district = adminDistrict;
+                targetUsers = await User.find(citizenFilter);
+                break;
+                
+            default:
+                // Check if it's a specific municipality
+                if (sendTo.startsWith('municipality_')) {
+                    const municipalityId = sendTo.replace('municipality_', '');
+                    targetUsers = await User.find({ 
+                        role: 'municipality_admin',
+                        _id: municipalityId 
+                    });
+                }
+                break;
+        }
+
+        // Create notifications for all target users
+        for (const user of targetUsers) {
+            await NotificationService.createNotification(
+                user._id,
+                title,
+                message,
+                'announcement',
+                null,
+                priority
+            );
+            createdNotifications++;
+        }
+
+        console.log(`✅ Announcement sent to ${createdNotifications} users by admin from ${adminDistrict || 'system'}`);
+
+        res.json({
+            success: true,
+            message: `Announcement sent successfully to ${createdNotifications} ${sendTo === 'all' ? 'users' : sendTo.replace('_', ' ')}`,
+            recipientCount: createdNotifications,
+            district: adminDistrict
+        });
+        
+    } catch (error) {
+        console.error('❌ Error sending announcement:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to send announcement: ' + (error.message || error)
+        });
+    }
+};
+
+// @desc    Get escalated reports for district admin
+// @route   GET /api/admin/escalations
+exports.getEscalations = async (req, res) => {
+    try {
+        // Get admin user data to check district
+        const adminUser = await getAdminUser(req.user.id);
+        const userDistrict = adminUser?.district;
+        
+        // Build base query filter for district filtering
+        let baseFilter = {};
+        if (userDistrict) {
+            baseFilter.district = userDistrict;
+        }
+
+        // Define criteria for escalated reports
+        const escalationCriteria = {
+            $or: [
+                // Reports in progress for more than 7 days
+                {
+                    status: 'in_progress',
+                    assignedAt: { $lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+                },
+                // High or Critical priority reports older than 3 days
+                {
+                    priority: { $in: ['High', 'Critical'] },
+                    createdAt: { $lt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) },
+                    status: { $nin: ['resolved', 'closed'] }
+                },
+                // Reports pending for more than 10 days
+                {
+                    status: { $in: ['submitted', 'acknowledged', 'assigned'] },
+                    createdAt: { $lt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) }
+                }
+            ],
+            ...baseFilter
+        };
+
+        const escalatedReports = await Report.find(escalationCriteria)
+            .populate('reportedBy', 'name email phone')
+            .sort({ priority: -1, createdAt: 1 })
+            .limit(50);
+
+        // Calculate escalation statistics
+        const totalEscalations = await Report.countDocuments(escalationCriteria);
+        const resolvedThisMonth = await Report.countDocuments({
+            ...baseFilter,
+            status: 'resolved',
+            resolvedAt: { $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) },
+            $or: [
+                { priority: { $in: ['High', 'Critical'] } },
+                { actualResolutionTime: { $gt: 168 } } // Took more than 1 week
+            ]
+        });
+
+        // Group by municipality for better organization
+        const escalationsByMunicipality = escalatedReports.reduce((acc, report) => {
+            const municipality = report.urbanLocalBody || 'Unknown';
+            if (!acc[municipality]) {
+                acc[municipality] = [];
+            }
+            acc[municipality].push(report);
+            return acc;
+        }, {});
+
+        res.json({
+            success: true,
+            data: {
+                escalations: escalatedReports,
+                escalationsByMunicipality,
+                statistics: {
+                    totalPending: totalEscalations,
+                    resolvedThisMonth,
+                    averageResponseTime: 0, // Calculate if needed
+                    priorityBreakdown: {
+                        critical: escalatedReports.filter(r => r.priority === 'Critical').length,
+                        high: escalatedReports.filter(r => r.priority === 'High').length,
+                        medium: escalatedReports.filter(r => r.priority === 'Medium').length,
+                        low: escalatedReports.filter(r => r.priority === 'Low').length
+                    }
+                }
+            },
+            district: userDistrict
+        });
+        
+    } catch (error) {
+        console.error('❌ Error fetching escalations:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch escalations: ' + (error.message || error)
+        });
+    }
+};
+
+// @desc    Handle escalation action (resolve, reassign, update priority)
+// @route   POST /api/admin/escalations/:id/action
+exports.handleEscalationAction = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { action, notes, priority, assignTo, department } = req.body;
+        
+        // Get admin user data to check district
+        const adminUser = await getAdminUser(req.user.id);
+        const userDistrict = adminUser?.district;
+        
+        // Find the report and verify it's in the admin's district
+        let report = await Report.findById(id);
+        if (!report) {
+            return res.status(404).json({
+                success: false,
+                message: 'Escalated report not found'
+            });
+        }
+
+        // Verify district access
+        if (userDistrict && report.district !== userDistrict) {
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied: Report not in your district'
+            });
+        }
+
+        const adminId = req.user.id;
+        const currentTime = new Date();
+
+        switch (action) {
+            case 'resolve':
+                report.status = 'resolved';
+                report.resolvedAt = currentTime;
+                if (notes) {
+                    report.adminNotes.push({
+                        note: `ESCALATION RESOLVED: ${notes}`,
+                        addedBy: adminId,
+                        addedAt: currentTime
+                    });
+                }
+                break;
+
+            case 'reassign':
+                if (assignTo) report.assignedTo = assignTo;
+                if (department) report.assignedDepartment = department;
+                report.assignedBy = adminId;
+                report.assignedAt = currentTime;
+                report.status = 'assigned';
+                if (notes) {
+                    report.adminNotes.push({
+                        note: `ESCALATION REASSIGNED: ${notes}`,
+                        addedBy: adminId,
+                        addedAt: currentTime
+                    });
+                }
+                break;
+
+            case 'updatePriority':
+                if (priority) {
+                    const oldPriority = report.priority;
+                    report.priority = priority;
+                    report.adminNotes.push({
+                        note: `ESCALATION PRIORITY UPDATED: Changed from ${oldPriority} to ${priority}${notes ? '. Notes: ' + notes : ''}`,
+                        addedBy: adminId,
+                        addedAt: currentTime
+                    });
+                }
+                break;
+
+            case 'addComment':
+                if (notes) {
+                    report.adminNotes.push({
+                        note: `ESCALATION COMMENT: ${notes}`,
+                        addedBy: adminId,
+                        addedAt: currentTime
+                    });
+                }
+                break;
+
+            default:
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid escalation action'
+                });
+        }
+
+        const updatedReport = await report.save();
+        
+        res.json({
+            success: true,
+            message: `Escalation ${action} completed successfully`,
+            data: updatedReport
+        });
+        
+    } catch (error) {
+        console.error('❌ Error handling escalation action:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to handle escalation action: ' + (error.message || error)
         });
     }
 };

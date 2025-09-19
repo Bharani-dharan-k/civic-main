@@ -14,6 +14,7 @@ const {
     getNotifications,
     markNotificationRead,
     markAllNotificationsRead,
+    sendAnnouncement,
     getProfile,
     updateProfile,
     changePassword,
@@ -34,7 +35,10 @@ const {
     getFinanceData,
     getProjectsData,
     getEmergencyAlerts,
-    getServiceRequests
+    getServiceRequests,
+    getMunicipalities,
+    getEscalations,
+    handleEscalationAction
 } = require('../controllers/adminController');
 const { getActiveWorkers } = require('../controllers/authController');
 const { protect, admin } = require('../middleware/authMiddleware');
@@ -49,6 +53,7 @@ router.get('/reports', getAllReports);
 router.get('/analytics', getAnalytics);
 router.get('/analytics/export', exportAnalyticsReport);
 router.get('/workers/active', getActiveWorkers);
+router.get('/municipalities', getMunicipalities);
 
 // Municipal Dashboard routes
 router.get('/staff', getStaffData);
@@ -72,6 +77,7 @@ router.delete('/reports/:id', deleteReport);
 router.get('/notifications', getNotifications);
 router.put('/notifications/:id/read', markNotificationRead);
 router.put('/notifications/mark-all-read', markAllNotificationsRead);
+router.post('/announcements', sendAnnouncement);
 
 // Settings routes
 router.get('/settings/profile', getProfile);
@@ -88,5 +94,9 @@ router.post('/users', createDepartmentAdmin);
 router.put('/users/:id', updateDepartmentAdmin);
 router.delete('/users/:id', deleteDepartmentAdmin);
 router.put('/users/:id/reset-password', resetUserPassword);
+
+// Escalation handling routes
+router.get('/escalations', getEscalations);
+router.post('/escalations/:id/action', handleEscalationAction);
 
 module.exports = router;

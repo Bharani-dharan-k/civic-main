@@ -24,11 +24,13 @@ exports.protect = async (req, res, next) => {
             }
 
             // Verify token
+            console.log('🔓 Verifying token...');
             const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
             console.log('🔓 Token decoded:', decoded);
 
             // Handle new role-based admin users
             if (decoded.user && decoded.user.role && ['super_admin', 'district_admin', 'municipality_admin', 'department_head', 'field_head'].includes(decoded.user.role)) {
+                console.log('✅ Admin user identified:', decoded.user.role);
                 req.user = {
                     id: decoded.user.id,
                     role: decoded.user.role,
@@ -39,6 +41,7 @@ exports.protect = async (req, res, next) => {
                     municipality: decoded.user.municipality,
                     department: decoded.user.department
                 };
+                console.log('✅ req.user set for admin:', req.user);
                 return next();
             }
 
@@ -119,7 +122,9 @@ exports.protect = async (req, res, next) => {
             };
             next();
         } catch (error) {
-            console.error('Auth middleware error:', error);
+            console.error('❌ Auth middleware error:', error.message);
+            console.error('❌ Full error:', error);
+            console.error('❌ Token that failed:', token);
             res.status(401).json({ 
                 success: false,
                 msg: 'Not authorized, token failed' 

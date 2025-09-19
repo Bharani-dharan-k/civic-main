@@ -297,11 +297,11 @@ const MunicipalDashboard = () => {
 
             const alerts = [];
             
-            if (statsResponse.data.success) {
-                const stats = statsResponse.data.data;
+            if (statsResponse.data.success && statsResponse.data.stats) {
+                const stats = statsResponse.data.stats;
                 
                 // Create alerts based on real data
-                if (stats.pendingReports > 10) {
+                if (stats.pendingReports && stats.pendingReports > 10) {
                     alerts.push({
                         id: 1,
                         message: `${stats.pendingReports} reports pending resolution`,
@@ -309,7 +309,7 @@ const MunicipalDashboard = () => {
                     });
                 }
                 
-                if (stats.inProgressReports > 5) {
+                if (stats.inProgressReports && stats.inProgressReports > 5) {
                     alerts.push({
                         id: 2,
                         message: `${stats.inProgressReports} reports in progress`,
@@ -318,7 +318,7 @@ const MunicipalDashboard = () => {
                 }
             }
 
-            if (alertsResponse.data.success && alertsResponse.data.data.length > 0) {
+            if (alertsResponse.data.success && alertsResponse.data.data && alertsResponse.data.data.length > 0) {
                 const emergencyCount = alertsResponse.data.data.filter(alert => 
                     alert.severity === 'high' || alert.severity === 'critical'
                 ).length;

@@ -5,7 +5,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "dev": "nodemon server.js",
+    "dev": "node dev-start.js",
+    "dev:concurrent": "concurrently \"nodemon server.js\" \"nodemon image-classifier-service.js\"",
+    "dev:main": "nodemon server.js",
+    "dev:classifier": "nodemon image-classifier-service.js",
     "seed:admin": "node seedAdmin.js"
   },
   "keywords": [],
@@ -31,6 +34,7 @@
     "puppeteer": "^24.19.0"
   },
   "devDependencies": {
+    "concurrently": "^8.2.2",
     "nodemon": "^3.1.10"
   }
 }

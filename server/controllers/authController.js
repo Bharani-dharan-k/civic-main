@@ -597,12 +597,16 @@ exports.loginWorker = async (req, res) => {
 // @desc    Get logged in user
 exports.getMe = async (req, res) => {
     try {
+        console.log('🔍 getMe called with req.user:', req.user);
+        
         // Handle admin users
-        if (req.user.id.startsWith('admin_')) {
+        if (req.user.id && req.user.id.startsWith('admin_')) {
+            console.log('📋 Processing admin user with email:', req.user.email);
             const adminEmail = req.user.email;
             const adminCredential = ADMIN_CREDENTIALS.find(admin => admin.email === adminEmail);
             
             if (adminCredential) {
+                console.log('✅ Found admin credential:', adminCredential.name);
                 return res.json({
                     success: true,
                     user: {
@@ -613,15 +617,19 @@ exports.getMe = async (req, res) => {
                         userType: 'admin'
                     }
                 });
+            } else {
+                console.log('❌ Admin credential not found for:', adminEmail);
             }
         }
 
         // Handle worker users
-        if (req.user.id.startsWith('worker_')) {
+        if (req.user.id && req.user.id.startsWith('worker_')) {
+            console.log('👷 Processing worker user with employeeId:', req.user.employeeId);
             const workerEmployeeId = req.user.employeeId;
             const workerCredential = WORKER_CREDENTIALS.find(worker => worker.employeeId === workerEmployeeId);
             
             if (workerCredential) {
+                console.log('✅ Found worker credential:', workerCredential.name);
                 return res.json({
                     success: true,
                     user: {
@@ -634,18 +642,33 @@ exports.getMe = async (req, res) => {
                         phone: workerCredential.phone
                     }
                 });
+            } else {
+                console.log('❌ Worker credential not found for:', workerEmployeeId);
             }
         }
 
         // Handle regular users
+        console.log('👤 Processing regular user with id:', req.user.id);
+        
+        // Check if the ID is a valid MongoDB ObjectId
+        if (!req.user.id || !req.user.id.match(/^[0-9a-fA-F]{24}$/)) {
+            console.log('❌ Invalid ObjectId format:', req.user.id);
+            return res.status(400).json({ 
+                success: false,
+                msg: 'Invalid user ID format' 
+            });
+        }
+        
         const user = await User.findById(req.user.id).select('-password');
         if (!user) {
+            console.log('❌ User not found in database for id:', req.user.id);
             return res.status(404).json({ 
                 success: false,
                 msg: 'User not found' 
             });
         }
 
+        console.log('✅ Found regular user:', user.name, user.email, user.role);
         res.json({
             success: true,
             user: {
@@ -653,14 +676,19 @@ exports.getMe = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
-                phone: user.phone
+                phone: user.phone,
+                userType: user.userType || 'user',
+                district: user.district,
+                municipality: user.municipality,
+                department: user.department
             }
         });
     } catch (err) {
-        console.error('Get user error:', err.message);
+        console.error('❌ Get user error:', err.message);
+        console.error('❌ Full error:', err);
         res.status(500).json({ 
             success: false,
-            msg: 'Server Error' 
+            msg: 'Server Error'
         });
     }
 };
