@@ -1631,6 +1631,22 @@ const CitizenDashboard = () => {
                         </div>
                       )}
 
+                      {/* Videos */}
+                      {complaint.videoUrl && complaint.videoUrl !== '' && !complaint.videoUrl.includes('via.placeholder') && (
+                        <div className="mb-4">
+                          <video
+                            src={complaint.videoUrl}
+                            controls
+                            className="w-48 h-32 object-cover rounded-lg border-2 border-gray-200"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          >
+                            Your browser does not support the video tag.
+                          </video>
+                        </div>
+                      )}
+
                       {/* Feedback Form for Resolved Reports */}
                       {complaint.status === 'resolved' && !complaint.feedback && (
                         <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">

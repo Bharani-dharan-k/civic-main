@@ -651,6 +651,19 @@ const InteractiveMapPage = ({ onBack }) => {
                       </div>
                     )}
 
+                    {/* Report Video */}
+                    {report.videoUrl && (
+                      <div className="mt-3">
+                        <video
+                          src={report.videoUrl}
+                          controls
+                          className="w-full h-24 object-cover rounded border"
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                      </div>
+                    )}
+
                     {/* Resolution Image for completed reports */}
                     {report.status === 'resolved' && report.resolutionImageUrl && (
                       <div className="mt-2">

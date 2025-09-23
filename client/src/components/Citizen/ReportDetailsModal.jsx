@@ -196,6 +196,20 @@ const ReportDetailsModal = ({ isOpen, onClose, report, onAddComment, onSubmitFee
                   </div>
                 )}
 
+                {/* Report Video */}
+                {report.videoUrl && (
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Report Video</h4>
+                    <video
+                      src={report.videoUrl}
+                      controls
+                      className="w-full h-64 object-cover rounded-lg border border-gray-200"
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  </div>
+                )}
+
                 {/* Progress Photos */}
                 {report.workProgressPhotos && report.workProgressPhotos.length > 0 && (
                   <div>
