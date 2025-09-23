@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -105,6 +105,14 @@ const CitizenDashboard = () => {
     initializeDashboard();
   }, []);
 
+  // Refresh user data when leaderboard updates (to get real points)
+  useEffect(() => {
+    if (activeTab === 'leaderboard') {
+      // Leaderboard data is fetched when the tab is active
+      // which will update user points automatically
+    }
+  }, [activeTab]);
+
   const initializeDashboard = async () => {
     try {
       setLoading(true);
@@ -130,7 +138,7 @@ const CitizenDashboard = () => {
               phone: '+91 000-000-0000',
               location: 'New Delhi, India',
               bio: 'An active citizen',
-              points: 108,
+              points: 0,
               badges: [],
               role: 'citizen'
             });
@@ -143,7 +151,7 @@ const CitizenDashboard = () => {
             phone: '+91 000-000-0000',
             location: 'New Delhi, India',
             bio: 'An active citizen',
-            points: 108,
+            points: 0,
             badges: [],
             role: 'citizen'
           });
@@ -176,7 +184,7 @@ const CitizenDashboard = () => {
         setUser({
           name: 'John Doe',
           email: 'citizen@civic.gov.in',
-          points: 108
+          points: 0
         });
       }
     } finally {
@@ -617,46 +625,60 @@ const CitizenDashboard = () => {
       }
 
       // Show loading toast
-      toast.info('🗺️ Getting your location...');
+      toast.info('🛰️ Getting accurate GPS location...');
 
       const options = {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000
+        timeout: 30000, // Increased timeout for better accuracy
+        maximumAge: 0 // Don't use cached location
       };
 
+      // First try to get high accuracy position
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const { latitude, longitude } = position.coords;
-          
-          // Update form with coordinates and temporary location
-          setFormData(prev => ({
-            ...prev,
-            coordinates: { latitude, longitude },
-            location: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
-          }));
-          
-          // Try to get readable address using reverse geocoding
-          getReadableAddress(latitude, longitude);
-          
-          // Don't show success toast yet - wait for address lookup
+          const { latitude, longitude, accuracy } = position.coords;
+
+          console.log(`GPS Position: ${latitude}, ${longitude}, Accuracy: ${accuracy}m`);
+
+          // Check if accuracy is good enough (less than 100 meters)
+          if (accuracy > 100) {
+            toast.warning(`⚠️ GPS accuracy: ${Math.round(accuracy)}m. Trying to improve...`);
+            // Try to get better accuracy
+            setTimeout(() => {
+              navigator.geolocation.getCurrentPosition(
+                (betterPosition) => {
+                  const { latitude: newLat, longitude: newLon, accuracy: newAccuracy } = betterPosition.coords;
+                  console.log(`Improved GPS Position: ${newLat}, ${newLon}, Accuracy: ${newAccuracy}m`);
+
+                  updateLocationData(newLat, newLon, newAccuracy);
+                },
+                (error) => {
+                  console.log('Second attempt failed, using first position');
+                  updateLocationData(latitude, longitude, accuracy);
+                },
+                { ...options, timeout: 15000 }
+              );
+            }, 2000);
+          } else {
+            updateLocationData(latitude, longitude, accuracy);
+          }
         },
         (error) => {
           console.error('Geolocation error:', error);
           let errorMessage = 'Failed to get location';
-          
+
           switch(error.code) {
             case error.PERMISSION_DENIED:
-              errorMessage = 'Location access denied. Please enable GPS and allow location access.';
+              errorMessage = '🚫 Location access denied. Please:\n1. Allow location access in browser\n2. Enable GPS on your device\n3. Try again';
               break;
             case error.POSITION_UNAVAILABLE:
-              errorMessage = 'Location information is unavailable.';
+              errorMessage = '📍 Location unavailable. Please:\n1. Check GPS is enabled\n2. Move to open area\n3. Try again';
               break;
             case error.TIMEOUT:
-              errorMessage = 'Location request timed out. Please try again.';
+              errorMessage = '⏱️ Location request timed out. Please:\n1. Check internet connection\n2. Move to area with better GPS signal\n3. Try again';
               break;
             default:
-              errorMessage = 'An unknown GPS error occurred.';
+              errorMessage = '❌ GPS error occurred. Please try again or enter location manually.';
               break;
           }
           toast.error(errorMessage);
@@ -665,76 +687,95 @@ const CitizenDashboard = () => {
       );
     };
 
+    const updateLocationData = (latitude, longitude, accuracy) => {
+      // Update form with coordinates and temporary location
+      setFormData(prev => ({
+        ...prev,
+        coordinates: { latitude, longitude, accuracy },
+        location: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+      }));
+
+      // Show accuracy info
+      const accuracyText = accuracy ? ` (±${Math.round(accuracy)}m)` : '';
+      toast.success(`📍 GPS coordinates obtained${accuracyText}`);
+
+      // Try to get readable address using reverse geocoding
+      getReadableAddress(latitude, longitude);
+    };
+
     // Function to get readable address from coordinates
     const getReadableAddress = async (latitude, longitude) => {
       try {
-        toast.info('🔍 Getting address details...');
-        
+        toast.info('🔍 Fetching precise address...');
+
         // Try multiple geocoding services for better coverage
         let addressData = null;
-        
-        // Method 1: Try OpenStreetMap Nominatim (free service)
+
+        // Method 1: Try OpenStreetMap Nominatim (free service) with higher precision
         try {
           const osmResponse = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=20&addressdetails=1&extratags=1&namedetails=1&accept-language=en`,
+            {
+              headers: {
+                'User-Agent': 'CivicConnect/1.0'
+              }
+            }
           );
-          
+
           if (osmResponse.ok) {
             const osmData = await osmResponse.json();
             console.log('OSM Geocoding Response:', osmData);
-            
+
             if (osmData && osmData.address) {
               const addr = osmData.address;
-              
-              // Extract address components
-              const houseNumber = addr.house_number || '';
-              const road = addr.road || addr.street || '';
-              const suburb = addr.suburb || addr.neighbourhood || addr.village || '';
-              const city = addr.city || addr.town || addr.municipality || '';
-              const district = addr.state_district || addr.county || city || '';
-              const state = addr.state || '';
-              const country = addr.country || '';
+
+              // Extract address components with better fallbacks
+              const houseNumber = addr.house_number || addr.building || '';
+              const road = addr.road || addr.street || addr.way || addr.path || '';
+              const suburb = addr.suburb || addr.neighbourhood || addr.quarter || addr.village || addr.hamlet || '';
+              const city = addr.city || addr.town || addr.municipality || addr.village || '';
+              const district = addr.state_district || addr.county || addr.district || city || '';
+              const state = addr.state || addr.province || '';
+              const country = addr.country || 'India';
               const postcode = addr.postcode || '';
-              
-              // Format readable address
-              let readableAddress = '';
-              
+
+              // Create more accurate address formatting for Indian locations
+              let fullAddress = '';
               if (houseNumber && road) {
-                readableAddress += `${houseNumber}, ${road}`;
+                fullAddress = `${houseNumber}, ${road}`;
               } else if (road) {
-                readableAddress += road;
-              }
-              
-              if (suburb && readableAddress) {
-                readableAddress += `, ${suburb}`;
+                fullAddress = road;
               } else if (suburb) {
-                readableAddress += suburb;
+                fullAddress = suburb;
               }
-              
-              if (city && readableAddress) {
-                readableAddress += `, ${city}`;
-              } else if (city) {
-                readableAddress += city;
+
+              if (suburb && !fullAddress.includes(suburb)) {
+                fullAddress += fullAddress ? `, ${suburb}` : suburb;
               }
-              
-              if (district && readableAddress) {
-                readableAddress += `, ${district}`;
-              } else if (district) {
-                readableAddress += district;
+
+              if (city && !fullAddress.includes(city)) {
+                fullAddress += fullAddress ? `, ${city}` : city;
               }
-              
-              if (state && readableAddress) {
-                readableAddress += `, ${state}`;
-              } else if (state) {
-                readableAddress += state;
+
+              if (district && district !== city && !fullAddress.includes(district)) {
+                fullAddress += fullAddress ? `, ${district}` : district;
               }
-              
-              if (postcode && readableAddress) {
-                readableAddress += ` - ${postcode}`;
+
+              if (state && !fullAddress.includes(state)) {
+                fullAddress += fullAddress ? `, ${state}` : state;
               }
-              
+
+              if (postcode) {
+                fullAddress += ` - ${postcode}`;
+              }
+
+              // Fallback to display name if formatted address is empty
+              if (!fullAddress.trim()) {
+                fullAddress = osmData.display_name || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+              }
+
               addressData = {
-                fullAddress: readableAddress || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+                fullAddress: fullAddress,
                 street: road ? `${houseNumber ? houseNumber + ', ' : ''}${road}` : '',
                 district: district || city || '',
                 state: state || '',
@@ -750,22 +791,28 @@ const CitizenDashboard = () => {
         // Method 2: Try alternative geocoding service if OSM fails
         if (!addressData) {
           try {
-            // Using a backup geocoding service (you can replace with your preferred service)
             const response = await fetch(
               `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
             );
-            
+
             if (response.ok) {
               const data = await response.json();
               console.log('BigDataCloud Geocoding Response:', data);
-              
-              const street = data.locality || '';
-              const district = data.principalSubdivision || '';
-              const state = data.principalSubdivision || '';
+
+              const street = data.locality || data.localityInfo?.administrative?.[3]?.name || '';
+              const district = data.principalSubdivision || data.localityInfo?.administrative?.[2]?.name || '';
+              const state = data.principalSubdivisionCode || data.localityInfo?.administrative?.[1]?.name || '';
               const city = data.city || data.locality || '';
-              
+              const country = data.countryName || 'India';
+
+              let fullAddress = '';
+              if (street) fullAddress += street;
+              if (city && city !== street) fullAddress += (fullAddress ? ', ' : '') + city;
+              if (district && district !== city) fullAddress += (fullAddress ? ', ' : '') + district;
+              if (state && state !== district) fullAddress += (fullAddress ? ', ' : '') + state;
+
               addressData = {
-                fullAddress: data.display_name || `${street}, ${city}, ${state}` || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+                fullAddress: fullAddress || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
                 street: street,
                 district: district,
                 state: state,
@@ -786,11 +833,18 @@ const CitizenDashboard = () => {
             // Auto-fill district if available and not already selected
             district: (!prev.district && addressData.district) ? addressData.district : prev.district
           }));
-          
-          toast.success(`📍 Address found: ${addressData.street || 'Location'}, ${addressData.district || 'District'}, ${addressData.state || 'State'}`);
+
+          // Create a concise success message
+          const locationParts = [];
+          if (addressData.street) locationParts.push(addressData.street);
+          if (addressData.city && addressData.city !== addressData.street) locationParts.push(addressData.city);
+          if (addressData.district && addressData.district !== addressData.city) locationParts.push(addressData.district);
+
+          const shortLocation = locationParts.length > 0 ? locationParts.join(', ') : 'Location found';
+          toast.success(`✅ Address: ${shortLocation}`);
         } else {
           // Fallback to coordinates if geocoding fails
-          toast.warning('📍 Location captured, but address details unavailable');
+          toast.warning('📍 GPS coordinates captured. Please verify the location manually.');
         }
         
       } catch (error) {
@@ -1142,6 +1196,15 @@ const CitizenDashboard = () => {
                 <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                   <MapPin className="w-4 h-4" />
                   Location
+                  {formData.coordinates?.accuracy && (
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      formData.coordinates.accuracy < 50 ? 'bg-green-100 text-green-700' :
+                      formData.coordinates.accuracy < 100 ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      ±{Math.round(formData.coordinates.accuracy)}m
+                    </span>
+                  )}
                 </label>
                 <div className="flex gap-3">
                   <input
@@ -1158,9 +1221,14 @@ const CitizenDashboard = () => {
                     className="px-6 py-3 bg-gradient-to-r from-saffron-500 to-green-500 text-white rounded-lg hover:from-saffron-600 hover:to-green-600 flex items-center gap-2 transition-colors shadow-md"
                   >
                     <Navigation className="w-4 h-4" />
-                    GPS
+                    {formData.coordinates ? 'Refresh' : 'GPS'}
                   </button>
                 </div>
+                {formData.coordinates && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    📍 Coordinates: {formData.coordinates.latitude.toFixed(6)}, {formData.coordinates.longitude.toFixed(6)}
+                  </p>
+                )}
               </div>
 
               {/* District Selection */}
@@ -1760,9 +1828,9 @@ const CitizenDashboard = () => {
 
     useEffect(() => {
       fetchLeaderboard();
-    }, []);
+    }, []); // Empty dependency array ensures this runs only once on mount
 
-    const fetchLeaderboard = async () => {
+    const fetchLeaderboard = useCallback(async () => {
       try {
         setLoadingLeaderboard(true);
 
@@ -1783,7 +1851,7 @@ const CitizenDashboard = () => {
 
           setLeaderboardData(processedData);
 
-          // Find current user's rank
+          // Find current user's rank (without updating user state to prevent loops)
           if (user && user._id) {
             const currentUserIndex = processedData.findIndex(item => item._id === user._id);
             if (currentUserIndex !== -1) {
@@ -1795,7 +1863,7 @@ const CitizenDashboard = () => {
           // Fallback data if backend doesn't return proper structure
           setLeaderboardData([
             { rank: 1, name: 'Top Citizen', points: 150, reports: 5, resolved: 4, location: 'Delhi', badge: '🏆' },
-            { rank: 2, name: user?.name || 'You', points: user?.points || 108, reports: complaints.length, resolved: complaints.filter(c => c.status === 'resolved').length, location: user?.location || 'Your City', badge: '🥈' }
+            { rank: 2, name: user?.name || 'You', points: user?.points || 0, reports: complaints.length, resolved: complaints.filter(c => c.status === 'resolved').length, location: user?.location || 'Your City', badge: '🥈' }
           ]);
         }
       } catch (error) {
@@ -1803,14 +1871,14 @@ const CitizenDashboard = () => {
 
         // Fallback data on error
         setLeaderboardData([
-          { rank: 1, name: user?.name || 'You', points: user?.points || 108, reports: complaints.length, resolved: complaints.filter(c => c.status === 'resolved').length, location: user?.location || 'Your City', badge: '🏆' }
+          { rank: 1, name: user?.name || 'You', points: user?.points || 0, reports: complaints.length, resolved: complaints.filter(c => c.status === 'resolved').length, location: user?.location || 'Your City', badge: '🏆' }
         ]);
 
         toast.error('Failed to load leaderboard data');
       } finally {
         setLoadingLeaderboard(false);
       }
-    };
+    }, []); // No dependencies to prevent infinite loop
 
     return (
       <div className="max-w-6xl mx-auto">
@@ -1827,7 +1895,7 @@ const CitizenDashboard = () => {
                 <p className="text-gray-700 mt-1">Top contributors making India better</p>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-yellow-600">{user?.points || 108}</div>
+                <div className="text-3xl font-bold text-yellow-600">{user?.points || 0}</div>
                 <div className="text-sm text-gray-600">Your Points</div>
                 {userRank && (
                   <div className="mt-2">
@@ -2450,7 +2518,7 @@ const CitizenDashboard = () => {
                 },
                 {
                   title: 'Civic Points',
-                  value: user?.points || 108,
+                  value: user?.points || 0,
                   icon: Star,
                   color: 'text-yellow-600',
                   loading: false // User points don't need analytics loading
@@ -2641,7 +2709,7 @@ const CitizenDashboard = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Civic Points</span>
-                    <span className="font-bold text-saffron-600">{user?.points || 108}</span>
+                    <span className="font-bold text-saffron-600">{user?.points || 0}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Total Reports</span>
@@ -2864,7 +2932,7 @@ const CitizenDashboard = () => {
                   <div className="w-px h-12 bg-gray-300"></div>
                   <div className="text-center p-3 bg-white/80 rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     <div className="h-1 bg-gradient-to-r from-yellow-400 to-yellow-600 mb-2"></div>
-                    <div className="text-2xl font-bold text-yellow-600">{user?.points || 108}</div>
+                    <div className="text-2xl font-bold text-yellow-600">{user?.points || 0}</div>
                     <div className="text-xs text-gray-600 font-medium">Points</div>
                   </div>
                 </div>

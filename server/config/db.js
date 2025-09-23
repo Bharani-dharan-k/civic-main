@@ -7,9 +7,9 @@ const connectDB = async () => {
             useNewUrlParser: true,
             useUnifiedTopology: true,
         });
-        console.log('MongoDB Connected...');
+        console.log('MongoDB Connected to Atlas cluster:', mongoose.connection.db.databaseName);
     } catch (err) {
-        console.error(err.message);
+        console.error('MongoDB connection error:', err.message);
         process.exit(1);
     }
 };

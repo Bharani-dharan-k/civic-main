@@ -17,6 +17,7 @@ const ReportSchema = new mongoose.Schema({
     district: { type: String },
     urbanLocalBody: { type: String },
     imageUrl: { type: String, required: true },
+    videoUrl: { type: String },
     status: {
         type: String,
         enum: ['submitted', 'acknowledged', 'assigned', 'in_progress', 'resolved', 'rejected', 'closed'],
