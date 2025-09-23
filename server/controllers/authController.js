@@ -415,6 +415,12 @@ exports.loginAdmin = async (req, res) => {
         
         if (dbAdmin) {
             console.log('Database admin found:', dbAdmin.email);
+            console.log('Admin record validation check:');
+            console.log('- AdminRole:', dbAdmin.adminRole);
+            console.log('- CreatedBy:', dbAdmin.createdBy);
+            console.log('- Ward:', dbAdmin.ward);
+            console.log('- District:', dbAdmin.district);
+            console.log('- Municipality:', dbAdmin.municipality);
             console.log('Input password:', JSON.stringify(password));
             console.log('Password length:', password.length);
             console.log('Password type:', typeof password);
@@ -438,9 +444,11 @@ exports.loginAdmin = async (req, res) => {
                     });
                 }
                 
-                // Update last login
-                dbAdmin.lastLogin = new Date();
-                await dbAdmin.save();
+                // Update last login using direct database update to avoid validation
+                await User.updateOne(
+                    { _id: dbAdmin._id },
+                    { $set: { lastLogin: new Date() } }
+                );
                 
                 // Create JWT token for database admin
                 const payload = { 

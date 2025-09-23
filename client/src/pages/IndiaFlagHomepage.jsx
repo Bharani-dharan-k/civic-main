@@ -108,41 +108,66 @@ const IndiaFlagHomepage = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-black/5 to-black/15"></div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
-          {/* Navigation */}
-          <nav className="absolute top-0 left-0 right-0 z-20 bg-white/10 backdrop-blur-md border-b border-white/20 shadow-lg">
+          {/* Enhanced Navigation Header */}
+          <nav className="fixed top-0 left-0 right-0 z-30 bg-gradient-to-r from-orange-500/95 via-white/95 to-green-600/95 backdrop-blur-xl border-b-2 border-blue-800/30 shadow-2xl">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex justify-between items-center h-16">
-                {/* Logo */}
-                <div className="flex items-center space-x-3">
-                  <img 
-                    src={logo} 
-                    alt="SEVA TRACK Logo" 
-                    className="w-10 h-10 rounded-lg shadow-sm" 
-                  />
-                  <span className="text-2xl font-bold tracking-tight text-white drop-shadow-lg">
-                    SevaTrack
-                  </span>
+              <div className="flex justify-between items-center h-20">
+                {/* Enhanced Logo Section */}
+                <div className="flex items-center space-x-4">
+                  <div className="relative">
+                    <img
+                      src={logo}
+                      alt="SEVA TRACK Logo"
+                      className="w-14 h-14 rounded-xl shadow-lg border-2 border-white/30"
+                    />
+                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-blue-800 rounded-full flex items-center justify-center">
+                      <AshokaChakra size={16} className="text-white" />
+                    </div>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 via-blue-800 to-green-700 bg-clip-text text-transparent drop-shadow-sm">
+                      SevaTrack
+                    </span>
+                    <span className="text-xs md:text-sm font-medium text-gray-600 tracking-wide">
+                      समुदायिक सेवा ट्रैकर
+                    </span>
+                  </div>
                 </div>
 
-                {/* Desktop Navigation */}
-                <div className="hidden md:flex items-center space-x-1">
-                  <button 
+                {/* Enhanced Desktop Navigation */}
+                <div className="hidden md:flex items-center space-x-2">
+                  <div className="flex items-center space-x-6 mr-6">
+                    <button className="text-gray-700 hover:text-orange-600 font-medium transition-colors duration-200 relative group">
+                      Home
+                      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-orange-500 transition-all duration-200 group-hover:w-full"></span>
+                    </button>
+                    <button className="text-gray-700 hover:text-orange-600 font-medium transition-colors duration-200 relative group">
+                      About
+                      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-orange-500 transition-all duration-200 group-hover:w-full"></span>
+                    </button>
+                    <button className="text-gray-700 hover:text-orange-600 font-medium transition-colors duration-200 relative group">
+                      Contact
+                      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-orange-500 transition-all duration-200 group-hover:w-full"></span>
+                    </button>
+                  </div>
+                  <button
                     onClick={() => navigate('/login')}
-                    className="text-white hover:text-orange-200 px-4 py-2 rounded-lg transition-all duration-200 font-medium hover:bg-white/10 backdrop-blur-sm"
+                    className="text-blue-800 hover:text-blue-900 px-4 py-2 rounded-lg transition-all duration-200 font-medium hover:bg-blue-50 border border-transparent hover:border-blue-200"
                   >
                     Login
                   </button>
-                  <button 
+                  <button
                     onClick={() => navigate('/login')}
-                    className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-2 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 ml-3"
+                    className="bg-gradient-to-r from-orange-500 via-orange-600 to-orange-700 hover:from-orange-600 hover:via-orange-700 hover:to-orange-800 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 border border-orange-400/30 backdrop-blur-sm"
                   >
+                    <PhotoCamera className="inline-block mr-2 text-lg" />
                     Report Issue
                   </button>
                 </div>
 
-                {/* Mobile Menu Button */}
+                {/* Enhanced Mobile Menu Button */}
                 <div className="md:hidden">
-                  <button className="text-white hover:text-orange-200 p-2 rounded-lg hover:bg-white/10 transition-colors">
+                  <button className="text-gray-700 hover:text-orange-600 p-3 rounded-xl hover:bg-white/20 transition-all duration-200 border border-gray-300/30">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
@@ -152,273 +177,493 @@ const IndiaFlagHomepage = () => {
             </div>
           </nav>
 
-          {/* Hero Content - Centered */}
-          <div className="text-center flex flex-col justify-center min-h-screen">
-            <h1 className="font-bold mb-8 text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-tight text-white drop-shadow-2xl">
+          {/* Enhanced Hero Content - Centered */}
+          <div className="text-center flex flex-col justify-center min-h-screen pt-20">
+            {/* Flag Tribute Section */}
+            <div className="mb-8 flex justify-center items-center space-x-4">
+              <div className="flex space-x-1">
+                <div className="w-3 h-16 bg-orange-500 rounded-sm shadow-lg"></div>
+                <div className="w-3 h-16 bg-white rounded-sm shadow-lg border border-gray-200"></div>
+                <div className="w-3 h-16 bg-green-600 rounded-sm shadow-lg"></div>
+              </div>
+              <AshokaChakra size={64} className="text-blue-800 animate-pulse-slow" />
+              <div className="flex space-x-1">
+                <div className="w-3 h-16 bg-orange-500 rounded-sm shadow-lg"></div>
+                <div className="w-3 h-16 bg-white rounded-sm shadow-lg border border-gray-200"></div>
+                <div className="w-3 h-16 bg-green-600 rounded-sm shadow-lg"></div>
+              </div>
+            </div>
+
+            <h1 className="font-bold mb-6 text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-tight text-white drop-shadow-2xl animate-fade-in">
               Empowering Citizens,<br />
-              <span className="text-yellow-100 drop-shadow-lg">Strengthening Communities</span>
+              <span className="bg-gradient-to-r from-yellow-200 via-yellow-100 to-white bg-clip-text text-transparent drop-shadow-lg">Strengthening Bharat</span>
             </h1>
-            
-            <p className="mb-12 text-xl md:text-2xl text-white/95 max-w-4xl mx-auto font-light leading-relaxed drop-shadow-lg">
-              Report civic issues in real-time and track their resolution. 
-              Together, we can make our communities better, stronger, and more connected.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center max-w-2xl mx-auto">
+
+            <div className="mb-12 text-center max-w-5xl mx-auto">
+              <p className="mb-4 text-xl md:text-2xl text-white/95 font-light leading-relaxed drop-shadow-lg animate-slide-up">
+                Report civic issues in real-time and track their resolution.
+                Together, we can make our communities better, stronger, and more connected.
+              </p>
+              <p className="text-lg md:text-xl text-yellow-100/90 font-medium hindi-text drop-shadow-md">
+                वास्तविक समय में नागरिक मुद्दों की रिपोर्ट करें और उनके समाधान को ट्रैक करें।
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center max-w-3xl mx-auto mb-8">
               <button
                 onClick={() => navigate('/login')}
-                className="w-full sm:w-auto group bg-white/95 text-orange-500 px-10 py-4 rounded-full text-xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-3 backdrop-blur-sm border border-white/50 hover:bg-white"
+                className="w-full sm:w-auto group bg-white/95 text-orange-600 px-12 py-5 rounded-2xl text-xl font-bold shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-3 backdrop-blur-sm border-2 border-white/70 hover:bg-white hover:border-orange-200"
               >
                 <PhotoCamera className="text-2xl group-hover:rotate-12 transition-transform" />
                 <span>Report an Issue</span>
+                <span className="text-sm font-normal">सूचना दें</span>
               </button>
               <button
                 onClick={() => navigate('/login')}
-                className="w-full sm:w-auto border-2 border-white/80 text-white hover:bg-white hover:text-orange-500 px-10 py-4 rounded-full text-xl font-semibold transition-all duration-300 flex items-center justify-center space-x-3 backdrop-blur-sm shadow-lg hover:shadow-xl bg-white/10"
+                className="w-full sm:w-auto border-3 border-white/90 text-white hover:bg-white hover:text-blue-800 px-12 py-5 rounded-2xl text-xl font-bold transition-all duration-300 flex items-center justify-center space-x-3 backdrop-blur-sm shadow-xl hover:shadow-2xl bg-white/15 hover:border-blue-200"
               >
                 <Map className="text-2xl" />
                 <span>View Dashboard</span>
+                <span className="text-sm font-normal">डैशबोर्ड</span>
               </button>
+            </div>
+
+            {/* Stats Section */}
+            <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-16">
+              <div className="text-center">
+                <div className="text-3xl md:text-4xl font-bold text-white mb-2">10K+</div>
+                <div className="text-white/80 text-sm md:text-base">Issues Resolved</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl md:text-4xl font-bold text-white mb-2">500+</div>
+                <div className="text-white/80 text-sm md:text-base">Cities Connected</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl md:text-4xl font-bold text-white mb-2">1M+</div>
+                <div className="text-white/80 text-sm md:text-base">Citizens Empowered</div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* White Center Section with Clean Features */}
-      <section className="bg-white py-24 relative">
-        {/* Subtle Background Pattern */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-gradient-to-br from-orange-200 to-orange-300 rounded-full blur-xl"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-40 h-40 bg-gradient-to-br from-green-200 to-green-300 rounded-full blur-xl"></div>
+      {/* Enhanced Features Section */}
+      <section className="bg-gradient-to-br from-gray-50 via-white to-blue-50/30 py-32 relative overflow-hidden">
+        {/* Enhanced Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-1/4 left-1/4 w-40 h-40 bg-gradient-to-br from-orange-300 to-orange-400 rounded-full blur-2xl animate-pulse-slow"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-gradient-to-br from-green-300 to-green-400 rounded-full blur-2xl animate-pulse-slow animation-delay-200"></div>
+          <div className="absolute top-1/2 right-1/3 w-32 h-32 bg-gradient-to-br from-blue-300 to-blue-400 rounded-full blur-xl animate-pulse-slow animation-delay-400"></div>
         </div>
-        
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          {/* Section Header */}
-          <div className="text-center mb-20">
-            <div className="flex justify-center mb-8">
-              <AshokaChakra size={60} className="text-blue-800" />
+          {/* Enhanced Section Header */}
+          <div className="text-center mb-24">
+            <div className="flex justify-center mb-10">
+              <div className="relative">
+                <AshokaChakra size={80} className="text-blue-800 chakra-rotate" />
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-orange-500 rounded-full animate-bounce-gentle"></div>
+                <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-green-600 rounded-full animate-bounce-gentle animation-delay-200"></div>
+              </div>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-800">
+            <h2 className="text-5xl md:text-6xl font-bold mb-8 bg-gradient-to-r from-orange-600 via-blue-800 to-green-700 bg-clip-text text-transparent">
               Platform Features
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed mb-4">
               Everything you need to report, track, and resolve civic issues efficiently.
               Built for the digital India of tomorrow.
             </p>
+            <p className="text-lg text-gray-500 hindi-text">
+              डिजिटल भारत के कल के लिए निर्मित, कुशलतापूर्वक नागरिक मुद्दों की रिपोर्ट, ट्रैक और समाधान करने के लिए आपको जो कुछ भी चाहिए।
+            </p>
           </div>
           
-          {/* Features Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => (
-              <div key={index} className="group">
-                <div className="bg-white rounded-2xl p-8 h-full shadow-soft hover:shadow-strong transition-all duration-300 border border-gray-100 group-hover:-translate-y-2 group-hover:border-orange-200">
-                  <div className="text-center">
-                    <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center text-white shadow-saffron group-hover:scale-110 transition-transform duration-300">
-                      {feature.icon}
+          {/* Enhanced Features Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+            {features.map((feature, index) => {
+              const gradientColors = [
+                'from-orange-500 to-orange-600',
+                'from-blue-600 to-blue-700',
+                'from-green-600 to-green-700',
+                'from-purple-600 to-purple-700'
+              ];
+              return (
+                <div key={index} className="group animate-slide-up" style={{animationDelay: `${index * 100}ms`}}>
+                  <div className="bg-white rounded-3xl p-8 h-full shadow-soft hover:shadow-strong transition-all duration-500 border border-gray-100 group-hover:-translate-y-4 group-hover:border-orange-200 relative overflow-hidden">
+                    {/* Decorative corner */}
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-orange-100 to-transparent rounded-bl-3xl"></div>
+
+                    <div className="text-center relative z-10">
+                      <div className={`w-20 h-20 mx-auto mb-8 bg-gradient-to-br ${gradientColors[index]} rounded-3xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 border-4 border-white`}>
+                        {feature.icon}
+                      </div>
+                      <h3 className="text-xl md:text-2xl font-bold mb-6 text-gray-800 group-hover:text-orange-600 transition-colors duration-300">
+                        {feature.title}
+                      </h3>
+                      <p className="text-gray-600 leading-relaxed text-base">
+                        {feature.description}
+                      </p>
+
+                      {/* Progress indicator */}
+                      <div className="mt-6 w-full bg-gray-100 rounded-full h-1">
+                        <div className={`bg-gradient-to-r ${gradientColors[index]} h-1 rounded-full transition-all duration-700 group-hover:w-full`} style={{width: '30%'}}></div>
+                      </div>
                     </div>
-                    <h3 className="text-xl font-bold mb-4 text-gray-800">
-                      {feature.title}
-                    </h3>
-                    <p className="text-gray-600 leading-relaxed">
-                      {feature.description}
-                    </p>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="bg-gradient-to-br from-gray-50 to-blue-50 py-24">
+      {/* Enhanced How It Works Section */}
+      <section className="bg-gradient-to-br from-orange-50 via-white to-green-50 py-32 relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-orange-500 via-white to-green-600"></div>
+        <div className="absolute bottom-0 left-0 w-full h-2 bg-gradient-to-r from-green-600 via-white to-orange-500"></div>
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Section Header */}
-          <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-800">
+          {/* Enhanced Section Header */}
+          <div className="text-center mb-24">
+            <div className="flex justify-center mb-8">
+              <div className="bg-gradient-to-r from-orange-500 via-white to-green-600 p-1 rounded-full">
+                <div className="bg-white rounded-full p-4">
+                  <AshokaChakra size={48} className="text-blue-800" />
+                </div>
+              </div>
+            </div>
+            <h2 className="text-5xl md:text-6xl font-bold mb-8 bg-gradient-to-r from-orange-600 via-blue-800 to-green-700 bg-clip-text text-transparent">
               How It Works
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed mb-4">
               Four simple steps to report and resolve civic issues in your community
             </p>
+            <p className="text-lg text-gray-500 hindi-text">
+              आपके समुदाय में नागरिक मुद्दों की रिपोर्ट और समाधान के लिए चार सरल चरण
+            </p>
           </div>
           
-          {/* Steps Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+          {/* Enhanced Steps Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16">
             {steps.map((step, index) => (
-              <div key={index} className="text-center group">
-                <div className="relative mb-8">
-                  <div className={`w-24 h-24 mx-auto ${step.color} rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-all duration-300`}>
+              <div key={index} className="text-center group animate-slide-up" style={{animationDelay: `${index * 150}ms`}}>
+                <div className="relative mb-10">
+                  {/* Main step circle */}
+                  <div className={`w-28 h-28 mx-auto ${step.color} rounded-3xl flex items-center justify-center text-white shadow-xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 border-4 border-white relative z-10`}>
                     {step.icon}
                   </div>
-                  <div className="absolute -top-3 -right-3 w-10 h-10 bg-blue-800 text-white rounded-full flex items-center justify-center text-lg font-bold shadow-lg">
+
+                  {/* Step number badge */}
+                  <div className="absolute -top-4 -right-4 w-12 h-12 bg-gradient-to-br from-blue-800 to-blue-900 text-white rounded-full flex items-center justify-center text-xl font-bold shadow-lg z-20 border-3 border-white">
                     {index + 1}
                   </div>
-                  {/* Connection Line */}
+
+                  {/* Decorative ring */}
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-36 h-36 border-2 border-dashed border-gray-300 rounded-full opacity-30 group-hover:opacity-60 transition-opacity duration-300"></div>
+
+                  {/* Enhanced Connection Line */}
                   {index < steps.length - 1 && (
-                    <div className="hidden lg:block absolute top-12 left-full w-full h-0.5 bg-gradient-to-r from-gray-300 to-gray-400 z-0"></div>
+                    <div className="hidden lg:block absolute top-14 left-full w-full z-0">
+                      <div className="relative">
+                        <div className="h-1 bg-gradient-to-r from-orange-200 via-blue-200 to-green-200 rounded-full"></div>
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
+                      </div>
+                    </div>
                   )}
                 </div>
-                <h3 className="text-xl font-bold mb-4 text-gray-800">
+
+                <h3 className="text-2xl font-bold mb-6 text-gray-800 group-hover:text-orange-600 transition-colors duration-300">
                   {step.title}
                 </h3>
-                <p className="text-gray-600 leading-relaxed max-w-xs mx-auto">
+                <p className="text-gray-600 leading-relaxed max-w-sm mx-auto text-base mb-4">
                   {step.description}
                 </p>
+
+                {/* Progress indicator */}
+                <div className="w-20 h-1 bg-gray-200 rounded-full mx-auto">
+                  <div className={`${step.color} h-1 rounded-full transition-all duration-1000 group-hover:w-full`} style={{width: `${25 * (index + 1)}%`}}></div>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Impact Benefits Section */}
-      <section className="bg-white py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Section Header */}
-          <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-800">
+      {/* Enhanced Impact Benefits Section */}
+      <section className="bg-gradient-to-br from-white via-blue-50/30 to-white py-32 relative">
+        {/* Background pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-1/4 left-1/6 w-32 h-32 bg-orange-400 rounded-full blur-xl animate-pulse-slow"></div>
+          <div className="absolute bottom-1/4 right-1/6 w-40 h-40 bg-green-400 rounded-full blur-xl animate-pulse-slow animation-delay-200"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-blue-400 rounded-full blur-2xl animate-pulse-slow animation-delay-400"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          {/* Enhanced Section Header */}
+          <div className="text-center mb-24">
+            <div className="flex justify-center items-center mb-10">
+              <div className="relative">
+                <div className="w-24 h-24 bg-gradient-to-r from-orange-500 via-white to-green-600 rounded-full p-1">
+                  <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
+                    <AshokaChakra size={48} className="text-blue-800" />
+                  </div>
+                </div>
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">★</span>
+                </div>
+                <div className="absolute -bottom-2 -left-2 w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">★</span>
+                </div>
+              </div>
+            </div>
+            <h2 className="text-5xl md:text-6xl font-bold mb-8 bg-gradient-to-r from-orange-600 via-blue-800 to-green-700 bg-clip-text text-transparent">
               Community Impact
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed mb-4">
               Making a real difference in communities across India with measurable results
+            </p>
+            <p className="text-lg text-gray-500 hindi-text">
+              मापने योग्य परिणामों के साथ पूरे भारत में समुदायों में वास्तविक बदलाव लाना
             </p>
           </div>
           
-          {/* Benefits Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            {benefits.map((benefit, index) => (
-              <div key={index} className="text-center group">
-                <div className="p-8 rounded-2xl hover:bg-gray-50 transition-all duration-300 h-full">
-                  <div className="mb-8 flex justify-center">
-                    {benefit.icon}
+          {/* Enhanced Benefits Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
+            {benefits.map((benefit, index) => {
+              const bgColors = ['bg-orange-50', 'bg-blue-50', 'bg-green-50'];
+              const borderColors = ['border-orange-200', 'border-blue-200', 'border-green-200'];
+              return (
+                <div key={index} className="text-center group animate-slide-up" style={{animationDelay: `${index * 200}ms`}}>
+                  <div className={`p-10 rounded-3xl ${bgColors[index]} hover:bg-white border-2 ${borderColors[index]} hover:border-opacity-50 transition-all duration-500 h-full shadow-soft hover:shadow-strong group-hover:-translate-y-2 relative overflow-hidden`}>
+                    {/* Decorative elements */}
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-white/50 to-transparent rounded-bl-3xl"></div>
+                    <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-white/30 to-transparent rounded-tr-3xl"></div>
+
+                    <div className="relative z-10">
+                      <div className="mb-10 flex justify-center">
+                        <div className="p-4 bg-white rounded-2xl shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 border-2 border-gray-100">
+                          {benefit.icon}
+                        </div>
+                      </div>
+                      <h3 className="text-2xl md:text-3xl font-bold mb-8 text-gray-800 group-hover:text-orange-600 transition-colors duration-300">
+                        {benefit.title}
+                      </h3>
+                      <p className="text-lg text-gray-600 leading-relaxed max-w-sm mx-auto mb-6">
+                        {benefit.description}
+                      </p>
+
+                      {/* Achievement badge */}
+                      <div className="inline-flex items-center px-4 py-2 bg-white rounded-full shadow-sm border border-gray-200">
+                        <span className="text-2xl mr-2">✓</span>
+                        <span className="text-sm font-medium text-gray-600">Verified Impact</span>
+                      </div>
+                    </div>
                   </div>
-                  <h3 className="text-2xl md:text-3xl font-bold mb-6 text-gray-800">
-                    {benefit.title}
-                  </h3>
-                  <p className="text-lg text-gray-600 leading-relaxed max-w-sm mx-auto">
-                    {benefit.description}
-                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Enhanced Call to Action Section */}
+      <section className="bg-gradient-to-br from-orange-500 via-white to-green-600 py-32 relative overflow-hidden">
+        {/* Enhanced Background Elements */}
+        <div className="absolute top-0 left-0 w-80 h-80 bg-gradient-radial from-orange-400/30 to-transparent rounded-full blur-3xl animate-pulse-slow"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-radial from-green-400/30 to-transparent rounded-full blur-3xl animate-pulse-slow animation-delay-200"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-radial from-white/40 to-transparent rounded-full blur-2xl animate-pulse-slow animation-delay-400"></div>
+
+        {/* Decorative flag stripes */}
+        <div className="absolute top-0 left-0 w-full h-4 bg-gradient-to-r from-orange-500 via-white to-green-600 opacity-60"></div>
+        <div className="absolute bottom-0 left-0 w-full h-4 bg-gradient-to-r from-green-600 via-white to-orange-500 opacity-60"></div>
+
+        {/* Content overlay for better readability */}
+        <div className="absolute inset-0 bg-white/15 backdrop-blur-sm"></div>
+
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center">
+            {/* Enhanced header with flag elements */}
+            <div className="flex justify-center items-center mb-10">
+              <div className="flex items-center space-x-4">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-12 bg-orange-500 rounded-sm shadow-md"></div>
+                  <div className="w-2 h-12 bg-white rounded-sm shadow-md border border-gray-200"></div>
+                  <div className="w-2 h-12 bg-green-600 rounded-sm shadow-md"></div>
+                </div>
+                <AshokaChakra size={60} className="text-blue-800 animate-pulse-slow" />
+                <div className="flex space-x-1">
+                  <div className="w-2 h-12 bg-orange-500 rounded-sm shadow-md"></div>
+                  <div className="w-2 h-12 bg-white rounded-sm shadow-md border border-gray-200"></div>
+                  <div className="w-2 h-12 bg-green-600 rounded-sm shadow-md"></div>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Call to Action - Clean Design */}
-      <section className="bg-gradient-to-r from-orange-500 via-white to-green-600 py-24 relative overflow-hidden">
-        {/* Subtle Background Elements */}
-        <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-radial from-orange-300/20 to-transparent rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-0 w-72 h-72 bg-gradient-radial from-green-300/20 to-transparent rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-gradient-radial from-white/30 to-transparent rounded-full blur-2xl"></div>
-        
-        {/* Content overlay for better readability */}
-        <div className="absolute inset-0 bg-white/10"></div>
-        
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center">
-            <div className="flex justify-center mb-6">
-              <AshokaChakra size={50} className="text-blue-800" />
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold mb-8 text-gray-800 drop-shadow-sm">
+
+            <h2 className="text-5xl md:text-6xl font-bold mb-8 bg-gradient-to-r from-orange-600 via-blue-800 to-green-700 bg-clip-text text-transparent drop-shadow-sm">
               Ready to Make a Difference?
             </h2>
-            <p className="text-xl mb-12 text-gray-700 leading-relaxed max-w-2xl mx-auto drop-shadow-sm">
+            <p className="text-xl md:text-2xl mb-6 text-gray-800 leading-relaxed max-w-3xl mx-auto drop-shadow-sm font-medium">
               Join thousands of citizens already using our platform to build better communities
             </p>
-            
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center max-w-2xl mx-auto">
+            <p className="text-lg mb-12 text-gray-700 hindi-text leading-relaxed max-w-2xl mx-auto">
+              बेहतर समुदाय बनाने के लिए हमारे प्लेटफॉर्म का उपयोग करने वाले हजारों नागरिकों के साथ जुड़ें
+            </p>
+
+            {/* Enhanced CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-8 justify-center items-center max-w-4xl mx-auto mb-12">
               <button
                 onClick={() => navigate('/login')}
-                className="w-full sm:w-auto group bg-gradient-to-r from-orange-500 to-orange-600 text-white px-12 py-4 rounded-full text-xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-3 backdrop-blur-sm border border-orange-400/20"
+                className="w-full sm:w-auto group bg-gradient-to-r from-orange-500 via-orange-600 to-orange-700 text-white px-16 py-5 rounded-2xl text-xl font-bold shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center space-x-3 backdrop-blur-sm border-2 border-orange-400/30 hover:border-orange-300"
               >
                 <PhotoCamera className="text-2xl group-hover:rotate-12 transition-transform" />
-                <span>Start Reporting Issues</span>
+                <div className="flex flex-col items-start">
+                  <span>Start Reporting Issues</span>
+                  <span className="text-sm font-normal opacity-90">समस्या की रिपोर्ट शुरू करें</span>
+                </div>
               </button>
               <button
                 onClick={() => navigate('/login')}
-                className="w-full sm:w-auto bg-white/90 border-2 border-blue-800 text-blue-800 hover:bg-blue-800 hover:text-white px-12 py-4 rounded-full text-xl font-bold transition-all duration-300 flex items-center justify-center space-x-3 shadow-lg backdrop-blur-sm hover:shadow-xl"
+                className="w-full sm:w-auto bg-white/95 border-3 border-blue-800 text-blue-800 hover:bg-blue-800 hover:text-white px-16 py-5 rounded-2xl text-xl font-bold transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl backdrop-blur-sm hover:shadow-2xl hover:border-blue-600"
               >
                 <Map className="text-2xl" />
-                <span>Admin Dashboard</span>
+                <div className="flex flex-col items-start">
+                  <span>Admin Dashboard</span>
+                  <span className="text-sm font-normal opacity-70">प्रबंधन डैशबोर्ड</span>
+                </div>
               </button>
+            </div>
+
+            {/* Trust indicators */}
+            <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto pt-8 border-t border-white/30">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-800">24/7</div>
+                <div className="text-sm text-gray-600">Support Available</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-800">100%</div>
+                <div className="text-sm text-gray-600">Secure Platform</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-800">Free</div>
+                <div className="text-sm text-gray-600">For All Citizens</div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Green Footer Section */}
-      <footer className="bg-gradient-to-r from-green-700 to-green-800 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Footer Content Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
-            {/* Brand Section */}
-            <div className="text-center md:text-left">
-              <div className="flex items-center justify-center md:justify-start space-x-3 mb-6">
-                <AshokaChakra size={40} className="filter brightness-0 invert opacity-90" />
-                <h3 className="text-2xl font-bold">SevaTrack</h3>
+      {/* Enhanced Footer Section */}
+      <footer className="bg-gradient-to-br from-green-700 via-green-800 to-green-900 text-white py-24 relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-orange-500 via-white to-green-600"></div>
+        <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-radial from-green-600/20 to-transparent rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-0 w-80 h-80 bg-gradient-radial from-green-500/20 to-transparent rounded-full blur-3xl"></div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          {/* Enhanced Footer Content Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-20">
+            {/* Enhanced Brand Section */}
+            <div className="md:col-span-2 text-center md:text-left">
+              <div className="flex items-center justify-center md:justify-start space-x-4 mb-8">
+                <div className="relative">
+                  <AshokaChakra size={48} className="text-white" />
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-orange-500 rounded-full"></div>
+                </div>
+                <div>
+                  <h3 className="text-3xl font-bold">SevaTrack</h3>
+                  <p className="text-green-300 text-sm hindi-text">सेवा ट्रैक</p>
+                </div>
               </div>
-              <p className="text-green-100 leading-relaxed text-lg">
-                Empowering citizens and strengthening communities through 
+              <p className="text-green-100 leading-relaxed text-lg mb-6">
+                Empowering citizens and strengthening communities through
                 technology-driven civic engagement across India.
               </p>
+              <p className="text-green-200 text-base hindi-text leading-relaxed">
+                पूरे भारत में प्रौद्योगिकी-संचालित नागरिक जुड़ाव के माध्यम से नागरिकों को सशक्त बनाना और समुदायों को मजबूत बनाना।
+              </p>
             </div>
-            
+
             {/* Quick Links */}
-            <div className="text-center">
-              <h4 className="text-xl font-bold mb-6 text-green-100">Quick Links</h4>
+            <div className="text-center md:text-left">
+              <h4 className="text-2xl font-bold mb-8 text-green-100 flex items-center justify-center md:justify-start">
+                <span className="mr-2">🔗</span> Quick Links
+              </h4>
               <div className="space-y-4">
                 {[
-                  { label: 'About Us', path: '/about' },
-                  { label: 'Contact', path: '/contact' },
-                  { label: 'Privacy Policy', path: '/privacy' },
-                  { label: 'Terms of Service', path: '/terms' }
+                  { label: 'About Us', path: '/about', hindi: 'हमारे बारे में' },
+                  { label: 'Contact', path: '/contact', hindi: 'संपर्क' },
+                  { label: 'Privacy Policy', path: '/privacy', hindi: 'गोपनीयता नीति' },
+                  { label: 'Terms of Service', path: '/terms', hindi: 'सेवा की शर्तें' }
                 ].map((link, index) => (
                   <button
                     key={index}
                     onClick={() => navigate(link.path)}
-                    className="block w-full text-green-200 hover:text-white transition-colors duration-200 font-medium text-lg py-1"
+                    className="block w-full text-green-200 hover:text-white transition-all duration-200 font-medium text-lg py-2 px-4 rounded-lg hover:bg-green-600/30 group"
                   >
-                    {link.label}
+                    <div className="flex flex-col items-center md:items-start">
+                      <span className="group-hover:translate-x-1 transition-transform">{link.label}</span>
+                      <span className="text-xs text-green-300 hindi-text">{link.hindi}</span>
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
-            
-            {/* Contact Info */}
+
+            {/* Enhanced Contact Info */}
             <div className="text-center md:text-left">
-              <h4 className="text-xl font-bold mb-6 text-green-100">Contact Info</h4>
-              <div className="space-y-4">
-                <div className="flex items-center justify-center md:justify-start space-x-3">
+              <h4 className="text-2xl font-bold mb-8 text-green-100 flex items-center justify-center md:justify-start">
+                <span className="mr-2">📞</span> Contact Info
+              </h4>
+              <div className="space-y-6">
+                <div className="flex items-center justify-center md:justify-start space-x-3 p-3 bg-green-600/20 rounded-lg">
                   <Email className="text-green-200 text-xl" />
-                  <span className="text-green-100 text-lg">support@civicconnect.gov.in</span>
+                  <div>
+                    <span className="text-green-100 text-lg block">support@civicconnect.gov.in</span>
+                    <span className="text-green-300 text-sm">ईमेल समर्थन</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-center md:justify-start space-x-3">
+                <div className="flex items-center justify-center md:justify-start space-x-3 p-3 bg-green-600/20 rounded-lg">
                   <Phone className="text-green-200 text-xl" />
-                  <span className="text-green-100 text-lg">1800-123-CIVIC</span>
+                  <div>
+                    <span className="text-green-100 text-lg block">1800-123-CIVIC</span>
+                    <span className="text-green-300 text-sm">मुफ्त हेल्पलाइन</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-center md:justify-start space-x-3">
+                <div className="flex items-center justify-center md:justify-start space-x-3 p-3 bg-green-600/20 rounded-lg">
                   <Language className="text-green-200 text-xl" />
-                  <span className="text-green-100 text-lg">Smart India Hackathon 2025</span>
+                  <div>
+                    <span className="text-green-100 text-lg block">Smart India Hackathon 2025</span>
+                    <span className="text-green-300 text-sm">इनोवेशन पार्टनर</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          
-          {/* Footer Bottom */}
-          <div className="border-t border-green-600 pt-8">
-            <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-              <p className="text-green-200 text-center md:text-left">
-                © 2025 Civic Engagement Platform. All rights reserved.
-              </p>
-              <div className="flex items-center space-x-4">
-                <div className="flex space-x-1">
-                  <div className="w-8 h-5 bg-orange-500 rounded-sm shadow-sm"></div>
-                  <div className="w-8 h-5 bg-white rounded-sm shadow-sm"></div>
-                  <div className="w-8 h-5 bg-green-600 rounded-sm shadow-sm"></div>
+
+          {/* Enhanced Footer Bottom */}
+          <div className="border-t-2 border-green-600 pt-10">
+            <div className="flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
+              <div className="text-center md:text-left">
+                <p className="text-green-200 text-lg font-medium">
+                  © 2025 Civic Engagement Platform. All rights reserved.
+                </p>
+                <p className="text-green-300 text-sm hindi-text mt-1">
+                  सभी अधिकार सुरक्षित | भारत सरकार द्वारा प्रमाणित
+                </p>
+              </div>
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-3">
+                  <div className="flex space-x-1 p-2 bg-white/10 rounded-lg">
+                    <div className="w-10 h-6 bg-orange-500 rounded-sm shadow-lg"></div>
+                    <div className="w-10 h-6 bg-white rounded-sm shadow-lg border border-gray-200"></div>
+                    <div className="w-10 h-6 bg-green-600 rounded-sm shadow-lg"></div>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-green-200 font-bold text-lg block">Proudly Made in India</span>
+                    <span className="text-green-300 text-sm hindi-text">गर्व से भारत में बना</span>
+                  </div>
                 </div>
-                <span className="text-green-200 font-medium">Proudly Made in India</span>
               </div>
             </div>
           </div>
