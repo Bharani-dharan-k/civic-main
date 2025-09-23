@@ -11,6 +11,15 @@ exports.protect = async (req, res, next) => {
             token = req.headers.authorization.split(' ')[1];
             console.log('🔐 Token received:', token.substring(0, 20) + '...');
 
+            // Handle invalid test tokens
+            if (token === 'test' || token === 'undefined' || token === 'null') {
+                console.log('❌ Invalid test token detected, rejecting');
+                return res.status(401).json({
+                    success: false,
+                    msg: 'Invalid token - please login again'
+                });
+            }
+
             // Handle fallback test token
             if (token === 'fallback-token-123') {
                 console.log('🔧 Using fallback test token');
@@ -178,12 +187,21 @@ exports.worker = (req, res, next) => {
 
 // Middleware to check for super admin role
 exports.superAdminOnly = (req, res, next) => {
+    console.log('🔒 SUPER ADMIN CHECK:', {
+        hasUser: !!req.user,
+        userRole: req.user?.role,
+        userEmail: req.user?.email,
+        userId: req.user?.id
+    });
+
     if (req.user && req.user.role === 'super_admin') {
+        console.log('✅ Super admin access granted');
         next();
     } else {
-        res.status(403).json({ 
+        console.log('❌ Super admin access denied');
+        res.status(403).json({
             success: false,
-            message: 'Access denied. Super Admin privileges required.' 
+            message: 'Access denied. Super Admin privileges required.'
         });
     }
 };

@@ -21,16 +21,16 @@ const UserSchema = new mongoose.Schema({
             return this.role === 'citizen';
         }
     },
-    role: { 
-        type: String, 
-        enum: ['citizen', 'field_staff', 'field_head', 'department_head', 'municipality_admin', 'district_admin', 'super_admin'], 
-        default: 'citizen' 
+    role: {
+        type: String,
+        enum: ['citizen', 'field_staff', 'field_head', 'department_head', 'municipality_admin', 'district_admin', 'state_admin', 'super_admin'],
+        default: 'citizen'
     },
     adminRole: {
         type: String,
-        enum: ['super_admin', 'district_admin', 'municipality_admin', 'department_head', 'field_head'],
+        enum: ['super_admin', 'district_admin', 'municipality_admin', 'department_head', 'field_head', 'state_admin'],
         required: function() {
-            return ['super_admin', 'district_admin', 'municipality_admin', 'department_head', 'field_head'].includes(this.role);
+            return ['super_admin', 'district_admin', 'municipality_admin', 'department_head', 'field_head', 'state_admin'].includes(this.role);
         }
     },
     district: {

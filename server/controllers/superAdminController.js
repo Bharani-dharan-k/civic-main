@@ -8,6 +8,14 @@ const Category = require('../models/Category');
 // Create new admin (District Admin, Municipality Admin, etc.)
 exports.createAdmin = async (req, res) => {
     try {
+        console.log('🔥 CREATE ADMIN REQUEST RECEIVED');
+        console.log('Request body:', JSON.stringify(req.body, null, 2));
+        console.log('Request user:', req.user ? {
+            id: req.user.id,
+            email: req.user.email,
+            role: req.user.role
+        } : 'NO USER FOUND');
+
         const { name, email, password, role, district, municipality, department } = req.body;
 
         // Validate required fields
@@ -28,7 +36,7 @@ exports.createAdmin = async (req, res) => {
         }
 
         // Validate role
-        const allowedRoles = ['district_admin', 'municipality_admin', 'department_head', 'field_head', 'field_staff'];
+        const allowedRoles = ['district_admin', 'municipality_admin', 'department_head', 'field_head', 'field_staff', 'state_admin'];
         if (!allowedRoles.includes(role)) {
             return res.status(400).json({
                 success: false,
@@ -42,8 +50,7 @@ exports.createAdmin = async (req, res) => {
             email,
             password,
             role,
-            adminRole: role,
-            createdBy: req.user.id
+            adminRole: role
         };
 
         // Add location fields based on role
@@ -77,6 +84,11 @@ exports.createAdmin = async (req, res) => {
             userData.department = department;
         }
 
+        // Set createdBy field for roles that require it
+        if (['municipality_admin', 'department_head', 'field_head', 'field_staff'].includes(role)) {
+            userData.createdBy = req.user.id;
+        }
+
         const newUser = new User(userData);
         await newUser.save();
 
@@ -92,6 +104,27 @@ exports.createAdmin = async (req, res) => {
 
     } catch (error) {
         console.error('Create admin error:', error);
+        console.error('Error details:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+            userData: JSON.stringify(userData, null, 2)
+        });
+
+        // Handle validation errors specifically
+        if (error.name === 'ValidationError') {
+            const validationErrors = Object.keys(error.errors).map(key => ({
+                field: key,
+                message: error.errors[key].message
+            }));
+
+            return res.status(400).json({
+                success: false,
+                message: 'Validation error',
+                errors: validationErrors
+            });
+        }
+
         res.status(500).json({
             success: false,
             message: 'Server error while creating admin',
