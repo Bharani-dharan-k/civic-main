@@ -710,7 +710,7 @@ const UnifiedLogin = () => {
                         type="button"
                         onClick={() => setAdminForm({
                           email: 'bharani@gmail.com',
-                          password: 'password',
+                          password: '123456',
                           role: 'super_admin'
                         })}
                         className="text-xs bg-red-50 text-red-600 hover:bg-red-100 font-medium py-2 px-3 rounded-lg border border-red-200 transition-colors"
