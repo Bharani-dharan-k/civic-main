@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Municipal Dashboard API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .error { color: #d32f2f; }
+        .success { color: #2e7d32; }
+        .warning { color: #f57c00; }
+        button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #1565c0; }
+        .log-output {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Municipal Dashboard API Test</h1>
+    
+    <div class="container">
+        <h2>Authentication Test</h2>
+        <div>
+            <input type="email" id="email" placeholder="Email" value="bhupesh@gmail.com">
+            <input type="password" id="password" placeholder="Password" value="123456">
+            <button onclick="testLogin()">Login</button>
+            <button onclick="clearAuth()">Clear Auth</button>
+        </div>
+        <div id="auth-status"></div>
+    </div>
+    
+    <div class="container">
+        <h2>API Test Results</h2>
+        <button onclick="testAllAPIs()">Test All APIs</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+        <div id="log-output" class="log-output"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        let logOutput = document.getElementById('log-output');
+        let authStatus = document.getElementById('auth-status');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : '';
+            logOutput.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLogs() {
+            logOutput.innerHTML = '';
+        }
+
+        function clearAuth() {
+            localStorage.clear();
+            updateAuthStatus();
+            log('🧹 Cleared all localStorage data');
+        }
+
+        function updateAuthStatus() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            if (token) {
+                authStatus.innerHTML = `<span class="success">✅ Authenticated</span><br>
+                    Token: ${token.substring(0, 30)}...<br>
+                    User: ${user || 'No user data'}`;
+            } else {
+                authStatus.innerHTML = `<span class="error">❌ Not authenticated</span>`;
+            }
+        }
+
+        async function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            log('🔑 Attempting login...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/admin/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                log(`Response status: ${response.status}`);
+                
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    log('✅ Login successful!', 'success');
+                    log(`User: ${data.user.name} (${data.user.role})`);
+                    updateAuthStatus();
+                } else {
+                    log(`❌ Login failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Login error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAPI(name, endpoint) {
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                log(`❌ Cannot test ${name}: No token found`, 'error');
+                return null;
+            }
+
+            try {
+                log(`🔄 Testing ${name}...`);
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    log(`✅ ${name}: Success`, 'success');
+                    if (Array.isArray(data.data)) {
+                        log(`   Found ${data.data.length} items`);
+                    } else if (typeof data.data === 'object') {
+                        log(`   Data: ${JSON.stringify(data.data, null, 2)}`);
+                    }
+                    return data;
+                } else {
+                    log(`❌ ${name}: Failed (${response.status}) - ${data.message || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ ${name}: Network error - ${error.message}`, 'error');
+            }
+            return null;
+        }
+
+        async function testAllAPIs() {
+            log('🧪 Starting comprehensive API test...');
+            
+            const apis = [
+                { name: 'Municipal Stats', endpoint: '/municipal/stats' },
+                { name: 'Assigned Tasks', endpoint: '/municipal/tasks' },
+                { name: 'Task Statistics', endpoint: '/municipal/tasks/stats' },
+                { name: 'Municipal Reports', endpoint: '/municipal/reports' },
+                { name: 'Staff Data', endpoint: '/municipal/staff' }
+            ];
+
+            for (const api of apis) {
+                await testAPI(api.name, api.endpoint);
+                await new Promise(resolve => setTimeout(resolve, 500)); // Small delay between tests
+            }
+
+            log('🏁 API test completed!');
+        }
+
+        // Initialize on page load
+        window.onload = function() {
+            updateAuthStatus();
+            log('🚀 Municipal Dashboard API Test Page loaded');
+        };
+    </script>
+</body>
+</html>

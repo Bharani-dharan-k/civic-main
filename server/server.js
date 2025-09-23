@@ -3,7 +3,6 @@ const connectDB = require('./config/db');
 const cors = require('cors');
 const multer = require('multer');
 const FormData = require('form-data');
-const fetch = require('node-fetch');
 require('dotenv').config();
 
 const app = express();
@@ -33,51 +32,8 @@ app.post('/api/test-post', (req, res) => {
   res.json({ message: 'POST route working' });
 });
 
-// Image classifier proxy route
-app.post('/api/image-classifier/analyze', upload.single('image'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No image file provided' });
-    }
-
-    // Create FormData for the external API call
-    const formData = new FormData();
-    formData.append('image', req.file.buffer, {
-      filename: req.file.originalname,
-      contentType: req.file.mimetype
-    });
-
-    // Call the external image classifier API
-    const response = await fetch('https://imageclassifier-wk4u.onrender.com/analyze', {
-      method: 'POST',
-      body: formData,
-      headers: formData.getHeaders()
-    });
-
-    if (!response.ok) {
-      console.error('External API error:', response.status, response.statusText);
-      return res.status(500).json({
-        message: 'Image classification service unavailable',
-        error: response.statusText
-      });
-    }
-
-    const result = await response.json();
-    console.log('Image classification result:', result);
-
-    // Return the result from the external API
-    res.json(result);
-
-  } catch (error) {
-    console.error('Image classification error:', error);
-    res.status(500).json({
-      message: 'Error processing image classification',
-      error: error.message
-    });
-  }
-});
-
-console.log('Image classifier route loaded directly in server.js');
+// Note: Image classifier is handled by separate service on port 5001
+// See image-classifier-service.js
 
 // Test route for debugging
 app.post('/api/test/worker', (req, res) => {
@@ -96,6 +52,7 @@ try {
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/admin/departments', require('./routes/departments'));
 app.use('/api/worker', require('./routes/worker'));
+app.use('/api/municipal', require('./routes/municipal'));
 app.use('/api/superadmin', require('./routes/superAdminRoutes'));
 app.use('/api/department-head', require('./routes/departmentHead'));
 

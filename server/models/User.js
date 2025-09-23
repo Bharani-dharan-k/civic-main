@@ -45,6 +45,12 @@ const UserSchema = new mongoose.Schema({
             return ['municipality_admin', 'department_head', 'field_head', 'field_staff'].includes(this.role);
         }
     },
+    ward: {
+        type: String,
+        required: function() {
+            return this.role === 'municipality_admin';
+        }
+    },
     points: { 
         type: Number, 
         default: 0 

@@ -64,6 +64,39 @@ const Login = () => {
         }
     };
 
+    // Demo account credentials
+    const demoAccounts = [
+        {
+            type: 'Super Admin',
+            email: 'bharani@gmail.com',
+            password: '123456',
+            description: 'Full system access'
+        },
+        {
+            type: 'District Admin',
+            email: 'dilshan@gmail.com',
+            password: '123456',
+            description: 'District-level management'
+        },
+        {
+            type: 'Municipality Admin',
+            email: 'bhupesh@gmail.com',
+            password: '123456',
+            description: 'Municipal operations'
+        },
+        {
+            type: 'Department Admin',
+            email: 'dharun@gmail.com',
+            password: '123456',
+            description: 'Department-specific access'
+        }
+    ];
+
+    // Auto-fill credentials function
+    const fillDemoCredentials = (email, password) => {
+        setFormData({ email, password });
+    };
+
     return (
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh" >
             <Paper sx={{ p: 4, maxWidth: 500, width: '100%', borderRadius: '16px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
@@ -116,6 +149,42 @@ const Login = () => {
                     <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
                         Password: {getPlaceholderCredentials().password}
                     </Typography>
+                </Box>
+
+                {/* Demo Account Buttons */}
+                <Box sx={{ mb: 3 }}>
+                    <Typography variant="subtitle2" sx={{ mb: 2, color: '#2c3e50', fontWeight: 'bold' }}>
+                        🚀 Quick Demo Login:
+                    </Typography>
+                    <Stack spacing={1}>
+                        {demoAccounts.map((account, index) => (
+                            <Button
+                                key={index}
+                                variant="outlined"
+                                size="small"
+                                onClick={() => fillDemoCredentials(account.email, account.password)}
+                                sx={{
+                                    justifyContent: 'flex-start',
+                                    textTransform: 'none',
+                                    borderColor: '#3498db',
+                                    color: '#2c3e50',
+                                    '&:hover': {
+                                        borderColor: '#2980b9',
+                                        backgroundColor: '#ecf0f1'
+                                    }
+                                }}
+                            >
+                                <Box sx={{ textAlign: 'left', width: '100%' }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                        {account.type}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ color: '#7f8c8d' }}>
+                                        {account.email} • {account.description}
+                                    </Typography>
+                                </Box>
+                            </Button>
+                        ))}
+                    </Stack>
                 </Box>
 
                 <form onSubmit={onSubmit}>

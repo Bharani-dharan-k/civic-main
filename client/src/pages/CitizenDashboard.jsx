@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -278,12 +278,16 @@ const CitizenDashboard = () => {
       urbanLocalBody: '',
       priority: 'medium',
       images: [],
+      videos: [],
       coordinates: null
     });
     const [submitting, setSubmitting] = useState(false);
     const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
     const [duplicateReports, setDuplicateReports] = useState([]);
     const [pendingSubmissionData, setPendingSubmissionData] = useState(null);
+  const [isListeningDesc, setIsListeningDesc] = useState(false);
+  const [recognitionDesc, setRecognitionDesc] = useState(null);
+  const micButtonRef = useRef(null);
 
     // Jharkhand Districts and Urban Local Bodies Data
     const jharkhandData = {
@@ -575,27 +579,224 @@ const CitizenDashboard = () => {
       }));
     };
 
-    const getCurrentLocation = () => {
-      if (!navigator.geolocation) {
-        toast.error('GPS location not supported');
+    // Video upload handling
+    const handleVideoUpload = async (e) => {
+      const files = Array.from(e.target.files);
+      if (files.length > 1) {
+        toast.error('Please upload only one video');
         return;
       }
+      if (files.length > 0) {
+        const file = files[0];
+        
+        // Check file size (limit to 50MB for videos)
+        const maxSizeInMB = 50;
+        const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
+        
+        if (file.size > maxSizeInBytes) {
+          toast.error(`Video size should be less than ${maxSizeInMB}MB`);
+          return;
+        }
+        
+        setFormData(prev => ({ ...prev, videos: [file] }));
+        toast.success('Video uploaded successfully');
+      }
+    };
+
+    const removeVideo = (index) => {
+      setFormData(prev => ({
+        ...prev,
+        videos: prev.videos.filter((_, i) => i !== index)
+      }));
+    };
+
+    const getCurrentLocation = () => {
+      if (!navigator.geolocation) {
+        toast.error('GPS location not supported by your browser');
+        return;
+      }
+
+      // Show loading toast
+      toast.info('🗺️ Getting your location...');
+
+      const options = {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
+      };
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
+          
+          // Update form with coordinates and temporary location
           setFormData(prev => ({
             ...prev,
             coordinates: { latitude, longitude },
             location: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
           }));
-          toast.success('Location captured successfully');
+          
+          // Try to get readable address using reverse geocoding
+          getReadableAddress(latitude, longitude);
+          
+          // Don't show success toast yet - wait for address lookup
         },
         (error) => {
           console.error('Geolocation error:', error);
-          toast.error('Failed to get location');
-        }
+          let errorMessage = 'Failed to get location';
+          
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = 'Location access denied. Please enable GPS and allow location access.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'Location information is unavailable.';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'Location request timed out. Please try again.';
+              break;
+            default:
+              errorMessage = 'An unknown GPS error occurred.';
+              break;
+          }
+          toast.error(errorMessage);
+        },
+        options
       );
+    };
+
+    // Function to get readable address from coordinates
+    const getReadableAddress = async (latitude, longitude) => {
+      try {
+        toast.info('🔍 Getting address details...');
+        
+        // Try multiple geocoding services for better coverage
+        let addressData = null;
+        
+        // Method 1: Try OpenStreetMap Nominatim (free service)
+        try {
+          const osmResponse = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
+          );
+          
+          if (osmResponse.ok) {
+            const osmData = await osmResponse.json();
+            console.log('OSM Geocoding Response:', osmData);
+            
+            if (osmData && osmData.address) {
+              const addr = osmData.address;
+              
+              // Extract address components
+              const houseNumber = addr.house_number || '';
+              const road = addr.road || addr.street || '';
+              const suburb = addr.suburb || addr.neighbourhood || addr.village || '';
+              const city = addr.city || addr.town || addr.municipality || '';
+              const district = addr.state_district || addr.county || city || '';
+              const state = addr.state || '';
+              const country = addr.country || '';
+              const postcode = addr.postcode || '';
+              
+              // Format readable address
+              let readableAddress = '';
+              
+              if (houseNumber && road) {
+                readableAddress += `${houseNumber}, ${road}`;
+              } else if (road) {
+                readableAddress += road;
+              }
+              
+              if (suburb && readableAddress) {
+                readableAddress += `, ${suburb}`;
+              } else if (suburb) {
+                readableAddress += suburb;
+              }
+              
+              if (city && readableAddress) {
+                readableAddress += `, ${city}`;
+              } else if (city) {
+                readableAddress += city;
+              }
+              
+              if (district && readableAddress) {
+                readableAddress += `, ${district}`;
+              } else if (district) {
+                readableAddress += district;
+              }
+              
+              if (state && readableAddress) {
+                readableAddress += `, ${state}`;
+              } else if (state) {
+                readableAddress += state;
+              }
+              
+              if (postcode && readableAddress) {
+                readableAddress += ` - ${postcode}`;
+              }
+              
+              addressData = {
+                fullAddress: readableAddress || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+                street: road ? `${houseNumber ? houseNumber + ', ' : ''}${road}` : '',
+                district: district || city || '',
+                state: state || '',
+                city: city || '',
+                postcode: postcode || ''
+              };
+            }
+          }
+        } catch (osmError) {
+          console.log('OSM geocoding failed, trying alternative...');
+        }
+        
+        // Method 2: Try alternative geocoding service if OSM fails
+        if (!addressData) {
+          try {
+            // Using a backup geocoding service (you can replace with your preferred service)
+            const response = await fetch(
+              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+            );
+            
+            if (response.ok) {
+              const data = await response.json();
+              console.log('BigDataCloud Geocoding Response:', data);
+              
+              const street = data.locality || '';
+              const district = data.principalSubdivision || '';
+              const state = data.principalSubdivision || '';
+              const city = data.city || data.locality || '';
+              
+              addressData = {
+                fullAddress: data.display_name || `${street}, ${city}, ${state}` || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+                street: street,
+                district: district,
+                state: state,
+                city: city,
+                postcode: ''
+              };
+            }
+          } catch (altError) {
+            console.log('Alternative geocoding also failed');
+          }
+        }
+        
+        // Update form with address data
+        if (addressData && addressData.fullAddress) {
+          setFormData(prev => ({
+            ...prev,
+            location: addressData.fullAddress,
+            // Auto-fill district if available and not already selected
+            district: (!prev.district && addressData.district) ? addressData.district : prev.district
+          }));
+          
+          toast.success(`📍 Address found: ${addressData.street || 'Location'}, ${addressData.district || 'District'}, ${addressData.state || 'State'}`);
+        } else {
+          // Fallback to coordinates if geocoding fails
+          toast.warning('📍 Location captured, but address details unavailable');
+        }
+        
+      } catch (error) {
+        console.error('Reverse geocoding error:', error);
+        toast.warning('📍 Location captured, but address lookup failed');
+      }
     };
 
     const checkForDuplicates = async (coordinates) => {
@@ -629,6 +830,7 @@ const CitizenDashboard = () => {
           location: '',
           priority: 'medium',
           images: [],
+          videos: [],
           coordinates: null,
           district: '',
           urbanLocalBody: ''
@@ -679,6 +881,11 @@ const CitizenDashboard = () => {
           submitData.append('image', formData.images[0]);
         }
 
+        // Add video file if uploaded
+        if (formData.videos && formData.videos.length > 0) {
+          submitData.append('video', formData.videos[0]);
+        }
+
         // Check for duplicates if GPS coordinates are available
         if (formData.coordinates && formData.coordinates.latitude && formData.coordinates.longitude) {
           const duplicateCheck = await checkForDuplicates(formData.coordinates);
@@ -699,6 +906,65 @@ const CitizenDashboard = () => {
         toast.error('Failed to submit report');
       } finally {
         setSubmitting(false);
+      }
+    };
+
+    // Initialize speech recognition for description (if available)
+    useEffect(() => {
+      if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
+        try {
+          const sr = new window.webkitSpeechRecognition();
+          sr.continuous = false;
+          sr.interimResults = false;
+          sr.lang = 'en-US';
+
+          sr.onresult = (event) => {
+            const transcript = event.results[0][0].transcript || '';
+            setFormData(prev => ({ ...prev, description: (prev.description ? prev.description + ' ' : '') + transcript }));
+            setIsListeningDesc(false);
+          };
+
+          sr.onerror = (err) => {
+            console.error('Description recognition error', err);
+            setIsListeningDesc(false);
+            toast.error('Voice recognition failed. Please try again.');
+          };
+
+          sr.onend = () => {
+            setIsListeningDesc(false);
+          };
+
+          setRecognitionDesc(sr);
+        } catch (e) {
+          console.warn('Speech recognition init failed for description', e);
+          setRecognitionDesc(null);
+        }
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const toggleMicForDescription = () => {
+      if (!recognitionDesc) {
+        toast.info('Voice input is not supported in this browser');
+        return;
+      }
+
+      if (isListeningDesc) {
+        try {
+          recognitionDesc.stop();
+        } catch (e) {
+          console.warn('Failed to stop recognitionDesc', e);
+        }
+        setIsListeningDesc(false);
+      } else {
+        try {
+          recognitionDesc.start();
+          setIsListeningDesc(true);
+        } catch (e) {
+          console.error('Failed to start recognitionDesc', e);
+          toast.error('Could not start voice recognition');
+          setIsListeningDesc(false);
+        }
       }
     };
 
@@ -847,15 +1113,28 @@ const CitizenDashboard = () => {
                   <MessageSquare className="w-4 h-4" />
                   Detailed Description *
                 </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-saffron-500 focus:border-saffron-500 transition-colors"
-                  placeholder="Please provide detailed information about the issue..."
-                  required
-                />
+                <div className="relative">
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-saffron-500 focus:border-saffron-500 transition-colors"
+                    placeholder="Please provide detailed information about the issue..."
+                    required
+                  />
+                  <button
+                    ref={micButtonRef}
+                    type="button"
+                    onClick={toggleMicForDescription}
+                    className={`absolute right-2 top-2 p-2 rounded-md text-white ${isListeningDesc ? 'bg-red-500' : 'bg-saffron-500 hover:bg-saffron-600'}`}
+                    title={isListeningDesc ? 'Stop voice input' : 'Start voice input'}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 14 0h-2z" />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               {/* Location */}
@@ -1013,6 +1292,55 @@ const CitizenDashboard = () => {
                         >
                           <X className="w-3 h-3" />
                         </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Enhanced Video Upload */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  🎥 Attach Video (Optional)
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-saffron-400 transition-colors">
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={handleVideoUpload}
+                    className="hidden"
+                    id="video-upload"
+                  />
+                  <label
+                    htmlFor="video-upload"
+                    className="flex flex-col items-center justify-center cursor-pointer"
+                  >
+                    <Upload className="w-12 h-12 text-gray-400 mb-3" />
+                    <span className="text-lg font-medium text-gray-700">Upload Video</span>
+                    <span className="text-sm text-gray-500 mt-1">MP4, AVI, MOV (Max 50MB)</span>
+                  </label>
+                </div>
+
+                {/* Video Preview */}
+                {formData.videos.length > 0 && (
+                  <div className="mt-4">
+                    {formData.videos.map((video, index) => (
+                      <div key={index} className="relative inline-block mr-4">
+                        <video
+                          src={URL.createObjectURL(video)}
+                          className="w-48 h-32 object-cover rounded-lg border-2 border-gray-200"
+                          controls
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeVideo(index)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                        <div className="mt-1 text-xs text-gray-500 text-center">
+                          {video.name}
+                        </div>
                       </div>
                     ))}
                   </div>

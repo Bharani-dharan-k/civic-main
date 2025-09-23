@@ -23,23 +23,13 @@ api.interceptors.request.use((config) => {
 export const getMunicipalStats = async () => {
   try {
     const response = await api.get('/municipal/stats');
+    console.log('✅ Municipal stats API success:', response.data);
     return { data: response.data };
   } catch (error) {
-    console.error('Municipal stats error:', error);
-    // Return fallback data
-    return {
-      data: {
-        success: true,
-        data: {
-          totalComplaints: 0,
-          resolvedComplaints: 0,
-          pendingComplaints: 0,
-          staffCount: 0,
-          activeProjects: 0,
-          budget: 0
-        }
-      }
-    };
+    console.error('❌ Municipal stats API error:', error);
+    console.error('Error details:', error.response?.data);
+    console.error('Error status:', error.response?.status);
+    throw error; // Don't mask the error with fallback data
   }
 };
 
@@ -58,11 +48,14 @@ export const getCitizenComplaints = async (filters = {}) => {
 // Municipal Reports Service
 export const getMunicipalReports = async (filters = {}) => {
   try {
-    const response = await api.get('/municipal/reports', { params: filters });
+    const queryParams = new URLSearchParams(filters).toString();
+    const response = await api.get(`/municipal/reports${queryParams ? `?${queryParams}` : ''}`);
+    console.log('✅ Municipal reports API success:', response.data);
     return { data: response.data };
   } catch (error) {
-    console.error('Municipal reports error:', error);
-    return { data: { success: false, reports: [] } };
+    console.error('❌ Municipal reports API error:', error);
+    console.error('Error details:', error.response?.data);
+    throw error;
   }
 };
 
@@ -81,47 +74,12 @@ export const assignWorker = async (reportId, workerId) => {
 export const getStaffData = async () => {
   try {
     const response = await api.get('/municipal/staff');
+    console.log('✅ Staff data API success:', response.data);
     return { data: response.data };
   } catch (error) {
-    console.error('Staff data error:', error);
-    // Return fallback staff data
-    return {
-      data: {
-        success: true,
-        data: [
-          {
-            _id: '1',
-            name: 'Rajesh Kumar',
-            role: 'field_supervisor',
-            department: 'Roads',
-            ward: 'Ward 5',
-            phone: '+91-9876543210',
-            email: 'rajesh.kumar@municipal.gov.in',
-            status: 'active'
-          },
-          {
-            _id: '2',
-            name: 'Priya Singh',
-            role: 'maintenance_engineer',
-            department: 'Electrical',
-            ward: 'Ward 3',
-            phone: '+91-9876543211',
-            email: 'priya.singh@municipal.gov.in',
-            status: 'active'
-          },
-          {
-            _id: '3',
-            name: 'Amit Patel',
-            role: 'sanitation_worker',
-            department: 'Sanitation',
-            ward: 'Ward 1',
-            phone: '+91-9876543212',
-            email: 'amit.patel@municipal.gov.in',
-            status: 'active'
-          }
-        ]
-      }
-    };
+    console.error('❌ Staff data API error:', error);
+    console.error('Error details:', error.response?.data);
+    throw error;
   }
 };
 
@@ -132,6 +90,28 @@ export const addStaffMember = async (staffData) => {
     return { data: response.data };
   } catch (error) {
     console.error('Add staff member error:', error);
+    throw error.response?.data || error;
+  }
+};
+
+// Update Staff Member Service
+export const updateStaffMember = async (staffId, staffData) => {
+  try {
+    const response = await api.put(`/municipal/staff/${staffId}`, staffData);
+    return { data: response.data };
+  } catch (error) {
+    console.error('Update staff member error:', error);
+    throw error.response?.data || error;
+  }
+};
+
+// Delete Staff Member Service
+export const deleteStaffMember = async (staffId) => {
+  try {
+    const response = await api.delete(`/municipal/staff/${staffId}`);
+    return { data: response.data };
+  } catch (error) {
+    console.error('Delete staff member error:', error);
     throw error.response?.data || error;
   }
 };
@@ -396,6 +376,41 @@ export const getAnnouncementStats = async () => {
         }
       }
     };
+  }
+};
+
+// Task Management Services
+export const getAssignedTasks = async () => {
+  try {
+    const response = await api.get('/municipal/tasks');
+    console.log('✅ Assigned tasks API success:', response.data);
+    return { data: response.data };
+  } catch (error) {
+    console.error('❌ Assigned tasks API error:', error);
+    console.error('Error details:', error.response?.data);
+    throw error;
+  }
+};
+
+export const getTaskStats = async () => {
+  try {
+    const response = await api.get('/municipal/tasks/stats');
+    console.log('✅ Task stats API success:', response.data);
+    return { data: response.data };
+  } catch (error) {
+    console.error('❌ Task stats API error:', error);
+    console.error('Error details:', error.response?.data);
+    throw error;
+  }
+};
+
+export const updateTaskProgress = async (taskId, status, notes) => {
+  try {
+    const response = await api.put(`/municipal/tasks/${taskId}/progress`, { status, notes });
+    return { data: response.data };
+  } catch (error) {
+    console.error('Update task progress error:', error);
+    throw error.response?.data || error;
   }
 };
 

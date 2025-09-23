@@ -720,8 +720,8 @@ const UnifiedLogin = () => {
                       <button
                         type="button"
                         onClick={() => setAdminForm({
-                          email: 'district1@admin.com',
-                          password: 'district123',
+                          email: 'dilshan@gmail.com',
+                          password: '123456',
                           role: 'district_admin'
                         })}
                         className="text-xs bg-green-50 text-green-600 hover:bg-green-100 font-medium py-2 px-3 rounded-lg border border-green-200 transition-colors"
@@ -731,8 +731,8 @@ const UnifiedLogin = () => {
                       <button
                         type="button"
                         onClick={() => setAdminForm({
-                          email: 'municipality1@admin.com',
-                          password: 'municipality123',
+                          email: 'bhupesh@gmail.com',
+                          password: '123456',
                           role: 'municipality_admin'
                         })}
                         className="text-xs bg-purple-50 text-purple-600 hover:bg-purple-100 font-medium py-2 px-3 rounded-lg border border-purple-200 transition-colors"
@@ -742,8 +742,8 @@ const UnifiedLogin = () => {
                       <button
                         type="button"
                         onClick={() => setAdminForm({
-                          email: 'department1@admin.com',
-                          password: 'department123',
+                          email: 'dharun@gmail.com',
+                          password: '123456',
                           role: 'department_head'
                         })}
                         className="text-xs bg-orange-50 text-orange-600 hover:bg-orange-100 font-medium py-2 px-3 rounded-lg border border-orange-200 transition-colors"

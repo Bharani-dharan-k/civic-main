@@ -472,7 +472,7 @@ exports.loginAdmin = async (req, res) => {
                 // Create JWT token for hardcoded admin
                 const payload = { 
                     user: {
-                        id: `admin_${adminCredential.email.split('@')[0]}`, 
+                        id: adminCredential.email === 'municipality1@admin.com' ? '68cdf546eb796bc9bc737444' : `admin_${adminCredential.email.split('@')[0]}`, 
                         role: adminCredential.role,
                         email: adminCredential.email,
                         name: adminCredential.name,
@@ -487,7 +487,7 @@ exports.loginAdmin = async (req, res) => {
                     success: true,
                     token,
                     user: {
-                        id: `admin_${adminCredential.email.split('@')[0]}`,
+                        id: adminCredential.email === 'municipality1@admin.com' ? '68cdf546eb796bc9bc737444' : `admin_${adminCredential.email.split('@')[0]}`,
                         name: adminCredential.name,
                         email: adminCredential.email,
                         role: adminCredential.role,
