@@ -2,6 +2,34 @@ const Report = require('../models/Report');
 const User = require('../models/User');
 const NotificationService = require('../utils/notificationService');
 
+// Points system configuration
+const POINTS_CONFIG = {
+    REPORT_SUBMITTED: 10,
+    REPORT_RESOLVED: 25,
+    REPORT_ACKNOWLEDGED: 5,
+    FEEDBACK_GIVEN: 15,
+    HIGH_PRIORITY_REPORT: 20
+};
+
+// Function to award points to users
+const awardPoints = async (userId, action, customPoints = null) => {
+    try {
+        const points = customPoints || POINTS_CONFIG[action] || 0;
+
+        if (points > 0) {
+            await User.findByIdAndUpdate(
+                userId,
+                { $inc: { points: points } },
+                { new: true }
+            );
+
+            console.log(`✅ Awarded ${points} points to user ${userId} for ${action}`);
+        }
+    } catch (error) {
+        console.error('❌ Error awarding points:', error.message);
+    }
+};
+
 // Predefined workers from authController - keep in sync with authController.js
 const WORKER_CREDENTIALS = [
     {
@@ -46,13 +74,15 @@ const WORKER_CREDENTIALS = [
 exports.createReport = async (req, res) => {
     console.log('=== CREATE REPORT REQUEST RECEIVED ===');
     console.log('Request body:', req.body);
-    console.log('Request file:', req.file);
+    console.log('Request files:', req.files);
     console.log('User from token:', req.user);
-    
+
     const { title, description, category, longitude, latitude, address, ward, district, urbanLocalBody } = req.body;
-    
+
     try {
-        const imageUrl = req.file ? req.file.path : (req.body.imageUrl || 'https://via.placeholder.com/400x300?text=No+Image');
+        // Handle both image and video uploads
+        const imageUrl = req.files?.image?.[0]?.path || (req.body.imageUrl || 'https://via.placeholder.com/400x300?text=No+Image');
+        const videoUrl = req.files?.video?.[0]?.path || null;
         
         const newReport = new Report({
             title,
@@ -67,21 +97,30 @@ exports.createReport = async (req, res) => {
             district: district,
             urbanLocalBody: urbanLocalBody,
             imageUrl,
+            videoUrl,
             reportedBy: req.user.id,
             priority: determinePriority(category, description),
             estimatedResolutionTime: getEstimatedTime(category)
         });
 
         const report = await newReport.save();
-        
+
+        // Award points to the user for submitting a report
+        await awardPoints(req.user.id, 'REPORT_SUBMITTED', 10);
+
+        // Award bonus points for high priority reports
+        if (report.priority === 'High' || report.priority === 'Critical') {
+            await awardPoints(req.user.id, 'HIGH_PRIORITY_REPORT', 20);
+        }
+
         // Populate the user info for response
         await report.populate('reportedBy', 'name email');
-        
+
         // Send notification to user about report submission
         await NotificationService.notifySystem(
             req.user.id,
             'Report Submitted Successfully',
-            `Your report "${title}" has been submitted and is being reviewed.`,
+            `Your report "${title}" has been submitted and is being reviewed. You earned 10 points!`,
             'medium'
         );
         
@@ -326,17 +365,20 @@ exports.updateReportStatus = async (req, res) => {
         
         if (status === 'resolved') {
             report.resolvedAt = new Date();
-            
+
             // Calculate actual resolution time
             if (report.workerStartedAt) {
                 const timeDiff = new Date() - report.workerStartedAt;
                 report.actualResolutionTime = Math.round(timeDiff / (1000 * 60 * 60)); // in hours
             }
-            
-            // Award points to citizen
-            await User.findByIdAndUpdate(report.reportedBy, { 
-                $inc: { points: getPointsForResolution(report.category, report.priority) } 
-            });
+
+            // Award points to the citizen for getting their report resolved
+            await awardPoints(report.reportedBy, 'REPORT_RESOLVED', 25);
+        }
+
+        if (status === 'acknowledged' && oldStatus === 'submitted') {
+            // Award points for report being acknowledged
+            await awardPoints(report.reportedBy, 'REPORT_ACKNOWLEDGED', 5);
         }
         
         // Add worker note
@@ -636,6 +678,9 @@ exports.submitFeedback = async (req, res) => {
             },
             { new: true }
         ).populate('feedback.submittedBy', 'name email');
+
+        // Award points for giving feedback
+        await awardPoints(req.user.id, 'FEEDBACK_GIVEN', 15);
 
         // Create notification for feedback submitted
         await NotificationService.notifyFeedbackSubmitted(

@@ -74,6 +74,17 @@ export const userService = {
       console.error('Change password error:', error);
       throw error.response?.data || error;
     }
+  },
+
+  // Get leaderboard data
+  getLeaderboard: async () => {
+    try {
+      const response = await api.get('/auth/leaderboard');
+      return response.data;
+    } catch (error) {
+      console.error('Get leaderboard error:', error);
+      throw error.response?.data || error;
+    }
   }
 };
 

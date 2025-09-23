@@ -13,8 +13,24 @@ const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
         folder: 'civic-connect',
-        format: async (req, file) => 'jpeg', // supports promises as well
-        public_id: (req, file) => 'report-' + Date.now(),
+        format: async (req, file) => {
+            // Keep original format for videos, convert images to jpeg
+            if (file.mimetype.startsWith('video/')) {
+                return file.mimetype.split('/')[1]; // Extract format (mp4, mov, etc.)
+            }
+            return 'jpeg';
+        },
+        public_id: (req, file) => {
+            const type = file.mimetype.startsWith('video/') ? 'video' : 'image';
+            return `${type}-report-${Date.now()}`;
+        },
+        resource_type: async (req, file) => {
+            // Set resource type based on file type
+            if (file.mimetype.startsWith('video/')) {
+                return 'video';
+            }
+            return 'image';
+        }
     },
 });
 

@@ -19,7 +19,7 @@ const upload = require('../utils/fileUploader');
 
 // Citizens can create reports, get all reports for admin
 router.route('/')
-    .post(protect, upload.single('image'), createReport)
+    .post(protect, upload.fields([{ name: 'image', maxCount: 1 }, { name: 'video', maxCount: 1 }]), createReport)
     .get(getAllReports);
 
 // Test route

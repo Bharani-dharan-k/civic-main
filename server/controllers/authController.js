@@ -157,21 +157,52 @@ exports.updateProfile = async (req, res) => {
 exports.getLeaderboard = async (req, res) => {
     try {
         console.log('🏆 Fetching leaderboard data...');
-        const topUsers = await User.find({ role: 'citizen' })
-            .select('name email points badges createdAt')
+        const Report = require('../models/Report');
+
+        const citizens = await User.find({ role: 'citizen' })
+            .select('name email points badges createdAt location')
             .sort({ points: -1 })
             .limit(10);
-        
-        console.log(`✅ Found ${topUsers.length} citizen users for leaderboard`);
-        console.log('Top users:', topUsers.map(u => ({ name: u.name, points: u.points })));
-        
+
+        console.log(`✅ Found ${citizens.length} citizen users for leaderboard`);
+
+        // Get report counts for each citizen
+        const leaderboardData = await Promise.all(
+            citizens.map(async (citizen) => {
+                const totalReports = await Report.countDocuments({ reportedBy: citizen._id });
+                const resolvedReports = await Report.countDocuments({
+                    reportedBy: citizen._id,
+                    status: 'resolved'
+                });
+
+                return {
+                    _id: citizen._id,
+                    name: citizen.name,
+                    email: citizen.email,
+                    points: citizen.points,
+                    badges: citizen.badges,
+                    location: citizen.location || 'Unknown',
+                    totalReports,
+                    resolvedReports,
+                    createdAt: citizen.createdAt
+                };
+            })
+        );
+
+        console.log('Leaderboard with report counts:', leaderboardData.map(u => ({
+            name: u.name,
+            points: u.points,
+            totalReports: u.totalReports,
+            resolvedReports: u.resolvedReports
+        })));
+
         res.json({
             success: true,
-            leaderboard: topUsers
+            leaderboard: leaderboardData
         });
     } catch (err) {
         console.error('❌ Leaderboard fetch error:', err.message);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
             msg: 'Server Error' 
         });
