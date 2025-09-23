@@ -9,19 +9,31 @@ const ADMIN_CREDENTIALS = [
     {
         email: 'bharani@gmail.com',
         name: 'Admin Bharani',
-        password: 'password', // plaintext for existing
+        password: '123456', // Changed to match expected password
         role: 'super_admin'
     },
     {
         email: 'ashok@gmail.com',
         name: 'Admin Ashok',
-        password: '$2b$10$OApkdLa2.A6ic2omgLZA5uVx7edk8gJdteD2gADJK7ll7Opz5iNeS', // 123456 hashed
+        password: '123456', // Updated to match database
         role: 'district_admin'
     },
     {
-        email: 'district1@admin.com',
-        name: 'District Admin 1',
-        password: '$2b$10$YN9OykPdT6DAPRH94Y8L5.R2iVnVZBef3OcaNLstFAEvwXSKgwl.S', // district123 hashed
+        email: 'bhupesh@gmail.com',
+        name: 'Bhupesh Municipal Admin',
+        password: '123456', // Updated to match database
+        role: 'municipality_admin'
+    },
+    {
+        email: 'dharun@gmail.com',
+        name: 'Dharun Department Admin',
+        password: '123456', // Updated to match database
+        role: 'department_head'
+    },
+    {
+        email: 'dilshan@gmail.com',
+        name: 'Dilshan District Admin',
+        password: '123456', // Updated to match database
         role: 'district_admin'
     },
     {
