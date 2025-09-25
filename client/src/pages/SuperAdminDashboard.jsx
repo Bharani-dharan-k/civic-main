@@ -104,20 +104,10 @@ const SuperAdminDashboard = () => {
     bestDistricts: []
   });
 
-  // Add User Modal states (moved from UserManagement component)
+  // Add User Modal states
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [isSubmittingUser, setIsSubmittingUser] = useState(false);
-  const [newUser, setNewUser] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'district_admin',
-    district: '',
-    municipality: '',
-    department: ''
-  });
   const [userFormErrors, setUserFormErrors] = useState({});
-  const [availableMunicipalities, setAvailableMunicipalities] = useState([]);
 
   // Municipality mapping by district
   const [municipalityMapping] = useState({
@@ -147,71 +137,6 @@ const SuperAdminDashboard = () => {
     'West Singhbhum': ['Chaibasa', 'Chakradharpur', 'Manoharpur', 'Khuntpani', 'Sonua']
   });
 
-  // Optimized form handlers to prevent unnecessary re-renders
-  const handleNameChange = useCallback((e) => {
-    const value = e.target.value;
-    console.log('🔤 Name change:', value);
-    setNewUser(prev => ({ ...prev, name: value }));
-  }, []);
-
-  const handleEmailChange = useCallback((e) => {
-    const value = e.target.value;
-    console.log('📧 Email change:', value);
-    setNewUser(prev => ({ ...prev, email: value }));
-  }, []);
-
-  const handlePasswordChange = useCallback((e) => {
-    const value = e.target.value;
-    console.log('🔒 Password change:', value.replace(/./g, '*'));
-    setNewUser(prev => ({ ...prev, password: value }));
-  }, []);
-
-  const handleRoleChange = useCallback((e) => {
-    const value = e.target.value;
-    setNewUser(prev => ({
-      ...prev,
-      role: value,
-      district: '',
-      municipality: '',
-      department: ''
-    }));
-  }, []);
-
-  const handleDistrictChange = useCallback((e) => {
-    e.stopPropagation();
-    const selectedDistrict = e.target.value;
-    setNewUser(prev => ({ ...prev, district: selectedDistrict, municipality: '' }));
-    // Update available municipalities based on selected district
-    if (selectedDistrict && municipalityMapping[selectedDistrict]) {
-      setAvailableMunicipalities(municipalityMapping[selectedDistrict]);
-    } else {
-      setAvailableMunicipalities([]);
-    }
-  }, [municipalityMapping]);
-
-  const handleMunicipalityChange = useCallback((e) => {
-    const value = e.target.value;
-    setNewUser(prev => ({ ...prev, municipality: value }));
-  }, []);
-
-  const handleDepartmentChange = useCallback((e) => {
-    const value = e.target.value;
-    setNewUser(prev => ({ ...prev, department: value }));
-  }, []);
-
-  const resetForm = useCallback(() => {
-    setNewUser({
-      name: '',
-      email: '',
-      password: '',
-      role: 'district_admin',
-      district: '',
-      municipality: '',
-      department: ''
-    });
-    setUserFormErrors({});
-    setAvailableMunicipalities([]);
-  }, []);
 
   // Enhanced navigation items with admin theme
   const sidebarItems = [
@@ -1526,48 +1451,48 @@ const SuperAdminDashboard = () => {
     };
 
     // Add User Modal Functions
-    const handleAddUser = async (e) => {
-      e.preventDefault();
+    const handleAddUser = async (formData) => {
       setUserFormErrors({});
 
       // Validation
       const errors = {};
-      if (!newUser.name.trim()) errors.name = 'Name is required';
-      if (!newUser.email.trim()) errors.email = 'Email is required';
-      if (!newUser.password.trim()) errors.password = 'Password is required';
-      if (newUser.password.length < 6) errors.password = 'Password must be at least 6 characters';
-      if (!newUser.role) errors.role = 'Role is required';
-      if (['district_admin', 'municipality_admin', 'department_head'].includes(newUser.role) && !newUser.district.trim()) {
+      if (!formData.name.trim()) errors.name = 'Name is required';
+      if (!formData.email.trim()) errors.email = 'Email is required';
+      if (!formData.password.trim()) errors.password = 'Password is required';
+      if (formData.password.length < 6) errors.password = 'Password must be at least 6 characters';
+      if (!formData.role) errors.role = 'Role is required';
+      if (['district_admin', 'municipality_admin', 'department_head'].includes(formData.role) && !formData.district.trim()) {
         errors.district = 'District is required for this role';
       }
-      if (['municipality_admin', 'department_head'].includes(newUser.role) && !newUser.municipality.trim()) {
+      if (['municipality_admin', 'department_head'].includes(formData.role) && !formData.municipality.trim()) {
         errors.municipality = 'Municipality is required for this role';
       }
-      if (newUser.role === 'department_head' && !newUser.department.trim()) {
+      if (formData.role === 'department_head' && !formData.department.trim()) {
         errors.department = 'Department is required for this role';
       }
 
       if (Object.keys(errors).length > 0) {
-        setFormErrors(errors);
+        setUserFormErrors(errors);
+        toast.error('Please fill in all required fields');
         return;
       }
 
-      setIsSubmitting(true);
+      setIsSubmittingUser(true);
 
       try {
-        console.log('👤 Creating new admin user:', newUser);
+        console.log('👤 Creating new admin user:', formData);
 
         const response = await fetch(`${API_BASE_URL}/create-admin`, {
           method: 'POST',
           headers: getAuthHeaders(),
           body: JSON.stringify({
-            name: newUser.name,
-            email: newUser.email,
-            password: newUser.password,
-            role: newUser.role,
-            district: newUser.district || null,
-            municipality: newUser.municipality || null,
-            department: newUser.department || null
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+            role: formData.role,
+            district: formData.district || null,
+            municipality: formData.municipality || null,
+            department: formData.department || null
           })
         });
 
@@ -1580,16 +1505,7 @@ const SuperAdminDashboard = () => {
         console.log('✅ User created successfully:', data);
         toast.success('User created successfully!');
 
-        // Reset form and close modal
-        setNewUser({
-          name: '',
-          email: '',
-          password: '',
-          role: 'district_admin',
-          district: '',
-          municipality: '',
-          department: ''
-        });
+        // Close modal
         setShowAddUserModal(false);
 
         // Refresh user list
@@ -1613,17 +1529,10 @@ const SuperAdminDashboard = () => {
             <p className="text-gray-600">Manage system users and their permissions.</p>
           </div>
           <button
-            onClick={(e) => {
-              try {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🔥 Add New Admin button clicked!');
-                resetForm();
-                setShowAddUserModal(true);
-                console.log('✅ Modal should now be open');
-              } catch (error) {
-                console.error('Error in Add New Admin button:', error);
-              }
+            onClick={() => {
+              console.log('🔥 Add New Admin button clicked!');
+              setUserFormErrors({});
+              setShowAddUserModal(true);
             }}
             type="button"
             className="flex items-center px-6 py-3 bg-gradient-to-r from-orange-500 via-white to-green-600 text-white rounded-xl hover:from-orange-600 hover:to-green-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 border-2 border-white/30"
@@ -1772,25 +1681,13 @@ const SuperAdminDashboard = () => {
         )}
 
         {/* Add User Modal */}
-        <AddUserModal 
+        <AddUserModal
           showModal={showAddUserModal}
-          onClose={() => {
-            setShowAddUserModal(false);
-            resetForm();
-          }}
+          onClose={() => setShowAddUserModal(false)}
           onSubmit={handleAddUser}
           isSubmitting={isSubmittingUser}
           municipalityMapping={municipalityMapping}
-          availableMunicipalities={availableMunicipalities}
-          onDistrictChange={handleDistrictChange}
-          onMunicipalityChange={handleMunicipalityChange}
-          initialFormData={newUser}
           errors={userFormErrors}
-          onNameChange={handleNameChange}
-          onEmailChange={handleEmailChange}
-          onPasswordChange={handlePasswordChange}
-          onRoleChange={handleRoleChange}
-          onDepartmentChange={handleDepartmentChange}
         />
       </div>
     );

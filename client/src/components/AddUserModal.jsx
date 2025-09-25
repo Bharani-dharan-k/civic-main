@@ -1,16 +1,16 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { UserPlus, X, User, Shield } from 'lucide-react';
 
-const AddUserModal = ({ 
-  showModal, 
-  onClose, 
-  onSubmit, 
-  isSubmitting, 
-  municipalityMapping,
-  availableMunicipalities,
-  onDistrictChange,
-  onMunicipalityChange,
-  initialFormData = {
+const AddUserModal = ({
+  showModal,
+  onClose,
+  onSubmit,
+  isSubmitting,
+  municipalityMapping = {},
+  errors = {}
+}) => {
+  // Internal state management to prevent focus loss
+  const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
@@ -18,21 +18,61 @@ const AddUserModal = ({
     district: '',
     municipality: '',
     department: ''
-  },
-  errors = {},
-  onNameChange,
-  onEmailChange,
-  onPasswordChange,
-  onRoleChange,
-  onDepartmentChange
-}) => {
-  // Use external state management
-  const formData = initialFormData;
+  });
+
+  const [availableMunicipalities, setAvailableMunicipalities] = useState([]);
+
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (showModal) {
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+        role: 'district_admin',
+        district: '',
+        municipality: '',
+        department: ''
+      });
+      setAvailableMunicipalities([]);
+    }
+  }, [showModal]);
+
+  // Handle input changes
+  const handleInputChange = useCallback((field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  // Handle district change
+  const handleDistrictChange = useCallback((e) => {
+    const selectedDistrict = e.target.value;
+    setFormData(prev => ({ ...prev, district: selectedDistrict, municipality: '' }));
+
+    // Update available municipalities
+    if (selectedDistrict && municipalityMapping[selectedDistrict]) {
+      setAvailableMunicipalities(municipalityMapping[selectedDistrict]);
+    } else {
+      setAvailableMunicipalities([]);
+    }
+  }, [municipalityMapping]);
+
+  // Handle role change
+  const handleRoleChange = useCallback((e) => {
+    const selectedRole = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      role: selectedRole,
+      district: '',
+      municipality: '',
+      department: ''
+    }));
+    setAvailableMunicipalities([]);
+  }, []);
 
   const handleSubmit = useCallback((e) => {
     e.preventDefault();
-    onSubmit(e);
-  }, [onSubmit]);
+    onSubmit(formData);
+  }, [onSubmit, formData]);
 
   if (!showModal) return null;
 
@@ -69,16 +109,17 @@ const AddUserModal = ({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="name-input" className="block text-sm font-medium text-gray-700 mb-2">
                   Full Name / पूरा नाम *
                 </label>
                 <input
-                  key="name-input"
                   id="name-input"
+                  name="name"
                   type="text"
                   value={formData.name}
-                  onChange={onNameChange}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
                   placeholder="Enter full name"
+                  autoComplete="name"
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
                     errors.name ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   }`}
@@ -87,16 +128,17 @@ const AddUserModal = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="email-input" className="block text-sm font-medium text-gray-700 mb-2">
                   Email Address / ईमेल पता *
                 </label>
                 <input
-                  key="email-input"
                   id="email-input"
+                  name="email"
                   type="email"
                   value={formData.email}
-                  onChange={onEmailChange}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
                   placeholder="admin@example.com"
+                  autoComplete="email"
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
                     errors.email ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   }`}
@@ -105,16 +147,17 @@ const AddUserModal = ({
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="password-input" className="block text-sm font-medium text-gray-700 mb-2">
                   Password / पासवर्ड *
                 </label>
                 <input
-                  key="password-input"
                   id="password-input"
+                  name="password"
                   type="password"
                   value={formData.password}
-                  onChange={onPasswordChange}
+                  onChange={(e) => handleInputChange('password', e.target.value)}
                   placeholder="Enter secure password (min 6 characters)"
+                  autoComplete="new-password"
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
                     errors.password ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   }`}
@@ -133,12 +176,14 @@ const AddUserModal = ({
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="role-select" className="block text-sm font-medium text-gray-700 mb-2">
                   Admin Role / व्यवस्थापक भूमिका *
                 </label>
                 <select
+                  id="role-select"
+                  name="role"
                   value={formData.role}
-                  onChange={onRoleChange}
+                  onChange={handleRoleChange}
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
                     errors.role ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   }`}
@@ -154,12 +199,14 @@ const AddUserModal = ({
               {/* District Selection */}
               {['district_admin', 'municipality_admin', 'department_head'].includes(formData.role) && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="district-select" className="block text-sm font-medium text-gray-700 mb-2">
                     District / जिला *
                   </label>
                   <select
+                    id="district-select"
+                    name="district"
                     value={formData.district}
-                    onChange={onDistrictChange}
+                    onChange={handleDistrictChange}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
                       errors.district ? 'border-red-500 bg-red-50' : 'border-gray-300'
                     }`}
@@ -176,12 +223,14 @@ const AddUserModal = ({
               {/* Municipality Selection */}
               {['municipality_admin', 'department_head'].includes(formData.role) && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="municipality-select" className="block text-sm font-medium text-gray-700 mb-2">
                     Municipality / नगरपालिका *
                   </label>
                   <select
+                    id="municipality-select"
+                    name="municipality"
                     value={formData.municipality}
-                    onChange={onMunicipalityChange}
+                    onChange={(e) => handleInputChange('municipality', e.target.value)}
                     disabled={!formData.district || availableMunicipalities.length === 0}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
                       errors.municipality ? 'border-red-500 bg-red-50' : 'border-gray-300'
@@ -190,9 +239,9 @@ const AddUserModal = ({
                     }`}
                   >
                     <option value="">
-                      {!formData.district 
+                      {!formData.district
                         ? 'Select District First / पहले जिला चुनें'
-                        : availableMunicipalities.length === 0 
+                        : availableMunicipalities.length === 0
                           ? 'No municipalities available / कोई नगरपालिका उपलब्ध नहीं'
                           : 'Select Municipality / नगरपालिका चुनें'
                       }
@@ -215,12 +264,14 @@ const AddUserModal = ({
               {/* Department Selection */}
               {formData.role === 'department_head' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="department-select" className="block text-sm font-medium text-gray-700 mb-2">
                     Department / विभाग *
                   </label>
                   <select
+                    id="department-select"
+                    name="department"
                     value={formData.department}
-                    onChange={onDepartmentChange}
+                    onChange={(e) => handleInputChange('department', e.target.value)}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
                       errors.department ? 'border-red-500 bg-red-50' : 'border-gray-300'
                     }`}
