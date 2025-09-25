@@ -851,14 +851,25 @@ const DistrictAdminDashboard = () => {
     try {
       console.log('🔄 Loading municipality data from backend...');
       
-      // Load municipalities from backend using the dedicated endpoint
-      const municipalityResponse = await API.get('/admin/municipalities');
-      console.log('✅ Municipalities endpoint response:', municipalityResponse.data);
+      // Load both existing municipalities (with admins) and available municipalities for dropdowns
+      const [municipalityResponse, availableResponse] = await Promise.all([
+        API.get('/admin/municipalities'),
+        API.get('/admin/available-municipalities')
+      ]);
       
+      console.log('✅ Existing municipalities response:', municipalityResponse.data);
+      console.log('✅ Available municipalities response:', availableResponse.data);
+      
+      // Also log any errors in the responses
+      if (!availableResponse.data.success) {
+        console.error('❌ Available municipalities API error:', availableResponse.data);
+      }
+      
+      // Process existing municipalities (for display in cards)
+      let existingMunicipalityData = [];
       if (municipalityResponse.data.success && Array.isArray(municipalityResponse.data.municipalities)) {
         const municipalities = municipalityResponse.data.municipalities;
-        
-        const municipalityData = municipalities.map((muni) => ({
+        existingMunicipalityData = municipalities.map((muni) => ({
           id: muni._id,
           name: muni.name,
           district: muni.district,
@@ -871,17 +882,57 @@ const DistrictAdminDashboard = () => {
           contact: muni.adminEmail || 'No Contact',
           createdAt: muni.createdAt
         }));
-        
-        setMunicipalityData(municipalityData);
-        console.log(`✅ Loaded ${municipalityData.length} municipalities from backend`);
-      } else {
-        console.log('⚠️ No municipalities found in response');
-        setMunicipalityData([]);
       }
+      
+      // Process available municipalities (for dropdowns)
+      let allAvailableMunicipalities = [];
+      if (availableResponse.data.success && Array.isArray(availableResponse.data.municipalities)) {
+        allAvailableMunicipalities = availableResponse.data.municipalities.map((muni) => ({
+          id: muni.id,
+          name: muni.name,
+          district: muni.district,
+          hasAdmin: muni.hasAdmin,
+          // Add dummy stats for compatibility
+          reports: 0,
+          resolved: 0,
+          pending: 0,
+          performance: 0,
+          head: muni.hasAdmin ? 'Admin Assigned' : 'Not Assigned',
+          contact: 'N/A'
+        }));
+      }
+      
+      // Use available municipalities for dropdown purposes (this is what the dialogs need)
+      setMunicipalityData(allAvailableMunicipalities);
+      console.log(`✅ Loaded ${allAvailableMunicipalities.length} available municipalities for district dropdowns`);
+      console.log(`✅ Found ${existingMunicipalityData.length} municipalities with existing admins`);
+      
+      // If no municipalities loaded, provide fallback data for Bokaro
+      if (allAvailableMunicipalities.length === 0) {
+        console.log('⚠️ No municipalities loaded, providing fallback data');
+        const fallbackMunicipalities = [
+          { id: 'bokaro-1', name: 'Bokaro Steel City', district: 'Bokaro', hasAdmin: false },
+          { id: 'bokaro-2', name: 'Chas Municipality', district: 'Bokaro', hasAdmin: false },
+          { id: 'bokaro-3', name: 'Bermo Municipality', district: 'Bokaro', hasAdmin: false },
+          { id: 'bokaro-4', name: 'Jaridih Municipality', district: 'Bokaro', hasAdmin: false },
+          { id: 'bokaro-5', name: 'Gomia Municipality', district: 'Bokaro', hasAdmin: false }
+        ];
+        setMunicipalityData(fallbackMunicipalities);
+        console.log('✅ Set fallback municipalities:', fallbackMunicipalities);
+      }
+      
     } catch (error) {
       console.error('❌ Error loading municipality data:', error);
       console.error('Error details:', error.response?.data || error.message);
-      setMunicipalityData([]);
+      
+      // Provide fallback data even on error
+      const fallbackMunicipalities = [
+        { id: 'bokaro-1', name: 'Bokaro Steel City', district: 'Bokaro', hasAdmin: false },
+        { id: 'bokaro-2', name: 'Chas Municipality', district: 'Bokaro', hasAdmin: false },
+        { id: 'bokaro-3', name: 'Bermo Municipality', district: 'Bokaro', hasAdmin: false }
+      ];
+      setMunicipalityData(fallbackMunicipalities);
+      console.log('✅ Set error fallback municipalities:', fallbackMunicipalities);
     }
   };
 

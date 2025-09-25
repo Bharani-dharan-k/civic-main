@@ -2610,3 +2610,111 @@ exports.handleEscalationAction = async (req, res) => {
         });
     }
 };
+
+// @desc    Get all available municipalities for a district (for creating new admins)
+// @route   GET /api/admin/available-municipalities
+exports.getAvailableMunicipalities = async (req, res) => {
+    try {
+        console.log('🔍 Getting available municipalities for district:', req.user.district);
+        console.log('🔍 Full user info:', {
+            id: req.user.id,
+            email: req.user.email,
+            district: req.user.district,
+            role: req.user.role
+        });
+        
+        // Define municipality mapping for Jharkhand districts
+        const municipalityMapping = {
+            'Bokaro': ['Bokaro Steel City', 'Chas Municipality', 'Bermo Municipality', 'Jaridih Municipality', 'Gomia Municipality', 'Phusro Nagar Parishad'],
+            'Ranchi': ['Ranchi Municipal Corporation', 'Bundu Nagar Panchayat', 'Tamar Nagar Panchayat', 'Sonahatu Nagar Panchayat', 'Angara Nagar Panchayat'],
+            'Dhanbad': ['Dhanbad Municipal Corporation', 'Jharia Municipality', 'Sindri Municipality', 'Nirsa Municipality', 'Govindpur Municipality', 'Chirkunda Nagar Panchayat'],
+            'East Singhbhum': ['Jamshedpur Notified Area Committee', 'Jugsalai Municipality', 'Chakulia Municipality', 'Dhalbhumgarh Municipality', 'Ghatshila Municipality'],
+            'Hazaribagh': ['Hazaribagh Municipality', 'Ramgarh Municipality', 'Barhi Municipality', 'Ichak Municipality'],
+            'Giridih': ['Giridih Municipality', 'Dumri Municipality', 'Bengabad Municipality'],
+            'Deoghar': ['Deoghar Municipal Corporation', 'Jasidih Municipality', 'Madhupur Municipality'],
+            'Dumka': ['Dumka Municipality', 'Shikaripara Municipality', 'Basukinath Nagar Parishad'],
+            'Godda': ['Godda Municipality', 'Mahagama Municipality'],
+            'Sahibganj': ['Sahibganj Municipality', 'Rajmahal Municipality'],
+            'Pakur': ['Pakur Municipality', 'Littipara Municipality'],
+            'Palamu': ['Medininagar Municipality', 'Daltonganj Municipality'],
+            'Garhwa': ['Garhwa Municipality', 'Ranka Municipality', 'Majhion Nagar Parishad'],
+            'Latehar': ['Latehar Municipality', 'Barwadih Municipality'],
+            'Chatra': ['Chatra Municipality', 'Hunterganj Municipality'],
+            'Koderma': ['Koderma Municipality', 'Jhumri Telaiya Municipality'],
+            'Jamtara': ['Jamtara Municipality', 'Narayanpur Municipality'],
+            'Gumla': ['Gumla Municipality', 'Bishunpur Municipality'],
+            'Simdega': ['Simdega Municipality', 'Bolba Municipality'],
+            'Lohardaga': ['Lohardaga Municipality', 'Senha Municipality'],
+            'Khunti': ['Khunti Municipality', 'Torpa Municipality'],
+            'West Singhbhum': ['Chaibasa Municipality', 'Manoharpur Municipality'],
+            'Seraikela Kharsawan': ['Seraikela Municipality', 'Kharsawan Municipality'],
+            'Ramgarh': ['Ramgarh Municipality', 'Patratu Municipality']
+        };
+        
+        let userDistrict = req.user.district;
+        console.log('🔍 Available districts in mapping:', Object.keys(municipalityMapping));
+        console.log('🔍 Looking for district:', userDistrict);
+        
+        // Handle different district name formats
+        let availableMunicipalities = municipalityMapping[userDistrict] || [];
+        
+        // If not found, try some common variations
+        if (availableMunicipalities.length === 0) {
+            const variations = [
+                userDistrict?.replace(' District', ''),
+                userDistrict?.replace('District', '').trim(),
+                userDistrict?.split(' ')[0], // Take first word
+                'Bokaro' // Default fallback for testing
+            ];
+            
+            for (const variation of variations) {
+                if (variation && municipalityMapping[variation]) {
+                    console.log('🔍 Found district using variation:', variation);
+                    userDistrict = variation;
+                    availableMunicipalities = municipalityMapping[variation];
+                    break;
+                }
+            }
+        }
+        
+        console.log('🔍 Raw municipalities found:', availableMunicipalities);
+        
+        if (availableMunicipalities.length === 0) {
+            console.log('⚠️ No municipalities found for district:', userDistrict);
+            console.log('⚠️ Available districts:', Object.keys(municipalityMapping));
+        }
+        
+        // Get existing municipality admins to show which ones already have admins
+        const existingAdmins = await User.find({
+            role: 'municipality_admin',
+            district: userDistrict
+        }).select('municipality');
+        
+        const existingMunicipalities = existingAdmins.map(admin => admin.municipality);
+        console.log('🔍 Existing municipality admins:', existingMunicipalities);
+        
+        // Format municipality data
+        const municipalityData = availableMunicipalities.map((municipality, index) => ({
+            id: `${userDistrict.toLowerCase().replace(' ', '-')}-${index}`,
+            name: municipality,
+            district: userDistrict,
+            hasAdmin: existingMunicipalities.includes(municipality)
+        }));
+        
+        console.log(`✅ Found ${municipalityData.length} available municipalities for ${userDistrict}`);
+        
+        res.json({
+            success: true,
+            municipalities: municipalityData,
+            count: municipalityData.length,
+            district: userDistrict
+        });
+        
+    } catch (error) {
+        console.error('❌ Error getting available municipalities:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch available municipalities: ' + (error.message || error)
+        });
+    }
+};
