@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Container, Typography, Box, Grid, Card, CardContent } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -21,6 +21,32 @@ import AshokaChakra from '../components/Common/AshokaChakra';
 import logo from "../assets/logo.png";
 const IndiaFlagHomepage = () => {
   const navigate = useNavigate();
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Check if scrolled enough to change header style
+      setIsScrolled(currentScrollY > 50);
+
+      // Hide/show header based on scroll direction
+      if (currentScrollY < lastScrollY || currentScrollY < 100) {
+        // Scrolling up or at the top - show header
+        setIsHeaderVisible(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        // Scrolling down and not at the top - hide header
+        setIsHeaderVisible(false);
+      }
+
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   const features = [
     {
@@ -91,7 +117,90 @@ const IndiaFlagHomepage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <>
+      <style jsx>{`
+        @keyframes chakra-rotate {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fade-in {
+          0% { opacity: 0; transform: translateY(20px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slide-up {
+          0% { opacity: 0; transform: translateY(30px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse-slow {
+          0%, 100% { transform: scale(1); opacity: 0.8; }
+          50% { transform: scale(1.05); opacity: 1; }
+        }
+
+        @keyframes bounce-gentle {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-5px); }
+        }
+
+        .chakra-rotate {
+          animation: chakra-rotate 20s linear infinite;
+        }
+
+        .animate-fade-in {
+          animation: fade-in 1s ease-out;
+        }
+
+        .animate-slide-up {
+          animation: slide-up 0.8s ease-out;
+        }
+
+        .animate-pulse-slow {
+          animation: pulse-slow 3s ease-in-out infinite;
+        }
+
+        .animate-bounce-gentle {
+          animation: bounce-gentle 2s ease-in-out infinite;
+        }
+
+        .animation-delay-200 {
+          animation-delay: 0.2s;
+        }
+
+        .animation-delay-400 {
+          animation-delay: 0.4s;
+        }
+
+        .shadow-soft {
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .shadow-strong {
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .hindi-text {
+          font-family: 'Devanagari Sangam MN', 'Noto Sans Devanagari', serif;
+        }
+
+        .bg-gradient-radial {
+          background: radial-gradient(circle, var(--tw-gradient-from) 0%, var(--tw-gradient-to) 100%);
+        }
+
+        .header-hide {
+          transform: translateY(-100%);
+          opacity: 0;
+          transition: transform 0.5s ease-in-out, opacity 0.3s ease-in-out;
+        }
+
+        .header-show {
+          transform: translateY(0);
+          opacity: 1;
+          transition: transform 0.5s ease-in-out, opacity 0.3s ease-in-out;
+        }
+      `}</style>
+      <div className="min-h-screen bg-white font-sans">
       {/* Saffron Header/Hero Section */}
       <section className="min-h-screen relative overflow-hidden flex items-center justify-center">
         {/* Indian Flag Gradient Background - Seamless Blend */}
@@ -108,69 +217,48 @@ const IndiaFlagHomepage = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-black/5 to-black/15"></div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
-          {/* Enhanced Navigation Header */}
-          <nav className="fixed top-0 left-0 right-0 z-30 bg-gradient-to-r from-orange-500/95 via-white/95 to-green-600/95 backdrop-blur-xl border-b-2 border-blue-800/30 shadow-2xl">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex justify-between items-center h-20">
-                {/* Enhanced Logo Section */}
-                <div className="flex items-center space-x-4">
-                  <div className="relative">
+          {/* Simplified Navigation Header */}
+          <nav className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-xl shadow-lg ${
+            isHeaderVisible ? 'header-show' : 'header-hide'
+          } ${
+            isScrolled
+              ? 'bg-white/95 py-2'
+              : 'bg-white/98 py-2'
+          }`}>
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className={`flex justify-between items-center transition-all duration-500 ${
+                isScrolled ? 'h-14' : 'h-16'
+              }`}>
+                {/* Logo Section */}
+                <div className="flex items-center space-x-3 group cursor-pointer">
+                  <div className="relative transform transition-all duration-300 group-hover:scale-105">
                     <img
                       src={logo}
                       alt="SEVA TRACK Logo"
-                      className="w-14 h-14 rounded-xl shadow-lg border-2 border-white/30"
+                      className="relative w-10 h-10 rounded-xl shadow-lg border border-gray-200"
                     />
-                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-blue-800 rounded-full flex items-center justify-center">
-                      <AshokaChakra size={16} className="text-white" />
-                    </div>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 via-blue-800 to-green-700 bg-clip-text text-transparent drop-shadow-sm">
+                    <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-orange-600 via-blue-800 to-green-700 bg-clip-text text-transparent">
                       SevaTrack
                     </span>
-                    <span className="text-xs md:text-sm font-medium text-gray-600 tracking-wide">
-                      समुदायिक सेवा ट्रैकर
-                    </span>
+                    <span className="text-xs text-gray-600 hindi-text">समुदायिक सेवा ट्रैकर</span>
                   </div>
                 </div>
 
-                {/* Enhanced Desktop Navigation */}
-                <div className="hidden md:flex items-center space-x-2">
-                  <div className="flex items-center space-x-6 mr-6">
-                    <button className="text-gray-700 hover:text-orange-600 font-medium transition-colors duration-200 relative group">
-                      Home
-                      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-orange-500 transition-all duration-200 group-hover:w-full"></span>
-                    </button>
-                    <button className="text-gray-700 hover:text-orange-600 font-medium transition-colors duration-200 relative group">
-                      About
-                      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-orange-500 transition-all duration-200 group-hover:w-full"></span>
-                    </button>
-                    <button className="text-gray-700 hover:text-orange-600 font-medium transition-colors duration-200 relative group">
-                      Contact
-                      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-orange-500 transition-all duration-200 group-hover:w-full"></span>
-                    </button>
-                  </div>
+                {/* Auth Buttons */}
+                <div className="flex items-center space-x-3">
                   <button
                     onClick={() => navigate('/login')}
-                    className="text-blue-800 hover:text-blue-900 px-4 py-2 rounded-lg transition-all duration-200 font-medium hover:bg-blue-50 border border-transparent hover:border-blue-200"
+                    className="text-gray-700 hover:text-blue-800 px-4 py-2 rounded-lg transition-all duration-300 font-medium hover:bg-gray-50"
                   >
-                    Login
+                    Sign In
                   </button>
                   <button
                     onClick={() => navigate('/login')}
-                    className="bg-gradient-to-r from-orange-500 via-orange-600 to-orange-700 hover:from-orange-600 hover:via-orange-700 hover:to-orange-800 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 border border-orange-400/30 backdrop-blur-sm"
+                    className="bg-blue-800 hover:bg-blue-900 text-white px-4 py-2 rounded-lg transition-all duration-300 font-medium shadow-md hover:shadow-lg"
                   >
-                    <PhotoCamera className="inline-block mr-2 text-lg" />
-                    Report Issue
-                  </button>
-                </div>
-
-                {/* Enhanced Mobile Menu Button */}
-                <div className="md:hidden">
-                  <button className="text-gray-700 hover:text-orange-600 p-3 rounded-xl hover:bg-white/20 transition-all duration-200 border border-gray-300/30">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
+                    Sign Up
                   </button>
                 </div>
               </div>
@@ -178,22 +266,7 @@ const IndiaFlagHomepage = () => {
           </nav>
 
           {/* Enhanced Hero Content - Centered */}
-          <div className="text-center flex flex-col justify-center min-h-screen pt-20">
-            {/* Flag Tribute Section */}
-            <div className="mb-8 flex justify-center items-center space-x-4">
-              <div className="flex space-x-1">
-                <div className="w-3 h-16 bg-orange-500 rounded-sm shadow-lg"></div>
-                <div className="w-3 h-16 bg-white rounded-sm shadow-lg border border-gray-200"></div>
-                <div className="w-3 h-16 bg-green-600 rounded-sm shadow-lg"></div>
-              </div>
-              <AshokaChakra size={64} className="text-blue-800 animate-pulse-slow" />
-              <div className="flex space-x-1">
-                <div className="w-3 h-16 bg-orange-500 rounded-sm shadow-lg"></div>
-                <div className="w-3 h-16 bg-white rounded-sm shadow-lg border border-gray-200"></div>
-                <div className="w-3 h-16 bg-green-600 rounded-sm shadow-lg"></div>
-              </div>
-            </div>
-
+          <div className="text-center mt-20 pt-8">
             <h1 className="font-bold mb-6 text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-tight text-white drop-shadow-2xl animate-fade-in">
               Empowering Citizens,<br />
               <span className="bg-gradient-to-r from-yellow-200 via-yellow-100 to-white bg-clip-text text-transparent drop-shadow-lg">Strengthening Bharat</span>
@@ -669,7 +742,8 @@ const IndiaFlagHomepage = () => {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </>
   );
 };
 
