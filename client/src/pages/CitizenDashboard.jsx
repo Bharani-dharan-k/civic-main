@@ -1104,6 +1104,57 @@ const CitizenDashboard = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Enhanced Image Upload - Moved to Top */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <Camera className="w-4 h-4" />
+                  Attach Photo
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-saffron-400 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="image-upload"
+                  />
+                  <label
+                    htmlFor="image-upload"
+                    className="flex flex-col items-center justify-center cursor-pointer"
+                  >
+                    <Upload className="w-12 h-12 text-gray-400 mb-3" />
+                    <span className="text-lg font-medium text-gray-700">Upload Photo</span>
+                    <span className="text-sm text-gray-500 mt-1">PNG, JPG, JPEG (Max 5MB)</span>
+                  </label>
+                </div>
+
+                {formData.images.length > 0 && (
+                  <div className="mt-4">
+                    {formData.images.map((image, index) => (
+                      <div key={index} className="relative inline-block">
+                        <img
+                          src={URL.createObjectURL(image)}
+                          alt={`Upload ${index + 1}`}
+                          className="w-32 h-32 object-cover rounded-lg border border-gray-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData(prev => ({
+                              ...prev,
+                              images: prev.images.filter((_, i) => i !== index)
+                            }));
+                          }}
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 flex items-center justify-center"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Enhanced Category Selection */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
@@ -1317,53 +1368,6 @@ const CitizenDashboard = () => {
                     </label>
                   ))}
                 </div>
-              </div>
-
-              {/* Enhanced Image Upload */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                  <Camera className="w-4 h-4" />
-                  Attach Photo
-                </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-saffron-400 transition-colors">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                    id="image-upload"
-                  />
-                  <label
-                    htmlFor="image-upload"
-                    className="flex flex-col items-center justify-center cursor-pointer"
-                  >
-                    <Upload className="w-12 h-12 text-gray-400 mb-3" />
-                    <span className="text-lg font-medium text-gray-700">Upload Photo</span>
-                    <span className="text-sm text-gray-500 mt-1">PNG, JPG, JPEG (Max 5MB)</span>
-                  </label>
-                </div>
-
-                {/* Image Preview */}
-                {formData.images.length > 0 && (
-                  <div className="mt-4">
-                    {formData.images.map((image, index) => (
-                      <div key={index} className="relative inline-block mr-4">
-                        <img
-                          src={URL.createObjectURL(image)}
-                          alt={`Upload ${index + 1}`}
-                          className="w-24 h-24 object-cover rounded-lg border-2 border-gray-200"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Enhanced Video Upload */}
