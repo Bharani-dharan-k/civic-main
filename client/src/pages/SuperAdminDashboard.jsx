@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import AddUserModal from '../components/AddUserModal';
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, AreaChart, Area
@@ -103,6 +104,115 @@ const SuperAdminDashboard = () => {
     bestDistricts: []
   });
 
+  // Add User Modal states (moved from UserManagement component)
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [isSubmittingUser, setIsSubmittingUser] = useState(false);
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'district_admin',
+    district: '',
+    municipality: '',
+    department: ''
+  });
+  const [userFormErrors, setUserFormErrors] = useState({});
+  const [availableMunicipalities, setAvailableMunicipalities] = useState([]);
+
+  // Municipality mapping by district
+  const [municipalityMapping] = useState({
+    'Bokaro': ['Bokaro Steel City', 'Chas', 'Bermo', 'Jaridih', 'Gomia'],
+    'Chatra': ['Chatra', 'Hunterganj', 'Itkhori', 'Pathalgada', 'Tandwa'],
+    'Deoghar': ['Deoghar', 'Madhupur', 'Sarath', 'Mohanpur', 'Sonaraithari'],
+    'Dhanbad': ['Dhanbad', 'Jharia', 'Sindri', 'Nirsa', 'Govindpur'],
+    'Dumka': ['Dumka', 'Jama', 'Kathikund', 'Ramgarh', 'Saraiyahat'],
+    'East Singhbhum': ['Jamshedpur', 'Jugsalai', 'Chakulia', 'Dhalbhumgarh', 'Ghatshila'],
+    'Garhwa': ['Garhwa', 'Nagar Untari', 'Danda', 'Majhiaon', 'Ranka'],
+    'Giridih': ['Giridih', 'Madhuban', 'Deori', 'Dumri', 'Gandey'],
+    'Godda': ['Godda', 'Mahagama', 'Boarijor', 'Meherma', 'Pathargama'],
+    'Gumla': ['Gumla', 'Sisai', 'Palkot', 'Raidih', 'Dumri'],
+    'Hazaribagh': ['Hazaribagh', 'Ramgarh', 'Chouparan', 'Ichak', 'Katkamsandi'],
+    'Jamtara': ['Jamtara', 'Mihijam', 'Narayanpur', 'Kundhit'],
+    'Khunti': ['Khunti', 'Murhu', 'Arki', 'Rania', 'Torpa'],
+    'Koderma': ['Koderma', 'Jhumri Telaiya', 'Markacho', 'Satgawan'],
+    'Latehar': ['Latehar', 'Manika', 'Chandwa', 'Balumath'],
+    'Lohardaga': ['Lohardaga', 'Senha', 'Bhandra', 'Kuru'],
+    'Pakur': ['Pakur', 'Hiranpur', 'Maheshpur', 'Pakuria'],
+    'Palamu': ['Daltonganj', 'Medininagar', 'Chainpur', 'Pandu', 'Vishrampur'],
+    'Ramgarh': ['Ramgarh', 'Mandu', 'Chitarpur', 'Gola'],
+    'Ranchi': ['Ranchi', 'Bundu', 'Tamar', 'Sonahatu', 'Angara'],
+    'Sahibganj': ['Sahibganj', 'Barharwa', 'Borio', 'Taljhari', 'Udhwa'],
+    'Seraikela-Kharsawan': ['Seraikela', 'Kharsawan', 'Govindpur', 'Ichagarh'],
+    'Simdega': ['Simdega', 'Bolba', 'Kolebira', 'Thethaitangar'],
+    'West Singhbhum': ['Chaibasa', 'Chakradharpur', 'Manoharpur', 'Khuntpani', 'Sonua']
+  });
+
+  // Optimized form handlers to prevent unnecessary re-renders
+  const handleNameChange = useCallback((e) => {
+    const value = e.target.value;
+    console.log('🔤 Name change:', value);
+    setNewUser(prev => ({ ...prev, name: value }));
+  }, []);
+
+  const handleEmailChange = useCallback((e) => {
+    const value = e.target.value;
+    console.log('📧 Email change:', value);
+    setNewUser(prev => ({ ...prev, email: value }));
+  }, []);
+
+  const handlePasswordChange = useCallback((e) => {
+    const value = e.target.value;
+    console.log('🔒 Password change:', value.replace(/./g, '*'));
+    setNewUser(prev => ({ ...prev, password: value }));
+  }, []);
+
+  const handleRoleChange = useCallback((e) => {
+    const value = e.target.value;
+    setNewUser(prev => ({
+      ...prev,
+      role: value,
+      district: '',
+      municipality: '',
+      department: ''
+    }));
+  }, []);
+
+  const handleDistrictChange = useCallback((e) => {
+    e.stopPropagation();
+    const selectedDistrict = e.target.value;
+    setNewUser(prev => ({ ...prev, district: selectedDistrict, municipality: '' }));
+    // Update available municipalities based on selected district
+    if (selectedDistrict && municipalityMapping[selectedDistrict]) {
+      setAvailableMunicipalities(municipalityMapping[selectedDistrict]);
+    } else {
+      setAvailableMunicipalities([]);
+    }
+  }, [municipalityMapping]);
+
+  const handleMunicipalityChange = useCallback((e) => {
+    const value = e.target.value;
+    setNewUser(prev => ({ ...prev, municipality: value }));
+  }, []);
+
+  const handleDepartmentChange = useCallback((e) => {
+    const value = e.target.value;
+    setNewUser(prev => ({ ...prev, department: value }));
+  }, []);
+
+  const resetForm = useCallback(() => {
+    setNewUser({
+      name: '',
+      email: '',
+      password: '',
+      role: 'district_admin',
+      district: '',
+      municipality: '',
+      department: ''
+    });
+    setUserFormErrors({});
+    setAvailableMunicipalities([]);
+  }, []);
+
   // Enhanced navigation items with admin theme
   const sidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3, color: 'text-orange-600' },
@@ -126,18 +236,21 @@ const SuperAdminDashboard = () => {
         },
         body: JSON.stringify({
           email: 'bharani@gmail.com',
-          password: 'password',
+          password: '123456',
           role: 'super_admin'
         })
       });
 
+      console.log('🌐 Auth response status:', response.status);
       const data = await response.json();
+      console.log('📦 Auth response data:', data);
 
       if (data.success) {
         console.log('✅ Super admin auto-login successful!');
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         console.log('🎫 Token stored in localStorage!');
+        console.log('🔑 Token preview:', data.token ? data.token.substring(0, 20) + '...' : 'NO TOKEN');
         return true;
       } else {
         console.error('❌ Auto-login failed:', data);
@@ -601,26 +714,39 @@ const SuperAdminDashboard = () => {
 
   const handleStaffAction = async (staffId, action, data) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/staff/${staffId}/${action}`, {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(data)
-      });
+      let response;
+      
+      if (action === 'delete') {
+        // Use the correct delete endpoint
+        response = await fetch(`${API_BASE_URL}/delete-user/${staffId}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        });
+      } else {
+        // For other actions, use the generic staff endpoint (if it exists)
+        response = await fetch(`${API_BASE_URL}/staff/${staffId}/${action}`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(data)
+        });
+      }
 
       if (!response.ok) {
-        console.log(`Staff action ${action} simulated for staff ${staffId}`);
-        toast.success(`Staff member ${action} completed successfully`);
-        return;
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to ${action} user`);
       }
+      
+      const result = await response.json();
+      console.log(`✅ Staff action ${action} successful:`, result);
+      toast.success(`User ${action} completed successfully`);
       
       // Refresh staff data
       const updatedStaff = await fetchStaffData();
       setUsers(updatedStaff);
       
-      toast.success('Staff member updated successfully');
     } catch (error) {
-      console.error(`Error updating staff member: ${error}`);
-      toast.error('Failed to update staff member');
+      console.error(`Error performing ${action} on user:`, error);
+      toast.error(`Failed to ${action} user: ${error.message}`);
     }
   };
 
@@ -1376,18 +1502,6 @@ const SuperAdminDashboard = () => {
   const UserManagement = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
-    const [showAddUserModal, setShowAddUserModal] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [newUser, setNewUser] = useState({
-      name: '',
-      email: '',
-      password: '',
-      role: 'district_admin',
-      district: '',
-      municipality: '',
-      department: ''
-    });
-    const [formErrors, setFormErrors] = useState({});
 
     const filteredUsers = Array.isArray(users) ? users.filter(user => {
       const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1414,7 +1528,7 @@ const SuperAdminDashboard = () => {
     // Add User Modal Functions
     const handleAddUser = async (e) => {
       e.preventDefault();
-      setFormErrors({});
+      setUserFormErrors({});
 
       // Validation
       const errors = {};
@@ -1486,21 +1600,8 @@ const SuperAdminDashboard = () => {
         console.error('Error creating user:', error);
         toast.error('Failed to create user: ' + error.message);
       } finally {
-        setIsSubmitting(false);
+        setIsSubmittingUser(false);
       }
-    };
-
-    const resetForm = () => {
-      setNewUser({
-        name: '',
-        email: '',
-        password: '',
-        role: 'district_admin',
-        district: '',
-        municipality: '',
-        department: ''
-      });
-      setFormErrors({});
     };
 
     return (
@@ -1512,10 +1613,19 @@ const SuperAdminDashboard = () => {
             <p className="text-gray-600">Manage system users and their permissions.</p>
           </div>
           <button
-            onClick={() => {
-              resetForm();
-              setShowAddUserModal(true);
+            onClick={(e) => {
+              try {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🔥 Add New Admin button clicked!');
+                resetForm();
+                setShowAddUserModal(true);
+                console.log('✅ Modal should now be open');
+              } catch (error) {
+                console.error('Error in Add New Admin button:', error);
+              }
             }}
+            type="button"
             className="flex items-center px-6 py-3 bg-gradient-to-r from-orange-500 via-white to-green-600 text-white rounded-xl hover:from-orange-600 hover:to-green-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 border-2 border-white/30"
           >
             <UserPlus className="w-5 h-5 mr-2" />
@@ -1662,371 +1772,436 @@ const SuperAdminDashboard = () => {
         )}
 
         {/* Add User Modal */}
-        {showAddUserModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              {/* Modal Header with Indian Flag Theme */}
-              <div className="sticky top-0 bg-gradient-to-r from-orange-500 via-white to-green-600 p-6 rounded-t-2xl border-b-4 border-blue-800">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
-                      <UserPlus className="w-7 h-7 text-blue-800" />
-                      Add New Admin User
-                    </h3>
-                    <p className="text-gray-700 mt-1 text-lg">नया व्यवस्थापक उपयोगकर्ता जोड़ें</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setShowAddUserModal(false);
-                      resetForm();
-                    }}
-                    className="text-gray-600 hover:text-red-600 p-2 hover:bg-red-50 rounded-full transition-colors"
+        <AddUserModal 
+          showModal={showAddUserModal}
+          onClose={() => {
+            setShowAddUserModal(false);
+            resetForm();
+          }}
+          onSubmit={handleAddUser}
+          isSubmitting={isSubmittingUser}
+          municipalityMapping={municipalityMapping}
+          availableMunicipalities={availableMunicipalities}
+          onDistrictChange={handleDistrictChange}
+          onMunicipalityChange={handleMunicipalityChange}
+          initialFormData={newUser}
+          errors={userFormErrors}
+          onNameChange={handleNameChange}
+          onEmailChange={handleEmailChange}
+          onPasswordChange={handlePasswordChange}
+          onRoleChange={handleRoleChange}
+          onDepartmentChange={handleDepartmentChange}
+        />
+      </div>
+    );
+  };
+
+  // Report Management Component with restored functionality
+  const ReportManagement = () => {
+    const [selectedReport, setSelectedReport] = useState(null);
+    const [showViewModal, setShowViewModal] = useState(false);
+    const [showAssignModal, setShowAssignModal] = useState(false);
+    const [reportToAssign, setReportToAssign] = useState(null);
+    const [workers, setWorkers] = useState([]);
+    const [selectedWorker, setSelectedWorker] = useState('');
+    const [assignmentLoading, setAssignmentLoading] = useState(false);
+
+    // Fetch workers/staff for assignment
+    const fetchWorkers = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/all-users`, {
+          headers: getAuthHeaders()
+        });
+        if (response.ok) {
+          const data = await response.json();
+          // Filter for field staff and workers
+          const workersList = data.users?.filter(user => 
+            user.role === 'field_staff' || 
+            user.role === 'worker' || 
+            user.role === 'department_head'
+          ) || [];
+          setWorkers(workersList);
+        }
+      } catch (error) {
+        console.error('Error fetching workers:', error);
+      }
+    };
+
+    // Handle view report
+    const handleViewReport = async (reportId) => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/reports/${reportId}`, {
+          headers: getAuthHeaders()
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setSelectedReport(data.report || data);
+          setShowViewModal(true);
+        } else {
+          toast.error('Failed to fetch report details');
+        }
+      } catch (error) {
+        console.error('Error fetching report:', error);
+        toast.error('Error loading report details');
+      }
+    };
+
+    // Handle assign report
+    const handleAssignReport = (report) => {
+      setReportToAssign(report);
+      setSelectedWorker('');
+      setShowAssignModal(true);
+      fetchWorkers();
+    };
+
+    // Submit assignment
+    const submitAssignment = async () => {
+      if (!selectedWorker) {
+        toast.error('Please select a worker');
+        return;
+      }
+
+      try {
+        setAssignmentLoading(true);
+        const response = await fetch(`http://localhost:5000/api/reports/${reportToAssign._id}/assign`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            workerId: selectedWorker
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          toast.success('Report assigned successfully!');
+          setShowAssignModal(false);
+          setReportToAssign(null);
+          setSelectedWorker('');
+          // Refresh reports
+          loadReports();
+        } else {
+          const errorData = await response.json();
+          toast.error(errorData.message || 'Failed to assign report');
+        }
+      } catch (error) {
+        console.error('Error assigning report:', error);
+        toast.error('Error assigning report');
+      } finally {
+        setAssignmentLoading(false);
+      }
+    };
+
+    return (
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">Report Management</h2>
+            <p className="text-gray-600">Monitor and manage citizen reports across all districts.</p>
+          </div>
+          <button
+            onClick={loadReports}
+            disabled={loading}
+            className="flex items-center px-4 py-2 border border-orange-500 text-orange-600 rounded-lg hover:bg-orange-50 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh Reports
+          </button>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-xl text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-3xl font-bold mb-1">{reports.length}</div>
+                <div className="text-blue-100">Total Reports</div>
+              </div>
+              <FileText className="w-12 h-12 text-blue-200" />
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 p-6 rounded-xl text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-3xl font-bold mb-1">
+                  {reports.filter(r => r.status === 'pending' || r.status === 'submitted').length}
+                </div>
+                <div className="text-yellow-100">Pending</div>
+              </div>
+              <Clock className="w-12 h-12 text-yellow-200" />
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-6 rounded-xl text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-3xl font-bold mb-1">
+                  {reports.filter(r => r.status === 'in_progress' || r.status === 'assigned').length}
+                </div>
+                <div className="text-orange-100">In Progress</div>
+              </div>
+              <Activity className="w-12 h-12 text-orange-200" />
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-xl text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-3xl font-bold mb-1">
+                  {reports.filter(r => r.status === 'resolved' || r.status === 'completed').length}
+                </div>
+                <div className="text-green-100">Resolved</div>
+              </div>
+              <CheckCircle className="w-12 h-12 text-green-200" />
+            </div>
+          </div>
+        </div>
+
+        {/* Reports Table */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+          <div className="p-6 border-b border-gray-200">
+            <h3 className="text-xl font-semibold">Recent Reports</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Report</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {reports.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
+                      <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                      <p className="text-lg font-medium">No reports found</p>
+                      <p className="text-sm">Reports from citizens will appear here</p>
+                    </td>
+                  </tr>
+                ) : (
+                  reports.slice(0, 20).map((report, index) => (
+                    <tr key={report._id || index} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div>
+                          <div className="font-medium text-gray-900">{report.title || report.category}</div>
+                          <div className="text-sm text-gray-500 truncate max-w-xs">{report.description}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">{report.category}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {report.address || report.district || report.location}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          report.status === 'resolved' || report.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          report.status === 'in_progress' || report.status === 'assigned' ? 'bg-orange-100 text-orange-800' :
+                          report.status === 'pending' || report.status === 'submitted' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {report.status || 'submitted'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          report.priority === 'high' || report.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                          report.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {report.priority || 'medium'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {new Date(report.createdAt || report.timestamp).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => handleViewReport(report._id)}
+                            className="text-blue-600 hover:text-blue-900 p-1 rounded transition-colors"
+                            title="View Report"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          {(report.status === 'pending' || report.status === 'submitted') && (
+                            <button 
+                              onClick={() => handleAssignReport(report)}
+                              className="text-green-600 hover:text-green-900 p-1 rounded transition-colors"
+                              title="Assign Report"
+                            >
+                              <User className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* View Report Modal */}
+        {showViewModal && selectedReport && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-semibold">Report Details</h3>
+                  <button 
+                    onClick={() => setShowViewModal(false)}
+                    className="text-gray-400 hover:text-gray-600"
                   >
                     <X className="w-6 h-6" />
                   </button>
                 </div>
               </div>
-
-              {/* Modal Body */}
-              <form onSubmit={handleAddUser} className="p-6 space-y-6">
-                {/* Basic Information Section */}
-                <div className="bg-gradient-to-r from-orange-50 via-white to-green-50 p-4 rounded-xl border border-gray-200">
-                  <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <User className="w-5 h-5 text-blue-600" />
-                    Basic Information / बुनियादी जानकारी
-                  </h4>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Full Name / पूरा नाम *
-                      </label>
-                      <input
-                        type="text"
-                        value={newUser.name}
-                        onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                        placeholder="Enter full name"
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
-                          formErrors.name ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                        }`}
-                      />
-                      {formErrors.name && <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>}
+              
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Basic Information</h4>
+                    <div className="space-y-2">
+                      <p><strong>Title:</strong> {selectedReport.title || selectedReport.category}</p>
+                      <p><strong>Category:</strong> {selectedReport.category}</p>
+                      <p><strong>Status:</strong> 
+                        <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
+                          selectedReport.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                          selectedReport.status === 'in_progress' ? 'bg-orange-100 text-orange-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {selectedReport.status}
+                        </span>
+                      </p>
+                      <p><strong>Priority:</strong> {selectedReport.priority || 'Medium'}</p>
+                      <p><strong>Date:</strong> {new Date(selectedReport.createdAt).toLocaleString()}</p>
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Email Address / ईमेल पता *
-                      </label>
-                      <input
-                        type="email"
-                        value={newUser.email}
-                        onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                        placeholder="admin@example.com"
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
-                          formErrors.email ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                        }`}
-                      />
-                      {formErrors.email && <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>}
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Password / पासवर्ड *
-                      </label>
-                      <input
-                        type="password"
-                        value={newUser.password}
-                        onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                        placeholder="Enter secure password (min 6 characters)"
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
-                          formErrors.password ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                        }`}
-                      />
-                      {formErrors.password && <p className="text-red-500 text-sm mt-1">{formErrors.password}</p>}
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Location Information</h4>
+                    <div className="space-y-2">
+                      <p><strong>Address:</strong> {selectedReport.address || 'Not provided'}</p>
+                      <p><strong>District:</strong> {selectedReport.district || 'Not specified'}</p>
+                      {selectedReport.coordinates && (
+                        <p><strong>Coordinates:</strong> {selectedReport.coordinates.lat}, {selectedReport.coordinates.lng}</p>
+                      )}
                     </div>
                   </div>
                 </div>
-
-                {/* Role and Jurisdiction Section */}
-                <div className="bg-gradient-to-r from-green-50 via-white to-orange-50 p-4 rounded-xl border border-gray-200">
-                  <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-green-600" />
-                    Role & Jurisdiction / भूमिका और क्षेत्राधिकार
-                  </h4>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Admin Role / व्यवस्थापक भूमिका *
-                      </label>
-                      <select
-                        value={newUser.role}
-                        onChange={(e) => {
-                          setNewUser({
-                            ...newUser,
-                            role: e.target.value,
-                            district: '',
-                            municipality: '',
-                            department: ''
-                          });
-                        }}
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
-                          formErrors.role ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                        }`}
-                      >
-                        <option value="district_admin">District Admin / जिला व्यवस्थापक</option>
-                        <option value="municipality_admin">Municipality Admin / नगरपालिका व्यवस्थापक</option>
-                        <option value="department_head">Department Head / विभाग प्रमुख</option>
-                        <option value="state_admin">State Admin / राज्य व्यवस्थापक</option>
-                      </select>
-                      {formErrors.role && <p className="text-red-500 text-sm mt-1">{formErrors.role}</p>}
-                    </div>
-
-                    {/* District Selection */}
-                    {['district_admin', 'municipality_admin', 'department_head'].includes(newUser.role) && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          District / जिला *
-                        </label>
-                        <select
-                          value={newUser.district}
-                          onChange={(e) => setNewUser({ ...newUser, district: e.target.value, municipality: '' })}
-                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
-                            formErrors.district ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                          }`}
-                        >
-                          <option value="">Select District / जिला चुनें</option>
-                          {districts.map(district => (
-                            <option key={district} value={district}>{district}</option>
-                          ))}
-                        </select>
-                        {formErrors.district && <p className="text-red-500 text-sm mt-1">{formErrors.district}</p>}
-                      </div>
-                    )}
-
-                    {/* Municipality Selection */}
-                    {['municipality_admin', 'department_head'].includes(newUser.role) && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Municipality / नगरपालिका *
-                        </label>
-                        <input
-                          type="text"
-                          value={newUser.municipality}
-                          onChange={(e) => setNewUser({ ...newUser, municipality: e.target.value })}
-                          placeholder="Enter municipality name"
-                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
-                            formErrors.municipality ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                          }`}
-                        />
-                        {formErrors.municipality && <p className="text-red-500 text-sm mt-1">{formErrors.municipality}</p>}
-                      </div>
-                    )}
-
-                    {/* Department Selection */}
-                    {newUser.role === 'department_head' && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Department / विभाग *
-                        </label>
-                        <select
-                          value={newUser.department}
-                          onChange={(e) => setNewUser({ ...newUser, department: e.target.value })}
-                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors ${
-                            formErrors.department ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                          }`}
-                        >
-                          <option value="">Select Department / विभाग चुनें</option>
-                          <option value="public_works">Public Works / लोक निर्माण</option>
-                          <option value="sanitation">Sanitation / स्वच्छता</option>
-                          <option value="water_supply">Water Supply / जल आपूर्ति</option>
-                          <option value="electricity">Electricity / बिजली</option>
-                          <option value="roads_transport">Roads & Transport / सड़क और परिवहन</option>
-                          <option value="health">Health / स्वास्थ्य</option>
-                          <option value="education">Education / शिक्षा</option>
-                        </select>
-                        {formErrors.department && <p className="text-red-500 text-sm mt-1">{formErrors.department}</p>}
-                      </div>
-                    )}
+                
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
+                  <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">{selectedReport.description}</p>
+                </div>
+                
+                {selectedReport.image && (
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Image</h4>
+                    <img 
+                      src={selectedReport.image} 
+                      alt="Report" 
+                      className="max-w-full h-auto rounded-lg border"
+                    />
                   </div>
-                </div>
+                )}
+                
+                {selectedReport.assignedWorker && (
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Assigned Worker</h4>
+                    <p>{selectedReport.assignedWorker.name} ({selectedReport.assignedWorker.email})</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="p-6 border-t border-gray-200">
+                <button 
+                  onClick={() => setShowViewModal(false)}
+                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
-                {/* Action Buttons */}
-                <div className="flex justify-end gap-4 pt-4 border-t border-gray-200">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowAddUserModal(false);
-                      resetForm();
-                    }}
-                    className="px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors font-medium"
+        {/* Assign Report Modal */}
+        {showAssignModal && reportToAssign && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl max-w-md w-full">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-semibold">Assign Report</h3>
+                  <button 
+                    onClick={() => setShowAssignModal(false)}
+                    className="text-gray-400 hover:text-gray-600"
                   >
-                    Cancel / रद्द करें
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="px-6 py-3 bg-gradient-to-r from-orange-500 to-green-500 text-white rounded-lg hover:from-orange-600 hover:to-green-600 transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        Creating...
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="w-4 h-4" />
-                        Create Admin / व्यवस्थापक बनाएं
-                      </>
-                    )}
+                    <X className="w-6 h-6" />
                   </button>
                 </div>
-              </form>
+              </div>
+              
+              <div className="p-6 space-y-4">
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Report Details</h4>
+                  <p className="text-sm text-gray-600">{reportToAssign.title || reportToAssign.category}</p>
+                  <p className="text-sm text-gray-600">{reportToAssign.description}</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Worker</label>
+                  <select 
+                    value={selectedWorker}
+                    onChange={(e) => setSelectedWorker(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  >
+                    <option value="">Choose a worker...</option>
+                    {workers.map(worker => (
+                      <option key={worker._id} value={worker._id}>
+                        {worker.name} - {worker.role} ({worker.district || worker.department || 'N/A'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
+                <button 
+                  onClick={() => setShowAssignModal(false)}
+                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                  disabled={assignmentLoading}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={submitAssignment}
+                  disabled={assignmentLoading || !selectedWorker}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  {assignmentLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      Assigning...
+                    </>
+                  ) : (
+                    'Assign Report'
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         )}
       </div>
     );
   };
-
-  // Report Management Component with restored functionality
-  const ReportManagement = () => (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">Report Management</h2>
-          <p className="text-gray-600">Monitor and manage citizen reports across all districts.</p>
-        </div>
-        <button
-          onClick={loadReports}
-          disabled={loading}
-          className="flex items-center px-4 py-2 border border-orange-500 text-orange-600 rounded-lg hover:bg-orange-50 transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh Reports
-        </button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-xl text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-3xl font-bold mb-1">{reports.length}</div>
-              <div className="text-blue-100">Total Reports</div>
-            </div>
-            <FileText className="w-12 h-12 text-blue-200" />
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 p-6 rounded-xl text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-3xl font-bold mb-1">
-                {reports.filter(r => r.status === 'pending').length}
-              </div>
-              <div className="text-yellow-100">Pending</div>
-            </div>
-            <Clock className="w-12 h-12 text-yellow-200" />
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-6 rounded-xl text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-3xl font-bold mb-1">
-                {reports.filter(r => r.status === 'in_progress').length}
-              </div>
-              <div className="text-orange-100">In Progress</div>
-            </div>
-            <Activity className="w-12 h-12 text-orange-200" />
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-xl text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-3xl font-bold mb-1">
-                {reports.filter(r => r.status === 'resolved').length}
-              </div>
-              <div className="text-green-100">Resolved</div>
-            </div>
-            <CheckCircle className="w-12 h-12 text-green-200" />
-          </div>
-        </div>
-      </div>
-
-      {/* Reports Table */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
-          <h3 className="text-xl font-semibold">Recent Reports</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Report</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">District</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {reports.slice(0, 10).map((report, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="font-medium text-gray-900">{report.title}</div>
-                      <div className="text-sm text-gray-500 truncate max-w-xs">{report.description}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{report.category}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{report.district}</td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      report.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                      report.status === 'in_progress' ? 'bg-orange-100 text-orange-800' :
-                      report.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {report.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      report.priority === 'Critical' ? 'bg-red-100 text-red-800' :
-                      report.priority === 'High' ? 'bg-orange-100 text-orange-800' :
-                      report.priority === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {report.priority || 'Medium'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">
-                    {new Date(report.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <button className="text-blue-600 hover:text-blue-900">
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button className="text-green-600 hover:text-green-900">
-                        <User className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
 
   // System Settings Component
   const SystemSettings = () => (
@@ -2123,67 +2298,205 @@ const SuperAdminDashboard = () => {
   );
 
   // Profile Page Component
-  const ProfilePage = () => (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">Profile Settings</h2>
-          <p className="text-gray-600">Manage your account settings and preferences.</p>
-        </div>
-      </div>
+  const ProfilePage = () => {
+    const [profileData, setProfileData] = useState({
+      name: adminUser?.name || '',
+      email: adminUser?.email || '',
+      role: adminUser?.role || 'super_admin'
+    });
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [profileLoading, setProfileLoading] = useState(true);
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-          <div className="text-center">
-            <div className="w-24 h-24 bg-gradient-to-r from-orange-500 to-green-500 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
-              {adminUser?.name?.charAt(0).toUpperCase() || 'S'}
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900">{adminUser?.name || 'Super Admin'}</h3>
-            <p className="text-gray-600">{adminUser?.email || 'admin@digitalindia.gov.in'}</p>
-            <p className="text-sm text-gray-500 mt-2">Super Administrator</p>
+    // Fetch profile data from backend on component mount
+    useEffect(() => {
+      fetchProfileData();
+    }, []);
+
+    const fetchProfileData = async () => {
+      try {
+        setProfileLoading(true);
+        const response = await fetch('http://localhost:5000/api/auth/profile', {
+          headers: getAuthHeaders()
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setProfileData({
+              name: data.user.name || '',
+              email: data.user.email || '',
+              role: data.user.role || 'super_admin'
+            });
+            console.log('✅ Profile data fetched:', data.user);
+          }
+        } else {
+          console.log('📝 Using cached profile data from localStorage');
+          // Fallback to localStorage data
+          const userData = JSON.parse(localStorage.getItem('user') || '{}');
+          setProfileData({
+            name: userData.name || adminUser?.name || '',
+            email: userData.email || adminUser?.email || '',
+            role: userData.role || 'super_admin'
+          });
+        }
+      } catch (error) {
+        console.error('❌ Error fetching profile:', error);
+        // Fallback to localStorage data
+        const userData = JSON.parse(localStorage.getItem('user') || '{}');
+        setProfileData({
+          name: userData.name || adminUser?.name || '',
+          email: userData.email || adminUser?.email || '',
+          role: userData.role || 'super_admin'
+        });
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    const handleInputChange = (field, value) => {
+      setProfileData(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    };
+
+    const handleSaveProfile = async () => {
+      try {
+        setIsUpdating(true);
+        console.log('💾 Updating profile:', profileData);
+        
+        const response = await fetch('http://localhost:5000/api/auth/profile', {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            name: profileData.name,
+            email: profileData.email
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            // Update localStorage
+            const userData = JSON.parse(localStorage.getItem('user') || '{}');
+            userData.name = profileData.name;
+            userData.email = profileData.email;
+            localStorage.setItem('user', JSON.stringify(userData));
+            
+            // Update adminUser state
+            setAdminUser(prev => ({
+              ...prev,
+              name: profileData.name,
+              email: profileData.email
+            }));
+            
+            toast.success('Profile updated successfully!');
+            console.log('✅ Profile updated successfully');
+          } else {
+            throw new Error(data.message || 'Failed to update profile');
+          }
+        } else {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to update profile');
+        }
+      } catch (error) {
+        console.error('❌ Error updating profile:', error);
+        toast.error('Failed to update profile: ' + error.message);
+      } finally {
+        setIsUpdating(false);
+      }
+    };
+
+    if (profileLoading) {
+      return (
+        <div className="p-6 space-y-6">
+          <div className="flex justify-center items-center h-64">
+            <div className="w-8 h-8 border-4 border-orange-600 border-t-transparent rounded-full animate-spin"></div>
+            <span className="ml-3 text-gray-600">Loading profile...</span>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">Profile Settings</h2>
+            <p className="text-gray-600">Manage your account settings and preferences.</p>
           </div>
         </div>
 
-        <div className="md:col-span-2 bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-          <h3 className="text-xl font-semibold mb-4">Account Information</h3>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+            <div className="text-center">
+              <div className="w-24 h-24 bg-gradient-to-r from-orange-500 to-green-500 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
+                {profileData.name?.charAt(0).toUpperCase() || 'S'}
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900">{profileData.name || 'Super Admin'}</h3>
+              <p className="text-gray-600">{profileData.email || 'admin@digitalindia.gov.in'}</p>
+              <p className="text-sm text-gray-500 mt-2">
+                {profileData.role === 'super_admin' ? 'Super Administrator' : profileData.role}
+              </p>
+            </div>
+          </div>
+
+          <div className="md:col-span-2 bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+            <h3 className="text-xl font-semibold mb-4">Account Information</h3>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                  <input
+                    type="text"
+                    value={profileData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="Enter your full name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <input
+                    type="email"
+                    value={profileData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="Enter your email address"
+                  />
+                </div>
+              </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
                 <input
                   type="text"
-                  defaultValue={adminUser?.name || 'Super Admin'}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  value={profileData.role === 'super_admin' ? 'Super Administrator' : profileData.role}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                <input
-                  type="email"
-                  defaultValue={adminUser?.email || 'admin@digitalindia.gov.in'}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                />
+              <div className="flex justify-end">
+                <button 
+                  onClick={handleSaveProfile}
+                  disabled={isUpdating}
+                  className="px-6 py-2 bg-gradient-to-r from-orange-500 to-green-500 text-white rounded-lg hover:from-orange-600 hover:to-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  {isUpdating ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </button>
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-              <input
-                type="text"
-                value="Super Administrator"
-                disabled
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
-              />
-            </div>
-            <div className="flex justify-end">
-              <button className="px-6 py-2 bg-gradient-to-r from-orange-500 to-green-500 text-white rounded-lg hover:from-orange-600 hover:to-green-600 transition-colors">
-                Save Changes
-              </button>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Loading state
   if (loading) {
