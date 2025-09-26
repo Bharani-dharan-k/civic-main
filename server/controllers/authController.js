@@ -472,6 +472,7 @@ exports.loginAdmin = async (req, res) => {
                         department: dbAdmin.department,
                         municipality: dbAdmin.municipality,
                         district: dbAdmin.district,
+                        ward: dbAdmin.ward,
                         userType: 'admin'
                     }
                 };

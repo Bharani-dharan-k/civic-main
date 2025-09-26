@@ -1628,11 +1628,12 @@ exports.createDepartmentAdmin = async (req, res) => {
             department, 
             district, 
             municipality,
+            ward,
             phone 
         } = req.body;
 
         console.log('🔍 Extracted values:', {
-            name, email, role, department, municipality, district, phone,
+            name, email, role, department, municipality, district, ward, phone,
             passwordProvided: !!password
         });
 
@@ -1699,12 +1700,23 @@ exports.createDepartmentAdmin = async (req, res) => {
             userData.municipality = userMunicipality; // Department heads belong to a municipality
         } else if (role === 'municipality_admin') {
             userData.municipality = municipality || userMunicipality;
+            userData.ward = ward || 'Ward 1'; // Use provided ward or default to Ward 1
             // Municipality admins don't have a specific department
         }
 
         console.log('🔍 Creating user with data:', userData);
+        console.log('🔍 User data role:', userData.role);
+        console.log('🔍 Ward field set:', userData.ward);
+        
         const newUser = new User(userData);
         console.log('🔍 User model created, saving...');
+        
+        // Validate the user before saving to get better error messages
+        const validationError = newUser.validateSync();
+        if (validationError) {
+            console.log('❌ Validation error before save:', validationError);
+            throw validationError;
+        }
 
         await newUser.save();
         console.log('✅ User saved successfully with ID:', newUser._id);

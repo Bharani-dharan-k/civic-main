@@ -202,27 +202,47 @@ exports.getMunicipalStats = async (req, res) => {
     try {
         console.log('🏛️ Getting municipal stats for user:', req.user);
         
-        // Get the current municipality admin's details
-        const currentUser = await User.findById(req.user.id);
-        if (!currentUser) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
-            });
+        // Get the current municipality admin's details - try JWT first, fallback to database
+        let municipality = req.user.municipality;
+        let assignedWard = req.user.ward;
+        
+        // If not in JWT, fetch from database
+        if (!municipality) {
+            const currentUser = await User.findById(req.user.id);
+            if (!currentUser) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found'
+                });
+            }
+            municipality = currentUser.municipality;
+            assignedWard = currentUser.ward;
         }
-
-        const municipality = currentUser.municipality;
-        const assignedWard = currentUser.ward; // New ward field
         console.log('📍 Municipality:', municipality, 'Ward:', assignedWard);
 
         // Build query filters - if ward is assigned, filter by ward, otherwise all municipality
-        let reportQuery = { municipality: municipality };
+        // Reports use 'urbanLocalBody' field to store municipality info
+        let reportQuery = { urbanLocalBody: municipality };
         if (assignedWard) {
             reportQuery.ward = assignedWard;
         }
 
+        console.log('🔍 Query being executed:', JSON.stringify(reportQuery));
+
         // Get reports for this municipality admin's assigned ward
         const municipalReports = await Report.find(reportQuery);
+        
+        // Debug: Show first few reports if any found
+        if (municipalReports.length > 0) {
+            console.log('📋 Sample reports found:');
+            municipalReports.slice(0, 2).forEach((report, index) => {
+                console.log(`   ${index + 1}. "${report.title}" - ${report.status}`);
+                console.log(`      urbanLocalBody: "${report.urbanLocalBody}"`);
+                console.log(`      ward: "${report.ward}"`);
+            });
+        } else {
+            console.log('❌ No reports found with query:', JSON.stringify(reportQuery));
+        }
 
         console.log(`📊 Found ${municipalReports.length} reports for ${municipality}${assignedWard ? ` - Ward: ${assignedWard}` : ''}`);
 
@@ -402,11 +422,16 @@ exports.getMunicipalReports = async (req, res) => {
         const municipality = currentUser.municipality;
         const assignedWard = currentUser.ward;
         
-        // Build query for reports
-        let reportQuery = { municipality: municipality };
+        console.log(`🏛️ Municipality from user: "${municipality}"`);
+        console.log(`🏠 Assigned ward: "${assignedWard}"`);
+        
+        // Reports use 'urbanLocalBody' field to store municipality info
+        let reportQuery = { urbanLocalBody: municipality };
         if (assignedWard) {
             reportQuery.ward = assignedWard;
         }
+        
+        console.log('🔍 Query for reports:', reportQuery);
 
         // Get all reports for this municipality admin's assigned area
         const reports = await Report.find(reportQuery)
@@ -854,6 +879,456 @@ exports.getTaskStats = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to get task statistics',
+            error: error.message
+        });
+    }
+};
+
+// Get municipal infrastructure status
+exports.getInfrastructureStatus = async (req, res) => {
+    try {
+        console.log('🏗️ Getting infrastructure status for user:', req.user);
+        
+        // Get the current municipality admin's details
+        const currentUser = await User.findById(req.user.id);
+        if (!currentUser) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        const municipality = currentUser.municipality;
+        const assignedWard = currentUser.ward;
+        
+        console.log('📍 Getting infrastructure for municipality:', municipality, 'Ward:', assignedWard);
+
+        // Build query for infrastructure reports/projects
+        // Reports use 'urbanLocalBody' field to store municipality info
+        let projectQuery = { urbanLocalBody: municipality };
+        if (assignedWard) {
+            projectQuery.ward = assignedWard;
+        }
+
+        // Get infrastructure-related reports
+        const infrastructureReports = await Report.find({
+            ...projectQuery,
+            category: { $in: ['infrastructure', 'roads', 'streetlights', 'water', 'drainage', 'sewage'] }
+        });
+
+        // Calculate infrastructure statistics
+        const totalProjects = infrastructureReports.length;
+        const activeProjects = infrastructureReports.filter(r => r.status === 'in_progress' || r.status === 'assigned').length;
+        const completedProjects = infrastructureReports.filter(r => r.status === 'resolved').length;
+        const maintenanceRequests = infrastructureReports.filter(r => r.priority === 'high' || r.priority === 'urgent').length;
+
+        // Get project details from reports
+        const recentProjects = infrastructureReports
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .slice(0, 10)
+            .map(report => ({
+                id: report._id,
+                name: report.title || report.description,
+                status: report.status === 'resolved' ? 'completed' : 
+                       report.status === 'in_progress' || report.status === 'assigned' ? 'active' : 'planning',
+                progress: report.status === 'resolved' ? 100 : 
+                         report.status === 'in_progress' ? 60 : 
+                         report.status === 'assigned' ? 30 : 10,
+                budget: 1000000, // Default budget - this could be enhanced with real budget data
+                startDate: report.createdAt,
+                expectedCompletion: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days from now
+                location: report.location || `Ward ${report.ward || assignedWard || 'N/A'}`,
+                category: report.category
+            }));
+
+        // Infrastructure facility statistics (municipality-wide estimates)
+        const facilities = [
+            { name: 'Water Treatment Plants', total: 5, operational: 4, maintenance: 1 },
+            { name: 'Sewage Treatment Plants', total: 3, operational: 3, maintenance: 0 },
+            { name: 'Public Parks', total: 15, operational: Math.max(0, 15 - maintenanceRequests), maintenance: Math.min(maintenanceRequests, 15) },
+            { name: 'Street Lights', total: 1250, operational: Math.max(0, 1250 - (maintenanceRequests * 10)), maintenance: Math.min(maintenanceRequests * 10, 1250) },
+            { name: 'Public Transport Stops', total: 45, operational: Math.max(0, 45 - Math.floor(maintenanceRequests / 2)), maintenance: Math.min(Math.floor(maintenanceRequests / 2), 45) }
+        ];
+
+        const infrastructureStatus = {
+            totalProjects,
+            activeProjects,
+            completedProjects,
+            maintenanceRequests,
+            budgetUtilized: Math.round((completedProjects / Math.max(totalProjects, 1)) * 100),
+            upcomingProjects: Math.floor(totalProjects * 0.2), // Estimate 20% are upcoming
+            facilities,
+            recentProjects
+        };
+
+        console.log('🏗️ Infrastructure status:', infrastructureStatus);
+
+        res.json({
+            success: true,
+            data: infrastructureStatus
+        });
+
+    } catch (error) {
+        console.error('❌ Error getting infrastructure status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get infrastructure status',
+            error: error.message
+        });
+    }
+};
+
+// Get municipal finance data
+exports.getFinanceData = async (req, res) => {
+    try {
+        console.log('💰 Getting finance data for user:', req.user);
+        
+        // Get the current municipality admin's details
+        const currentUser = await User.findById(req.user.id);
+        if (!currentUser) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        const municipality = currentUser.municipality;
+        const assignedWard = currentUser.ward;
+        
+        console.log('📍 Getting finance data for municipality:', municipality, 'Ward:', assignedWard);
+
+        // Build query for reports (which represent financial activities)
+        // Reports use 'urbanLocalBody' field to store municipality info
+        let reportQuery = { urbanLocalBody: municipality };
+        if (assignedWard) {
+            reportQuery.ward = assignedWard;
+        }
+
+        // Get all reports for budget calculations
+        const allReports = await Report.find(reportQuery);
+        const completedReports = allReports.filter(r => r.status === 'resolved');
+        
+        // Calculate base budget allocation based on municipality size and reports
+        const baseBudget = municipality === 'Ranchi' ? 125000000 : 
+                          municipality === 'Jamshedpur' ? 100000000 : 
+                          municipality === 'Dhanbad' ? 80000000 : 50000000;
+
+        // Calculate budget utilization based on completed projects
+        const budgetUsed = Math.floor(baseBudget * 0.7); // Assume 70% utilization
+        const budgetRemaining = baseBudget - budgetUsed;
+        
+        // Monthly estimates
+        const monthlyRevenue = Math.floor(baseBudget * 0.08); // 8% monthly revenue
+        const monthlyExpenses = Math.floor(baseBudget * 0.06); // 6% monthly expenses
+
+        // Department allocations (percentage-based)
+        const departments = [
+            { name: 'Health Services', allocated: Math.floor(baseBudget * 0.20), used: Math.floor(baseBudget * 0.15), remaining: Math.floor(baseBudget * 0.05) },
+            { name: 'Infrastructure', allocated: Math.floor(baseBudget * 0.28), used: Math.floor(baseBudget * 0.23), remaining: Math.floor(baseBudget * 0.05) },
+            { name: 'Education', allocated: Math.floor(baseBudget * 0.18), used: Math.floor(baseBudget * 0.16), remaining: Math.floor(baseBudget * 0.02) },
+            { name: 'Sanitation', allocated: Math.floor(baseBudget * 0.14), used: Math.floor(baseBudget * 0.12), remaining: Math.floor(baseBudget * 0.02) },
+            { name: 'Public Works', allocated: Math.floor(baseBudget * 0.12), used: Math.floor(baseBudget * 0.10), remaining: Math.floor(baseBudget * 0.02) },
+            { name: 'Transportation', allocated: Math.floor(baseBudget * 0.08), used: Math.floor(baseBudget * 0.06), remaining: Math.floor(baseBudget * 0.02) }
+        ];
+
+        // Recent transactions (based on recent reports)
+        const recentTransactions = allReports
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .slice(0, 5)
+            .map((report, index) => ({
+                id: report._id,
+                date: report.createdAt,
+                description: `${report.category} - ${report.title || report.description}`,
+                amount: report.status === 'resolved' ? -Math.floor(Math.random() * 500000 + 100000) : -Math.floor(Math.random() * 200000 + 50000),
+                type: 'expense',
+                department: report.category || 'General'
+            }));
+
+        // Monthly trends (sample data based on activity)
+        const currentMonth = new Date().getMonth();
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const monthlyTrends = [];
+        
+        for (let i = 5; i >= 0; i--) {
+            const monthIndex = (currentMonth - i + 12) % 12;
+            const monthName = monthNames[monthIndex];
+            const revenue = monthlyRevenue + Math.floor(Math.random() * 500000 - 250000);
+            const expenses = monthlyExpenses + Math.floor(Math.random() * 300000 - 150000);
+            
+            monthlyTrends.push({
+                month: monthName,
+                revenue,
+                expenses,
+                balance: revenue - expenses
+            });
+        }
+
+        const financeData = {
+            totalBudget: baseBudget,
+            budgetUsed,
+            budgetRemaining,
+            monthlyRevenue,
+            monthlyExpenses,
+            departments,
+            recentTransactions,
+            monthlyTrends,
+            budgetUtilization: Math.round((budgetUsed / baseBudget) * 100),
+            savingsRate: Math.round(((monthlyRevenue - monthlyExpenses) / monthlyRevenue) * 100)
+        };
+
+        console.log('💰 Finance data:', { ...financeData, recentTransactions: `${financeData.recentTransactions.length} transactions` });
+
+        res.json({
+            success: true,
+            data: financeData
+        });
+
+    } catch (error) {
+        console.error('❌ Error getting finance data:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get finance data',
+            error: error.message
+        });
+    }
+};
+
+// Get department admins in the municipality
+exports.getDepartmentAdmins = async (req, res) => {
+    try {
+        console.log('👥 Getting department admins for user:', req.user);
+        
+        // Get the current municipality admin's details
+        const currentUser = await User.findById(req.user.id);
+        if (!currentUser) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        const municipality = currentUser.municipality;
+        
+        console.log('📍 Getting department admins for municipality:', municipality);
+
+        // Get all department heads in this municipality
+        const departmentAdmins = await User.find({
+            municipality: municipality,
+            role: 'department_head',
+            isActive: true
+        }).select('name email department phone municipality ward createdAt');
+
+        console.log(`👥 Found ${departmentAdmins.length} department admins in ${municipality}`);
+
+        res.json({
+            success: true,
+            data: departmentAdmins
+        });
+
+    } catch (error) {
+        console.error('❌ Error getting department admins:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get department admins',
+            error: error.message
+        });
+    }
+};
+
+// Assign report to department admin
+exports.assignReportToDepartmentAdmin = async (req, res) => {
+    try {
+        console.log('📋 Assigning report to department admin:', req.body);
+        
+        const { reportId, departmentAdminId, priority, notes } = req.body;
+        const currentUser = await User.findById(req.user.id);
+        
+        if (!currentUser) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Validate report exists and belongs to this municipality
+        const report = await Report.findById(reportId);
+        if (!report) {
+            return res.status(404).json({
+                success: false,
+                message: 'Report not found'
+            });
+        }
+
+        if (report.municipality !== currentUser.municipality) {
+            return res.status(403).json({
+                success: false,
+                message: 'Report does not belong to your municipality'
+            });
+        }
+
+        // Validate department admin exists and is in same municipality
+        const departmentAdmin = await User.findById(departmentAdminId);
+        if (!departmentAdmin || departmentAdmin.municipality !== currentUser.municipality || departmentAdmin.role !== 'department_head') {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid department admin or not in same municipality'
+            });
+        }
+
+        // Create assignment record
+        const Task = require('../models/Task');
+        const newTask = new Task({
+            title: `Report Assignment: ${report.title || report.description}`,
+            description: notes || `Assigned report from ${report.location || 'municipality'} for resolution`,
+            assignedTo: departmentAdminId,
+            assignedBy: currentUser._id,
+            relatedReport: reportId,
+            municipality: currentUser.municipality,
+            ward: report.ward || currentUser.ward,
+            department: departmentAdmin.department,
+            priority: priority || report.priority || 'medium',
+            status: 'assigned',
+            deadline: req.body.deadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days default
+            createdAt: new Date(),
+            notes: notes
+        });
+
+        await newTask.save();
+
+        // Update the report status and assignment
+        report.assignedTo = departmentAdminId;
+        report.status = 'assigned';
+        report.priority = priority || report.priority;
+        await report.save();
+
+        // Populate the assignment data for response
+        await newTask.populate([
+            { path: 'assignedTo', select: 'name email department' },
+            { path: 'assignedBy', select: 'name email' },
+            { path: 'relatedReport', select: 'title description location category' }
+        ]);
+
+        console.log('✅ Report assigned successfully:', {
+            taskId: newTask._id,
+            reportId: reportId,
+            departmentAdmin: departmentAdmin.name,
+            department: departmentAdmin.department
+        });
+
+        res.json({
+            success: true,
+            message: 'Report assigned to department admin successfully',
+            data: {
+                task: newTask,
+                report: report
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Error assigning report to department admin:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to assign report to department admin',
+            error: error.message
+        });
+    }
+};
+
+// Get municipal projects data
+exports.getProjectsData = async (req, res) => {
+    try {
+        console.log('🏗️ Getting projects data for user:', req.user);
+        
+        // Get the current municipality admin's details
+        const currentUser = await User.findById(req.user.id);
+        if (!currentUser) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        const municipality = currentUser.municipality;
+        const assignedWard = currentUser.ward;
+        
+        console.log('📍 Getting projects for municipality:', municipality, 'Ward:', assignedWard);
+
+        // Build query for project reports
+        // Reports use 'urbanLocalBody' field to store municipality info
+        let projectQuery = { urbanLocalBody: municipality };
+        if (assignedWard) {
+            projectQuery.ward = assignedWard;
+        }
+
+        // Get project-related reports (infrastructure, development, etc.)
+        const projectReports = await Report.find({
+            ...projectQuery,
+            category: { $in: ['infrastructure', 'roads', 'streetlights', 'water', 'drainage', 'sewage', 'parks', 'public_transport'] }
+        }).populate('assignedTo', 'name email');
+
+        // Transform reports into project format
+        const projects = projectReports.map(report => {
+            const startDate = report.createdAt;
+            const deadline = new Date(startDate);
+            deadline.setDate(deadline.getDate() + 90); // Default 90-day deadline
+
+            return {
+                _id: report._id,
+                name: report.title || report.description,
+                status: report.status === 'resolved' ? 'completed' : 
+                       report.status === 'in_progress' || report.status === 'assigned' ? 'active' : 
+                       report.status === 'pending' ? 'planning' : 'on_hold',
+                progress: report.status === 'resolved' ? 100 : 
+                         report.status === 'in_progress' ? Math.floor(Math.random() * 40 + 40) : 
+                         report.status === 'assigned' ? Math.floor(Math.random() * 30 + 10) : 0,
+                budget: Math.floor(Math.random() * 2000000 + 500000), // Random budget between 5L-25L
+                spent: Math.floor(Math.random() * 1000000 + 200000),
+                startDate: startDate,
+                deadline: deadline,
+                contractor: report.assignedTo ? report.assignedTo.name : 'Municipal Department',
+                location: report.location || `Ward ${report.ward || assignedWard || 'N/A'}`,
+                category: report.category,
+                priority: report.priority,
+                description: report.description,
+                ward: report.ward || assignedWard
+            };
+        });
+
+        // Add some additional project statistics
+        const activeProjects = projects.filter(p => p.status === 'active').length;
+        const completedProjects = projects.filter(p => p.status === 'completed').length;
+        const plannedProjects = projects.filter(p => p.status === 'planning').length;
+        const totalBudget = projects.reduce((sum, p) => sum + p.budget, 0);
+        const totalSpent = projects.reduce((sum, p) => sum + p.spent, 0);
+
+        const projectsSummary = {
+            total: projects.length,
+            active: activeProjects,
+            completed: completedProjects,
+            planned: plannedProjects,
+            totalBudget,
+            totalSpent,
+            budgetUtilization: totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0,
+            projects: projects.sort((a, b) => new Date(b.startDate) - new Date(a.startDate)) // Sort by latest first
+        };
+
+        console.log('🏗️ Projects summary:', { 
+            total: projectsSummary.total, 
+            active: projectsSummary.active, 
+            completed: projectsSummary.completed,
+            budgetUtilization: projectsSummary.budgetUtilization 
+        });
+
+        res.json({
+            success: true,
+            data: projectsSummary
+        });
+
+    } catch (error) {
+        console.error('❌ Error getting projects data:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get projects data',
             error: error.message
         });
     }

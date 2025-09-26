@@ -361,6 +361,7 @@ const MunicipalityAdminDialog = ({
     email: '',
     password: '',
     municipality: '',
+    ward: '',
     phone: ''
   });
 
@@ -369,8 +370,8 @@ const MunicipalityAdminDialog = ({
   };
 
   const handleSubmit = () => {
-    if (!formData.name || !formData.email || !formData.password || !formData.municipality) {
-      alert('❌ Please fill in all required fields');
+    if (!formData.name || !formData.email || !formData.password || !formData.municipality || !formData.ward) {
+      alert('❌ Please fill in all required fields (Name, Email, Password, Municipality, and Ward)');
       return;
     }
     
@@ -382,6 +383,7 @@ const MunicipalityAdminDialog = ({
       email: '',
       password: '',
       municipality: '',
+      ward: '',
       phone: ''
     });
   };
@@ -393,6 +395,7 @@ const MunicipalityAdminDialog = ({
       email: '',
       password: '',
       municipality: '',
+      ward: '',
       phone: ''
     });
     onClose();
@@ -480,6 +483,18 @@ const MunicipalityAdminDialog = ({
               value={formData.phone}
               onChange={(e) => handleFieldChange('phone', e.target.value)}
               variant="outlined"
+            />
+          </Grid>
+          
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              fullWidth
+              label="Ward *"
+              value={formData.ward}
+              onChange={(e) => handleFieldChange('ward', e.target.value)}
+              variant="outlined"
+              required
+              placeholder="e.g., Ward 1, Ward 2, etc."
             />
           </Grid>
           
@@ -1462,7 +1477,7 @@ const DistrictAdminDashboard = () => {
       console.log('🔄 Creating municipality admin with data:', adminData);
       
       // Validate the data before sending
-      const requiredFields = ['name', 'email', 'password', 'municipality'];
+      const requiredFields = ['name', 'email', 'password', 'municipality', 'ward'];
       const missingFields = requiredFields.filter(field => !adminData[field]);
       if (missingFields.length > 0) {
         alert(`❌ Missing required fields: ${missingFields.join(', ')}`);
@@ -1473,7 +1488,7 @@ const DistrictAdminDashboard = () => {
       const userData = {
         ...adminData,
         role: 'municipality_admin',
-        district: currentUser?.district || 'Bokaro District'
+        district: user?.district || 'Bokaro District'
       };
       
       const response = await API.post('/admin/users', userData);

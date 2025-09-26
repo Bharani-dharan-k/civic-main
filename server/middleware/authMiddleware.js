@@ -48,6 +48,7 @@ exports.protect = async (req, res, next) => {
                     userType: decoded.user.userType || 'admin',
                     district: decoded.user.district,
                     municipality: decoded.user.municipality,
+                    ward: decoded.user.ward,
                     department: decoded.user.department
                 };
                 console.log('✅ req.user set for admin:', req.user);

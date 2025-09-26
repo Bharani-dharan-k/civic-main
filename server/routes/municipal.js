@@ -14,7 +14,12 @@ const {
     assignTask,
     addStaffMember,
     updateStaffMember,
-    deleteStaffMember
+    deleteStaffMember,
+    getInfrastructureStatus,
+    getFinanceData,
+    getProjectsData,
+    getDepartmentAdmins,
+    assignReportToDepartmentAdmin
 } = require('../controllers/municipalController');
 
 const { protect, admin } = require('../middleware/authMiddleware');
@@ -31,6 +36,9 @@ router.get('/service-requests', getServiceRequests);
 router.get('/emergency-alerts', getEmergencyAlerts);
 router.get('/reports', getMunicipalReports);
 router.get('/staff', getMunicipalStaff);
+router.get('/infrastructure', getInfrastructureStatus);
+router.get('/finance', getFinanceData);
+router.get('/projects', getProjectsData);
 // Add staff member
 router.post('/staff', addStaffMember);
 // Update staff member
@@ -45,5 +53,9 @@ router.put('/reports/:reportId/status', updateReportStatus);
 router.get('/tasks', getAssignedTasks);
 router.get('/tasks/stats', getTaskStats);
 router.put('/tasks/:taskId/progress', updateTaskProgress);
+
+// Department admin management
+router.get('/department-admins', getDepartmentAdmins);
+router.post('/assign-report', assignReportToDepartmentAdmin);
 
 module.exports = router;
