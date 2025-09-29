@@ -1481,6 +1481,8 @@ const SuperAdminDashboard = () => {
 
       try {
         console.log('👤 Creating new admin user:', formData);
+        console.log('🔑 Auth headers:', getAuthHeaders());
+        console.log('🔑 Token from localStorage:', localStorage.getItem('token')?.substring(0, 20) + '...');
 
         const response = await fetch(`${API_BASE_URL}/create-admin`, {
           method: 'POST',
@@ -1495,6 +1497,19 @@ const SuperAdminDashboard = () => {
             department: formData.department || null
           })
         });
+
+        console.log('🔍 Response status:', response.status);
+        console.log('🔍 Response headers:', response.headers);
+
+        // Check if response is actually JSON
+        const contentType = response.headers.get('content-type');
+        console.log('🔍 Content-Type:', contentType);
+
+        if (!contentType || !contentType.includes('application/json')) {
+          const htmlText = await response.text();
+          console.error('❌ Received HTML instead of JSON:', htmlText.substring(0, 200));
+          throw new Error('Server returned HTML instead of JSON. Check server logs for errors.');
+        }
 
         const data = await response.json();
 

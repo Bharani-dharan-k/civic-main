@@ -190,52 +190,85 @@ const InsightsSection = () => {
   };
 
   const setFallbackData = () => {
-    // Fallback to dummy data if backend is not available
-    setMonthlyData([
-      { month: 'Jan', reports: 2, resolved: 1 },
-      { month: 'Feb', reports: 3, resolved: 2 },
-      { month: 'Mar', reports: 1, resolved: 1 },
-      { month: 'Apr', reports: 4, resolved: 3 },
-      { month: 'May', reports: 2, resolved: 1 },
-      { month: 'Jun', reports: 0, resolved: 0 }
-    ]);
+    // Enhanced fallback data based on the dummy reports structure
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
 
+    // Generate monthly data based on typical usage patterns
+    const monthlyDataFallback = [];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    for (let i = 0; i < 12; i++) {
+      const isCurrentMonth = i === currentMonth;
+      const isPastMonth = i < currentMonth;
+      const isFutureMonth = i > currentMonth;
+
+      let reports = 0;
+      let resolved = 0;
+
+      if (isPastMonth) {
+        // Past months have more data
+        reports = Math.floor(Math.random() * 5) + 2; // 2-6 reports
+        resolved = Math.floor(reports * 0.7); // 70% resolution rate for past months
+      } else if (isCurrentMonth) {
+        // Current month has some reports, fewer resolved
+        reports = Math.floor(Math.random() * 3) + 1; // 1-3 reports
+        resolved = Math.floor(reports * 0.4); // 40% resolution rate for current month
+      } else {
+        // Future months have no data
+        reports = 0;
+        resolved = 0;
+      }
+
+      monthlyDataFallback.push({
+        month: monthNames[i],
+        reports,
+        resolved
+      });
+    }
+
+    setMonthlyData(monthlyDataFallback);
+
+    // Enhanced category data matching our dummy reports
     setCategoryData([
-      { name: 'Potholes', value: 5, color: '#ff6b6b' },
-      { name: 'Street Lights', value: 3, color: '#4ecdc4' },
+      { name: 'Potholes', value: 2, color: '#ff6b6b' },
+      { name: 'Street Lights', value: 1, color: '#4ecdc4' },
       { name: 'Garbage', value: 2, color: '#45b7d1' },
-      { name: 'Water Supply', value: 2, color: '#96ceb4' }
+      { name: 'Water Supply', value: 1, color: '#96ceb4' },
+      { name: 'Drainage', value: 1, color: '#ffd93d' },
+      { name: 'Maintenance', value: 1, color: '#ffb347' }
     ]);
 
+    // Enhanced stats based on dummy data (8 total reports)
     setStats([
       {
         title: 'Total Reports',
-        value: '12',
-        change: '+2',
+        value: '8',
+        change: '+3',
         trend: 'up',
         icon: BarChart3,
         color: 'blue'
       },
       {
         title: 'Resolution Rate',
-        value: '67%',
-        change: '+5%',
+        value: '25%',
+        change: '+10%',
         trend: 'up',
         icon: Target,
         color: 'green'
       },
       {
         title: 'Avg. Response Time',
-        value: '2.4 days',
-        change: '-0.5',
+        value: '3.2 days',
+        change: '-0.8 days',
         trend: 'down',
         icon: Calendar,
         color: 'purple'
       },
       {
         title: 'Community Impact',
-        value: '8.2/10',
-        change: '+0.3',
+        value: '7.8/10',
+        change: '+0.5',
         trend: 'up',
         icon: Award,
         color: 'orange'

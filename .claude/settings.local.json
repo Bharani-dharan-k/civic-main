@@ -28,7 +28,8 @@
       "Bash(move:*)",
       "Bash(copy:*)",
       "Bash(findstr:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Read(//c/**)"
     ],
     "deny": [],
     "ask": []

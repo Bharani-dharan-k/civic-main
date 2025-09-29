@@ -1699,6 +1699,7 @@ exports.createDepartmentAdmin = async (req, res) => {
             userData.municipality = userMunicipality; // Department heads belong to a municipality
         } else if (role === 'municipality_admin') {
             userData.municipality = municipality || userMunicipality;
+            userData.ward = 'Ward 1'; // Default ward for municipality admin (required by User model)
             // Municipality admins don't have a specific department
         }
 

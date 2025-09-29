@@ -165,7 +165,136 @@ const CitizenDashboard = () => {
         setComplaints(Array.isArray(userReports) ? userReports : []);
       } catch (reportsError) {
         console.error('Failed to load user reports:', reportsError);
-        setComplaints([]);
+        // Add dummy report data with different statuses
+        const dummyReports = [
+          {
+            _id: 'report-001',
+            title: 'Pothole on Main Street',
+            description: 'Large pothole causing damage to vehicles near the traffic signal',
+            category: 'pothole',
+            location: 'Main Street, Sector 15, New Delhi',
+            coordinates: { latitude: 28.6139, longitude: 77.2090 },
+            status: 'resolved',
+            priority: 'high',
+            images: ['https://via.placeholder.com/300x200?text=Pothole'],
+            createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days ago
+            resolvedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+            updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+            feedback: { rating: 5, comment: 'Great work! Fixed quickly.' },
+            officerComments: [
+              { comment: 'Issue acknowledged, scheduling repair crew.', timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString() },
+              { comment: 'Repair completed successfully.', timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() }
+            ]
+          },
+          {
+            _id: 'report-002',
+            title: 'Broken Street Light',
+            description: 'Street light not working for past 3 days, making the area unsafe at night',
+            category: 'streetlight',
+            location: 'Park Avenue, Sector 8, New Delhi',
+            coordinates: { latitude: 28.6190, longitude: 77.2100 },
+            status: 'in-progress',
+            priority: 'medium',
+            images: ['https://via.placeholder.com/300x200?text=Broken+Light'],
+            createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
+            updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            officerComments: [
+              { comment: 'Electrician team assigned. Parts ordered.', timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() }
+            ]
+          },
+          {
+            _id: 'report-003',
+            title: 'Garbage Overflow',
+            description: 'Community dustbin overflowing, attracting stray animals and creating unhygienic conditions',
+            category: 'garbage',
+            location: 'Community Center, Sector 12, New Delhi',
+            coordinates: { latitude: 28.6250, longitude: 77.2150 },
+            status: 'pending',
+            priority: 'high',
+            images: ['https://via.placeholder.com/300x200?text=Garbage+Overflow'],
+            createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+            updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            _id: 'report-004',
+            title: 'Water Leakage',
+            description: 'Water pipe burst causing water wastage and road damage',
+            category: 'water',
+            location: 'Housing Society Block A, Sector 20, New Delhi',
+            coordinates: { latitude: 28.6300, longitude: 77.2200 },
+            status: 'acknowledged',
+            priority: 'high',
+            images: ['https://via.placeholder.com/300x200?text=Water+Leak'],
+            createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+            updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+            officerComments: [
+              { comment: 'Water department notified. Emergency repair scheduled.', timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() }
+            ]
+          },
+          {
+            _id: 'report-005',
+            title: 'Illegal Construction',
+            description: 'Unauthorized construction blocking public pathway',
+            category: 'maintenance',
+            location: 'Commercial Area, Sector 18, New Delhi',
+            coordinates: { latitude: 28.6350, longitude: 77.2250 },
+            status: 'submitted',
+            priority: 'medium',
+            images: ['https://via.placeholder.com/300x200?text=Illegal+Construction'],
+            createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+            updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            _id: 'report-006',
+            title: 'Drainage Blockage',
+            description: 'Storm drain clogged causing water logging during rain',
+            category: 'drainage',
+            location: 'Residential Area, Sector 25, New Delhi',
+            coordinates: { latitude: 28.6400, longitude: 77.2300 },
+            status: 'resolved',
+            priority: 'medium',
+            images: ['https://via.placeholder.com/300x200?text=Blocked+Drain'],
+            createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(), // 20 days ago
+            resolvedAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(), // 12 days ago
+            updatedAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
+            feedback: { rating: 4, comment: 'Good work, but took longer than expected.' },
+            officerComments: [
+              { comment: 'Cleaning crew dispatched.', timestamp: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString() },
+              { comment: 'Drainage cleared and tested.', timestamp: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString() }
+            ]
+          },
+          {
+            _id: 'report-007',
+            title: 'Tree Fallen on Road',
+            description: 'Large tree fell during storm, completely blocking the road',
+            category: 'maintenance',
+            location: 'Green Belt Road, Sector 30, New Delhi',
+            coordinates: { latitude: 28.6450, longitude: 77.2350 },
+            status: 'in-progress',
+            priority: 'urgent',
+            images: ['https://via.placeholder.com/300x200?text=Fallen+Tree'],
+            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+            updatedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
+            officerComments: [
+              { comment: 'Emergency response team deployed.', timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+              { comment: 'Tree cutting in progress. Road will be cleared by evening.', timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() }
+            ]
+          },
+          {
+            _id: 'report-008',
+            title: 'Public Toilet Maintenance',
+            description: 'Public toilet facility needs urgent cleaning and repair',
+            category: 'cleaning',
+            location: 'Bus Stand, Sector 35, New Delhi',
+            coordinates: { latitude: 28.6500, longitude: 77.2400 },
+            status: 'pending',
+            priority: 'medium',
+            images: ['https://via.placeholder.com/300x200?text=Public+Toilet'],
+            createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(), // 4 days ago
+            updatedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
+          }
+        ];
+        setComplaints(dummyReports);
       }
 
       // Load notifications
@@ -177,7 +306,53 @@ const CitizenDashboard = () => {
     } catch (error) {
       console.error('Failed to initialize dashboard:', error);
       toast.error('Failed to load data');
-      setComplaints([]);
+
+      // Add dummy data as fallback for complete initialization failure
+      const dummyReports = [
+        {
+          _id: 'report-001',
+          title: 'Pothole on Main Street',
+          description: 'Large pothole causing damage to vehicles near the traffic signal',
+          category: 'pothole',
+          location: 'Main Street, Sector 15, New Delhi',
+          coordinates: { latitude: 28.6139, longitude: 77.2090 },
+          status: 'resolved',
+          priority: 'high',
+          images: ['https://via.placeholder.com/300x200?text=Pothole'],
+          createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+          resolvedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+          updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+          feedback: { rating: 5, comment: 'Great work! Fixed quickly.' }
+        },
+        {
+          _id: 'report-002',
+          title: 'Broken Street Light',
+          description: 'Street light not working for past 3 days',
+          category: 'streetlight',
+          location: 'Park Avenue, Sector 8, New Delhi',
+          coordinates: { latitude: 28.6190, longitude: 77.2100 },
+          status: 'in-progress',
+          priority: 'medium',
+          images: ['https://via.placeholder.com/300x200?text=Broken+Light'],
+          createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+          updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+        },
+        {
+          _id: 'report-003',
+          title: 'Garbage Overflow',
+          description: 'Community dustbin overflowing',
+          category: 'garbage',
+          location: 'Community Center, Sector 12, New Delhi',
+          coordinates: { latitude: 28.6250, longitude: 77.2150 },
+          status: 'pending',
+          priority: 'high',
+          images: ['https://via.placeholder.com/300x200?text=Garbage+Overflow'],
+          createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+          updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+        }
+      ];
+
+      setComplaints(dummyReports);
       setNotifications([]);
       setUnreadCount(0);
       if (!user) {

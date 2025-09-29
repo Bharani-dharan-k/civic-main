@@ -122,6 +122,93 @@ const INDIA_THEME = {
   headerGradient: 'linear-gradient(135deg, #FF9933 0%, #000080 100%)'
 };
 
+// Comprehensive Jharkhand Municipalities Data
+const JHARKHAND_MUNICIPALITIES = {
+  'Bokaro District': [
+    { value: 'phusro', label: 'Phusro', type: 'Nagar Parishad', district: 'Bokaro District' },
+    { value: 'chas', label: 'Chas', type: 'Nagar Parishad', district: 'Bokaro District' }
+  ],
+  'Chatra District': [
+    { value: 'chatra', label: 'Chatra', type: 'Nagar Parishad', district: 'Chatra District' }
+  ],
+  'Deoghar District': [
+    { value: 'deoghar', label: 'Deoghar', type: 'Municipal Corporation', district: 'Deoghar District' },
+    { value: 'madhupur', label: 'Madhupur', type: 'Nagar Parishad', district: 'Deoghar District' }
+  ],
+  'Dhanbad District': [
+    { value: 'dhanbad', label: 'Dhanbad', type: 'Municipal Corporation', district: 'Dhanbad District' },
+    { value: 'chirkunda', label: 'Chirkunda', type: 'Nagar Panchayat', district: 'Dhanbad District' }
+  ],
+  'Dumka District': [
+    { value: 'basukinath', label: 'Basukinath', type: 'Nagar Parishad', district: 'Dumka District' },
+    { value: 'dumka', label: 'Dumka', type: 'Nagar Parishad', district: 'Dumka District' }
+  ],
+  'Garhwa District': [
+    { value: 'majhion', label: 'Majhion', type: 'Nagar Parishad', district: 'Garhwa District' },
+    { value: 'garhwa', label: 'Garhwa', type: 'Nagar Parishad', district: 'Garhwa District' }
+  ],
+  'Giridih District': [
+    { value: 'giridih', label: 'Giridih', type: 'Nagar Parishad', district: 'Giridih District' }
+  ],
+  'Godda District': [
+    { value: 'godda', label: 'Godda', type: 'Nagar Parishad', district: 'Godda District' }
+  ],
+  'Gumla District': [
+    { value: 'gumla', label: 'Gumla', type: 'Nagar Parishad', district: 'Gumla District' }
+  ],
+  'Hazaribagh District': [
+    { value: 'hazaribagh', label: 'Hazaribagh', type: 'Nagar Parishad', district: 'Hazaribagh District' }
+  ],
+  'Jamtara District': [
+    { value: 'jamtara', label: 'Jamtara', type: 'Nagar Parishad', district: 'Jamtara District' },
+    { value: 'mihijam', label: 'Mihijam', type: 'Nagar Parishad', district: 'Jamtara District' }
+  ],
+  'Khunti District': [
+    { value: 'khunti', label: 'Khunti', type: 'Nagar Parishad', district: 'Khunti District' }
+  ],
+  'Koderma District': [
+    { value: 'kodarma', label: 'Kodarma', type: 'Nagar Parishad', district: 'Koderma District' },
+    { value: 'jhumri-tilaiya', label: 'Jhumri Tilaiya', type: 'Nagar Parishad', district: 'Koderma District' }
+  ],
+  'Latehar District': [
+    { value: 'latehar', label: 'Latehar', type: 'Nagar Parishad', district: 'Latehar District' }
+  ],
+  'Lohardaga District': [
+    { value: 'lohardaga', label: 'Lohardaga', type: 'Nagar Parishad', district: 'Lohardaga District' }
+  ],
+  'Palamu District': [
+    { value: 'hussainabad', label: 'Hussainabad', type: 'Nagar Parishad', district: 'Palamu District' },
+    { value: 'bishrampur', label: 'Bishrampur', type: 'Nagar Parishad', district: 'Palamu District' },
+    { value: 'medininagar', label: 'Medininagar (Daltonganj)', type: 'Nagar Parishad', district: 'Palamu District' }
+  ],
+  'East Singhbhum District': [
+    { value: 'mango', label: 'Mango', type: 'Notified Area Council', district: 'East Singhbhum District' },
+    { value: 'jamshedpur', label: 'Jamshedpur', type: 'Notified Area Council', district: 'East Singhbhum District' },
+    { value: 'jugsalai', label: 'Jugsalai', type: 'Municipality', district: 'East Singhbhum District' }
+  ],
+  'Ramgarh District': [
+    { value: 'ramgarh', label: 'Ramgarh Cantonment', type: 'Cantonment Board', district: 'Ramgarh District' }
+  ],
+  'Ranchi District': [
+    { value: 'ranchi', label: 'Ranchi', type: 'Municipal Corporation', district: 'Ranchi District' },
+    { value: 'bundu', label: 'Bundu', type: 'Nagar Parishad', district: 'Ranchi District' }
+  ],
+  'Sahebganj District': [
+    { value: 'sahibganj', label: 'Sahibganj', type: 'Nagar Parishad', district: 'Sahebganj District' },
+    { value: 'rajmahal', label: 'Rajmahal', type: 'Nagar Parishad', district: 'Sahebganj District' }
+  ],
+  'Saraikela Kharsawan District': [
+    { value: 'adityapur', label: 'Adityapur', type: 'Nagar Parishad', district: 'Saraikela Kharsawan District' },
+    { value: 'seraikela', label: 'Seraikela', type: 'Nagar Parishad', district: 'Saraikela Kharsawan District' }
+  ],
+  'Simdega District': [
+    { value: 'simdega', label: 'Simdega', type: 'Nagar Parishad', district: 'Simdega District' }
+  ],
+  'West Singhbhum District': [
+    { value: 'chaibasa', label: 'Chaibasa', type: 'Nagar Parishad', district: 'West Singhbhum District' }
+  ]
+};
+
 // Simple User Management Dialog Component (outside main component)
 const UserManagementDialog = ({ 
   open, 
@@ -398,10 +485,22 @@ const MunicipalityAdminDialog = ({
     onClose();
   };
 
-  // Filter municipalities based on current user's district
-  const filteredMunicipalities = municipalityData.filter(muni => 
+  // Get comprehensive municipalities for current user's district
+  const userDistrict = currentUser?.district || 'Bokaro District';
+  const availableMunicipalities = JHARKHAND_MUNICIPALITIES[userDistrict] || [];
+
+  // Combine with existing backend data (if any) for backward compatibility
+  const backendMunicipalities = municipalityData?.filter(muni =>
     !currentUser?.district || muni.district === currentUser.district
-  );
+  ) || [];
+
+  // Create comprehensive list with all municipalities from the district
+  const filteredMunicipalities = availableMunicipalities.map(muni => ({
+    id: muni.value,
+    name: muni.label,
+    district: muni.district,
+    type: muni.type
+  }));
 
   return (
     <Dialog 
@@ -495,15 +594,20 @@ const MunicipalityAdminDialog = ({
                 {filteredMunicipalities.length > 0 ? (
                   filteredMunicipalities.map((muni) => (
                     <MenuItem key={muni.id} value={muni.name}>
-                      {muni.name} ({muni.district})
+                      <Box>
+                        <Typography variant="body1">{muni.name}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {muni.type} • {muni.district}
+                        </Typography>
+                      </Box>
                     </MenuItem>
                   ))
                 ) : (
-                  <MenuItem disabled>No municipalities available</MenuItem>
+                  <MenuItem disabled>No municipalities available for your district</MenuItem>
                 )}
               </Select>
               <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5, display: 'block' }}>
-                Showing {filteredMunicipalities.length} municipalities for {currentUser?.district || 'your district'}
+                🏛️ Showing {filteredMunicipalities.length} municipalities for {userDistrict}
               </Typography>
             </FormControl>
           </Grid>
@@ -1422,7 +1526,7 @@ const DistrictAdminDashboard = () => {
       const userData = {
         ...adminData,
         role: 'municipality_admin',
-        district: currentUser?.district || 'Bokaro District'
+        district: user?.district || 'Bokaro District'
       };
       
       const response = await API.post('/admin/users', userData);

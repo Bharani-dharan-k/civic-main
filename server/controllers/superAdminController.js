@@ -15,6 +15,7 @@ exports.createAdmin = async (req, res) => {
             email: req.user.email,
             role: req.user.role
         } : 'NO USER FOUND');
+        console.log('Headers:', req.headers);
 
         const { name, email, password, role, district, municipality, department } = req.body;
 

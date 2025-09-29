@@ -421,7 +421,7 @@ const DepartmentOfficerDashboard = () => {
             <Box sx={{ flexGrow: 1 }}>
                 {/* Key Metrics */}
                 <Grid container spacing={3} sx={{ mb: 3 }}>
-                    <Grid xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Card sx={{ height: '100%', background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' }}>
                             <CardContent>
                                 <Box display="flex" alignItems="center">
@@ -437,7 +437,7 @@ const DepartmentOfficerDashboard = () => {
                         </Card>
                     </Grid>
 
-                    <Grid xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Card sx={{ height: '100%', background: 'linear-gradient(135deg, #e8f5e8 0%, #c8e6c8 100%)' }}>
                             <CardContent>
                                 <Box display="flex" alignItems="center">
@@ -453,7 +453,7 @@ const DepartmentOfficerDashboard = () => {
                         </Card>
                     </Grid>
 
-                    <Grid xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Card sx={{ height: '100%', background: 'linear-gradient(135deg, #fff3e0 0%, #ffe0b3 100%)' }}>
                             <CardContent>
                                 <Box display="flex" alignItems="center">
@@ -469,7 +469,7 @@ const DepartmentOfficerDashboard = () => {
                         </Card>
                     </Grid>
 
-                    <Grid xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <Card sx={{ height: '100%', background: 'linear-gradient(135deg, #e8f8e8 0%, #c8e8c8 100%)' }}>
                             <CardContent>
                                 <Box display="flex" alignItems="center">
@@ -489,7 +489,7 @@ const DepartmentOfficerDashboard = () => {
                 {/* Charts Section */}
                 <Grid container spacing={3}>
                     {/* Task Status Chart */}
-                    <Grid xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                         <Card sx={{ 
                             height: '500px', 
                             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -600,7 +600,7 @@ const DepartmentOfficerDashboard = () => {
                     </Grid>
 
                     {/* Recent Activity */}
-                    <Grid xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                         <Card sx={{ 
                             height: '500px', 
                             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
@@ -1003,7 +1003,7 @@ const DepartmentOfficerDashboard = () => {
 
             <Grid container spacing={2}>
                 {resources.map((resource) => (
-                    <Grid item xs={12} sm={6} md={4} key={resource._id}>
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={resource._id}>
                         <Card>
                             <CardContent>
                                 <Typography variant="h6">{resource.name}</Typography>
@@ -1047,24 +1047,24 @@ const DepartmentOfficerDashboard = () => {
                 </Typography>
 
                 <Grid container spacing={3}>
-                    <Grid item xs={12} md={8}>
+                    <Grid size={{ xs: 12, md: 8 }}>
                         <Card>
                             <CardContent>
                                 <Typography variant="h6" gutterBottom>Budget Overview</Typography>
                                 <Grid container spacing={2}>
-                                    <Grid item xs={6}>
+                                    <Grid size={{ xs: 6 }}>
                                         <Typography variant="body2" color="textSecondary">Total Budget</Typography>
                                         <Typography variant="h5">{formatCurrency(budget.totalBudget)}</Typography>
                                     </Grid>
-                                    <Grid item xs={6}>
+                                    <Grid size={{ xs: 6 }}>
                                         <Typography variant="body2" color="textSecondary">Allocated</Typography>
                                         <Typography variant="h5">{formatCurrency(budget.allocated)}</Typography>
                                     </Grid>
-                                    <Grid item xs={6}>
+                                    <Grid size={{ xs: 6 }}>
                                         <Typography variant="body2" color="textSecondary">Spent</Typography>
                                         <Typography variant="h5">{formatCurrency(budget.spent)}</Typography>
                                     </Grid>
-                                    <Grid item xs={6}>
+                                    <Grid size={{ xs: 6 }}>
                                         <Typography variant="body2" color="textSecondary">Remaining</Typography>
                                         <Typography variant="h5">{formatCurrency(budget.remaining)}</Typography>
                                     </Grid>
@@ -1090,7 +1090,7 @@ const DepartmentOfficerDashboard = () => {
                         </Card>
                     </Grid>
 
-                    <Grid item xs={12} md={4}>
+                    <Grid size={{ xs: 12, md: 4 }}>
                         <Card>
                             <CardContent>
                                 <Typography variant="h6" gutterBottom>Category Breakdown</Typography>
@@ -1126,7 +1126,7 @@ const DepartmentOfficerDashboard = () => {
 
             <Grid container spacing={2}>
                 {projects.map((project) => (
-                    <Grid item xs={12} md={6} key={project._id}>
+                    <Grid size={{ xs: 12, md: 6 }} key={project._id}>
                         <Card>
                             <CardContent>
                                 <Typography variant="h6">{project.name}</Typography>
@@ -1135,7 +1135,7 @@ const DepartmentOfficerDashboard = () => {
                                 </Typography>
                                 
                                 <Grid container spacing={2} alignItems="center">
-                                    <Grid item xs={6}>
+                                    <Grid size={{ xs: 6 }}>
                                         <Typography variant="body2" color="textSecondary">Status</Typography>
                                         <Chip
                                             label={project.status}
@@ -1143,7 +1143,7 @@ const DepartmentOfficerDashboard = () => {
                                             style={{ backgroundColor: getStatusColor(project.status), color: 'white' }}
                                         />
                                     </Grid>
-                                    <Grid item xs={6}>
+                                    <Grid size={{ xs: 6 }}>
                                         <Typography variant="body2" color="textSecondary">Progress</Typography>
                                         <Box display="flex" alignItems="center">
                                             <LinearProgress
@@ -1242,7 +1242,7 @@ const DepartmentOfficerDashboard = () => {
             </Typography>
             
             <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Card>
                         <CardContent>
                             <Typography variant="h6" gutterBottom>Monthly Task Completion</Typography>
@@ -1261,7 +1261,7 @@ const DepartmentOfficerDashboard = () => {
                     </Card>
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Card>
                         <CardContent>
                             <Typography variant="h6" gutterBottom>Budget Trend</Typography>
@@ -1291,7 +1291,7 @@ const DepartmentOfficerDashboard = () => {
             </Typography>
             
             <Grid container spacing={3}>
-                <Grid item xs={12} md={8}>
+                <Grid size={{ xs: 12, md: 8 }}>
                     <Card>
                         <CardContent>
                             <Typography variant="h6" gutterBottom>Recent Messages</Typography>
@@ -1315,7 +1315,7 @@ const DepartmentOfficerDashboard = () => {
                     </Card>
                 </Grid>
 
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <Card>
                         <CardContent>
                             <Typography variant="h6" gutterBottom>Quick Actions</Typography>
@@ -1529,7 +1529,7 @@ const DepartmentOfficerDashboard = () => {
                     <DialogContent>
                         {dialogType === 'create-task' && (
                             <Grid container spacing={2}>
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <TextField
                                         fullWidth
                                         label="Task Title"
@@ -1538,7 +1538,7 @@ const DepartmentOfficerDashboard = () => {
                                         margin="normal"
                                     />
                                 </Grid>
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <TextField
                                         fullWidth
                                         multiline
@@ -1549,7 +1549,7 @@ const DepartmentOfficerDashboard = () => {
                                         margin="normal"
                                     />
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <FormControl fullWidth margin="normal">
                                         <InputLabel>Priority</InputLabel>
                                         <Select
@@ -1562,7 +1562,7 @@ const DepartmentOfficerDashboard = () => {
                                         </Select>
                                     </FormControl>
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <TextField
                                         fullWidth
                                         type="date"
@@ -1573,7 +1573,7 @@ const DepartmentOfficerDashboard = () => {
                                         InputLabelProps={{ shrink: true }}
                                     />
                                 </Grid>
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <TextField
                                         fullWidth
                                         label="Assign To (Staff ID or Name)"
@@ -1587,7 +1587,7 @@ const DepartmentOfficerDashboard = () => {
 
                         {dialogType === 'assign-task' && (
                             <Grid container spacing={2}>
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <Box sx={{ p: 2, bgcolor: COLORS.saffron + '10', borderRadius: 2, mb: 2 }}>
                                         <Typography variant="h6" sx={{ color: COLORS.navy, mb: 1 }}>
                                             Assigning Task to: {selectedItem?.user?.name || selectedItem?.name}
@@ -1597,7 +1597,7 @@ const DepartmentOfficerDashboard = () => {
                                         </Typography>
                                     </Box>
                                 </Grid>
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <TextField
                                         fullWidth
                                         label="Task Title"
@@ -1607,7 +1607,7 @@ const DepartmentOfficerDashboard = () => {
                                         required
                                     />
                                 </Grid>
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <TextField
                                         fullWidth
                                         label="Task Description"
@@ -1619,7 +1619,7 @@ const DepartmentOfficerDashboard = () => {
                                         required
                                     />
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <FormControl fullWidth margin="normal">
                                         <InputLabel>Priority</InputLabel>
                                         <Select
@@ -1634,7 +1634,7 @@ const DepartmentOfficerDashboard = () => {
                                         </Select>
                                     </FormControl>
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <TextField
                                         fullWidth
                                         label="Deadline"
@@ -1646,7 +1646,7 @@ const DepartmentOfficerDashboard = () => {
                                         required
                                     />
                                 </Grid>
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <TextField
                                         fullWidth
                                         label="Additional Notes (Optional)"
@@ -1660,7 +1660,7 @@ const DepartmentOfficerDashboard = () => {
                                 </Grid>
                                 
                                 {/* Pending Reports Section */}
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <Box sx={{ mt: 3, p: 2, bgcolor: '#f8f9fa', borderRadius: 2, border: '1px solid #e0e0e0' }}>
                                         <Typography variant="h6" sx={{ 
                                             color: COLORS.navy, 
@@ -1761,7 +1761,7 @@ const DepartmentOfficerDashboard = () => {
 
                         {dialogType === 'create-staff' && (
                             <Grid container spacing={2}>
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <TextField
                                         fullWidth
                                         label="Full Name"
@@ -1770,7 +1770,7 @@ const DepartmentOfficerDashboard = () => {
                                         margin="normal"
                                     />
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <TextField
                                         fullWidth
                                         label="Employee ID"
@@ -1779,7 +1779,7 @@ const DepartmentOfficerDashboard = () => {
                                         margin="normal"
                                     />
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <TextField
                                         fullWidth
                                         label="Position"
@@ -1788,7 +1788,7 @@ const DepartmentOfficerDashboard = () => {
                                         margin="normal"
                                     />
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <TextField
                                         fullWidth
                                         label="Phone"
@@ -1797,7 +1797,7 @@ const DepartmentOfficerDashboard = () => {
                                         margin="normal"
                                     />
                                 </Grid>
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <TextField
                                         fullWidth
                                         label="Email"
@@ -1807,7 +1807,7 @@ const DepartmentOfficerDashboard = () => {
                                         margin="normal"
                                     />
                                 </Grid>
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <TextField
                                         fullWidth
                                         multiline
@@ -1838,13 +1838,13 @@ const DepartmentOfficerDashboard = () => {
 
                         {dialogType === 'view-task' && selectedItem && (
                             <Grid container spacing={2}>
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <Typography variant="h6">{selectedItem.title}</Typography>
                                     <Typography variant="body2" color="textSecondary" gutterBottom>
                                         {selectedItem.description}
                                     </Typography>
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <Typography variant="body2" color="textSecondary">Status</Typography>
                                     <Chip 
                                         label={selectedItem.status} 
@@ -1852,7 +1852,7 @@ const DepartmentOfficerDashboard = () => {
                                         size="small"
                                     />
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <Typography variant="body2" color="textSecondary">Priority</Typography>
                                     <Chip 
                                         label={selectedItem.priority} 
@@ -1860,11 +1860,11 @@ const DepartmentOfficerDashboard = () => {
                                         size="small"
                                     />
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <Typography variant="body2" color="textSecondary">Assigned To</Typography>
                                     <Typography>{selectedItem.assignedTo}</Typography>
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <Typography variant="body2" color="textSecondary">Deadline</Typography>
                                     <Typography>
                                         {selectedItem.deadline ? format(new Date(selectedItem.deadline), 'MMM dd, yyyy') : 'No deadline'}
@@ -1875,29 +1875,29 @@ const DepartmentOfficerDashboard = () => {
 
                         {dialogType === 'view-staff' && selectedItem && (
                             <Grid container spacing={2}>
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <Typography variant="h6">{selectedItem.name}</Typography>
                                     <Typography variant="body2" color="textSecondary">
                                         {selectedItem.position}
                                     </Typography>
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <Typography variant="body2" color="textSecondary">Employee ID</Typography>
                                     <Typography>{selectedItem.employeeId}</Typography>
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <Typography variant="body2" color="textSecondary">Status</Typography>
                                     <Typography>{selectedItem.status}</Typography>
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <Typography variant="body2" color="textSecondary">Phone</Typography>
                                     <Typography>{selectedItem.phone}</Typography>
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <Typography variant="body2" color="textSecondary">Email</Typography>
                                     <Typography>{selectedItem.email}</Typography>
                                 </Grid>
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <Typography variant="body2" color="textSecondary">Address</Typography>
                                     <Typography>{selectedItem.address}</Typography>
                                 </Grid>
@@ -1906,17 +1906,17 @@ const DepartmentOfficerDashboard = () => {
 
                         {dialogType === 'view-complaint' && selectedItem && (
                             <Grid container spacing={2}>
-                                <Grid item xs={12}>
+                                <Grid size={{ xs: 12 }}>
                                     <Typography variant="h6">{selectedItem.title}</Typography>
                                     <Typography variant="body2" color="textSecondary" gutterBottom>
                                         {selectedItem.description}
                                     </Typography>
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <Typography variant="body2" color="textSecondary">Category</Typography>
                                     <Typography>{selectedItem.category}</Typography>
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <Typography variant="body2" color="textSecondary">Priority</Typography>
                                     <Chip 
                                         label={selectedItem.priority} 
@@ -1924,7 +1924,7 @@ const DepartmentOfficerDashboard = () => {
                                         size="small"
                                     />
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <Typography variant="body2" color="textSecondary">Status</Typography>
                                     <Chip 
                                         label={selectedItem.status} 
@@ -1932,7 +1932,7 @@ const DepartmentOfficerDashboard = () => {
                                         size="small"
                                     />
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid size={{ xs: 6 }}>
                                     <Typography variant="body2" color="textSecondary">Submitted Date</Typography>
                                     <Typography>
                                         {format(new Date(selectedItem.createdAt), 'MMM dd, yyyy')}

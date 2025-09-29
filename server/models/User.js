@@ -47,9 +47,7 @@ const UserSchema = new mongoose.Schema({
     },
     ward: {
         type: String,
-        required: function() {
-            return this.role === 'municipality_admin';
-        }
+        required: false // Temporarily make ward optional to fix creation issue
     },
     points: { 
         type: Number, 

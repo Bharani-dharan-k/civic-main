@@ -18,6 +18,14 @@ const getDashboardOverview = async (req, res) => {
         // Get department from user profile or use default
         const department = user.department || 'general';
 
+        // Modified query to include tasks assigned directly to this department head
+        const taskQuery = {
+            $or: [
+                { department: department }, // Tasks belonging to their department
+                { assignedTo: user.id }     // Tasks assigned directly to this department head
+            ]
+        };
+
         // Fetch counts and data
         const [
             totalTasks,
@@ -32,9 +40,9 @@ const getDashboardOverview = async (req, res) => {
             totalResources,
             availableResources
         ] = await Promise.all([
-            Task.countDocuments({ department }),
-            Task.countDocuments({ department, status: { $in: ['assigned', 'in_progress'] } }),
-            Task.countDocuments({ department, status: 'completed' }),
+            Task.countDocuments(taskQuery),
+            Task.countDocuments({ ...taskQuery, status: { $in: ['assigned', 'in_progress'] } }),
+            Task.countDocuments({ ...taskQuery, status: 'completed' }),
             Staff.countDocuments({ department }),
             Staff.countDocuments({ department, status: 'active' }),
             Report.countDocuments(),
@@ -46,8 +54,9 @@ const getDashboardOverview = async (req, res) => {
         ]);
 
         // Recent tasks
-        const recentTasks = await Task.find({ department })
+        const recentTasks = await Task.find(taskQuery)
             .populate('assignedTo', 'name email')
+            .populate('relatedReport', 'title category')
             .sort({ createdAt: -1 })
             .limit(5);
 
@@ -101,21 +110,32 @@ const getTasks = async (req, res) => {
     try {
         const { user } = req;
         const { status, type, page = 1, limit = 10 } = req.query;
-        
+
         const department = user.department || 'general';
-        const query = { department };
-        
+
+        // Modified query to include tasks assigned directly to this department head
+        // OR tasks belonging to their department
+        const query = {
+            $or: [
+                { department: department }, // Tasks belonging to their department
+                { assignedTo: user.id }     // Tasks assigned directly to this department head
+            ]
+        };
+
         if (status && status !== 'all') query.status = status;
         if (type && type !== 'all') query.type = type;
 
         const tasks = await Task.find(query)
             .populate('assignedTo', 'name email phone')
             .populate('assignedBy', 'name email')
+            .populate('relatedReport', 'title category status location address')
             .sort({ createdAt: -1 })
             .limit(limit * 1)
             .skip((page - 1) * limit);
 
         const total = await Task.countDocuments(query);
+
+        console.log(`📋 Department Head ${user.name} - Found ${tasks.length} tasks for department: ${department}`);
 
         res.json(tasks);
     } catch (error) {
@@ -128,24 +148,58 @@ const createTask = async (req, res) => {
     try {
         const { user } = req;
         const { title, description, priority, assignedTo, deadline } = req.body;
-        
+
+        console.log('📝 Creating task with data:', {
+            title,
+            description,
+            priority,
+            assignedTo,
+            deadline,
+            department: user.department
+        });
+
         const department = user.department || 'general';
 
-        // Convert assignedTo to ObjectId if it's a staff member
+        // Convert assignedTo to ObjectId if it's a valid staff member or user
         let assignedToId = null;
-        if (assignedTo) {
-            // Try to find staff member by employeeId first
-            const staff = await Staff.findOne({ employeeId: assignedTo });
-            if (staff) {
-                assignedToId = staff.user;
-            } else {
-                // Try to find user directly
-                const userAssigned = await User.findById(assignedTo);
-                if (userAssigned) {
-                    assignedToId = assignedTo;
+        if (assignedTo && assignedTo.trim() !== '') {
+            try {
+                // First, try to find staff member by employeeId
+                const staff = await Staff.findOne({ employeeId: assignedTo });
+                if (staff && staff.user) {
+                    assignedToId = staff.user;
+                } else {
+                    // Try to find staff member by name (case insensitive)
+                    const staffByName = await Staff.findOne({
+                        name: { $regex: new RegExp(assignedTo, 'i') }
+                    });
+                    if (staffByName && staffByName.user) {
+                        assignedToId = staffByName.user;
+                    } else {
+                        // Try to find user by name (case insensitive)
+                        const userByName = await User.findOne({
+                            name: { $regex: new RegExp(assignedTo, 'i') }
+                        });
+                        if (userByName) {
+                            assignedToId = userByName._id;
+                        } else {
+                            // Finally, try to find user directly by ObjectId (if it's a valid ObjectId)
+                            if (assignedTo.match(/^[0-9a-fA-F]{24}$/)) {
+                                const userAssigned = await User.findById(assignedTo);
+                                if (userAssigned) {
+                                    assignedToId = assignedTo;
+                                }
+                            }
+                        }
+                    }
                 }
+            } catch (error) {
+                console.warn(`Could not resolve assignedTo value: ${assignedTo}`, error.message);
+                // assignedToId remains null - task will be created without assignment
             }
         }
+
+        console.log(`📝 Resolved assignedTo: "${assignedTo}" -> ${assignedToId}`);
 
         const task = new Task({
             title,
@@ -159,11 +213,18 @@ const createTask = async (req, res) => {
         });
 
         await task.save();
-        await task.populate('assignedTo', 'name email phone');
+
+        // Only populate if assignedToId exists
+        if (assignedToId) {
+            await task.populate('assignedTo', 'name email phone');
+        }
+
+        console.log('✅ Task created successfully:', task._id);
 
         res.status(201).json({
             message: 'Task created successfully',
-            task
+            task,
+            assignmentWarning: assignedToId ? null : `Could not find user/staff for "${assignedTo}". Task created without assignment.`
         });
     } catch (error) {
         console.error('Create task error:', error);
