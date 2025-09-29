@@ -414,4 +414,39 @@ export const updateTaskProgress = async (taskId, status, notes) => {
   }
 };
 
+// Get department admins in municipality
+export const getDepartmentAdmins = async () => {
+  try {
+    const response = await api.get('/municipal/department-admins');
+    console.log('✅ Department admins API success:', response.data);
+    return { data: response.data };
+  } catch (error) {
+    console.error('❌ Department admins API error:', error);
+    console.error('Error details:', error.response?.data);
+    throw error;
+  }
+};
+
+// Assign report to department admin
+export const assignReportToDepartmentAdmin = async (reportId, departmentAdminId, priority, notes, deadline) => {
+  try {
+    const payload = {
+      reportId,
+      departmentAdminId,
+      priority: priority || 'medium',
+      notes: notes || '',
+      deadline: deadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    };
+    
+    console.log('📋 Assigning report to department admin:', payload);
+    const response = await api.post('/municipal/assign-report', payload);
+    console.log('✅ Report assignment API success:', response.data);
+    return { data: response.data };
+  } catch (error) {
+    console.error('❌ Report assignment API error:', error);
+    console.error('Error details:', error.response?.data);
+    throw error.response?.data || error;
+  }
+};
+
 export default api;

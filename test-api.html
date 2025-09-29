@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Municipality API</title>
+</head>
+<body>
+    <h1>Municipality API Test</h1>
+    <button onclick="testAPI()">Test Available Municipalities API</button>
+    <div id="result"></div>
+    
+    <script>
+        async function testAPI() {
+            try {
+                console.log('Testing API...');
+                const response = await fetch('/api/admin/available-municipalities', {
+                    headers: {
+                        'Authorization': 'Bearer YOUR_TOKEN_HERE',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                console.log('API Response:', data);
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                console.error('API Error:', error);
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

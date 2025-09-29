@@ -70,7 +70,9 @@ import {
     getAnnouncementStats,
     getAssignedTasks,
     getTaskStats,
-    updateTaskProgress
+    updateTaskProgress,
+    getDepartmentAdmins,
+    assignReportToDepartmentAdmin
 } from '../services/municipalService';
 
 const MunicipalDashboard = () => {
@@ -87,55 +89,24 @@ const MunicipalDashboard = () => {
   const [serviceRequests, setServiceRequests] = useState([]);
   const [staffData, setStaffData] = useState([]);
   const [infrastructureStatus, setInfrastructureStatus] = useState({
-    totalProjects: 24,
-    activeProjects: 8,
-    completedProjects: 16,
-    maintenanceRequests: 45,
-    budgetUtilized: 78,
-    upcomingProjects: 5,
-    facilities: [
-      { name: 'Water Treatment Plants', total: 5, operational: 4, maintenance: 1 },
-      { name: 'Sewage Treatment Plants', total: 3, operational: 3, maintenance: 0 },
-      { name: 'Public Parks', total: 15, operational: 12, maintenance: 3 },
-      { name: 'Street Lights', total: 1250, operational: 1180, maintenance: 70 },
-      { name: 'Public Transport Stops', total: 45, operational: 42, maintenance: 3 }
-    ],
-    recentProjects: [
-      { id: 1, name: 'Smart Street Lighting Phase 2', status: 'active', progress: 65, budget: 2500000, startDate: '2024-08-01', expectedCompletion: '2025-01-15' },
-      { id: 2, name: 'Water Pipeline Replacement', status: 'active', progress: 40, budget: 5200000, startDate: '2024-09-01', expectedCompletion: '2025-03-30' },
-      { id: 3, name: 'Digital Bus Stop Displays', status: 'planning', progress: 10, budget: 1800000, startDate: '2024-10-15', expectedCompletion: '2025-02-28' },
-      { id: 4, name: 'Park Renovation Project', status: 'completed', progress: 100, budget: 3200000, startDate: '2024-05-01', expectedCompletion: '2024-08-30' }
-    ]
+    totalProjects: 0,
+    activeProjects: 0,
+    completedProjects: 0,
+    maintenanceRequests: 0,
+    budgetUtilized: 0,
+    upcomingProjects: 0,
+    facilities: [],
+    recentProjects: []
   });
   const [financeData, setFinanceData] = useState({
-    totalBudget: 125000000,
-    budgetUsed: 89500000,
-    budgetRemaining: 35500000,
-    monthlyRevenue: 8500000,
-    monthlyExpenses: 7200000,
-    departments: [
-      { name: 'Health Services', allocated: 25000000, used: 18500000, remaining: 6500000 },
-      { name: 'Infrastructure', allocated: 35000000, used: 28200000, remaining: 6800000 },
-      { name: 'Education', allocated: 22000000, used: 19800000, remaining: 2200000 },
-      { name: 'Sanitation', allocated: 18000000, used: 15200000, remaining: 2800000 },
-      { name: 'Transportation', allocated: 15000000, used: 12300000, remaining: 2700000 },
-      { name: 'Others', allocated: 10000000, used: 7500000, remaining: 2500000 }
-    ],
-    recentTransactions: [
-      { id: 1, date: '2024-09-18', description: 'Street Light Maintenance Contract', amount: -850000, type: 'expense', department: 'Infrastructure' },
-      { id: 2, date: '2024-09-17', description: 'Property Tax Collection', amount: 1250000, type: 'revenue', department: 'General' },
-      { id: 3, date: '2024-09-16', description: 'Medical Equipment Purchase', amount: -420000, type: 'expense', department: 'Health Services' },
-      { id: 4, date: '2024-09-15', description: 'Municipal Bond Interest', amount: 890000, type: 'revenue', department: 'Finance' },
-      { id: 5, date: '2024-09-14', description: 'School Renovation Payment', amount: -720000, type: 'expense', department: 'Education' }
-    ],
-    monthlyTrends: [
-      { month: 'Apr', revenue: 8200000, expenses: 7100000, balance: 1100000 },
-      { month: 'May', revenue: 8800000, expenses: 7300000, balance: 1500000 },
-      { month: 'Jun', revenue: 9100000, expenses: 7500000, balance: 1600000 },
-      { month: 'Jul', revenue: 8600000, expenses: 7200000, balance: 1400000 },
-      { month: 'Aug', revenue: 8900000, expenses: 7400000, balance: 1500000 },
-      { month: 'Sep', revenue: 8500000, expenses: 7200000, balance: 1300000 }
-    ]
+    totalBudget: 0,
+    budgetUsed: 0,
+    budgetRemaining: 0,
+    monthlyRevenue: 0,
+    monthlyExpenses: 0,
+    departments: [],
+    recentTransactions: [],
+    monthlyTrends: []
   });
   const [projects, setProjects] = useState([]);
   const [emergencyAlerts, setEmergencyAlerts] = useState([
@@ -212,6 +183,24 @@ const MunicipalDashboard = () => {
   ]);
   const [assignedTasks, setAssignedTasks] = useState([]);
   const [taskStats, setTaskStats] = useState({});
+  const [departmentAdmins, setDepartmentAdmins] = useState([]);
+  const [assignmentDialog, setAssignmentDialog] = useState({ 
+    open: false, 
+    report: null, 
+    selectedAdmin: '', 
+    priority: 'medium', 
+    notes: '', 
+    deadline: '' 
+  });
+  const [viewReportDialog, setViewReportDialog] = useState({ 
+    open: false, 
+    report: null 
+  });
+  const [editReportDialog, setEditReportDialog] = useState({ 
+    open: false, 
+    report: null,
+    formData: {}
+  });
   const [municipalSettings, setMunicipalSettings] = useState({
     general: {
       municipalName: 'New Civic Municipality',
@@ -301,7 +290,7 @@ const MunicipalDashboard = () => {
     { id: 'staff', label: 'Staff Management', icon: Users, color: 'text-green-600', badge: staffData.length },
     { id: 'infrastructure', label: 'Infrastructure', icon: Building, color: 'text-purple-600', badge: 0 },
     { id: 'finance', label: 'Finance', icon: DollarSign, color: 'text-yellow-600', badge: 0 },
-    { id: 'projects', label: 'Projects', icon: Wrench, color: 'text-indigo-600', badge: projects.filter(p => p.status === 'active').length },
+    { id: 'projects', label: 'Projects', icon: Wrench, color: 'text-indigo-600', badge: Array.isArray(projects) ? projects.filter(p => p.status === 'active').length : 0 },
     { id: 'emergency', label: 'Emergency', icon: AlertTriangle, color: 'text-red-600', badge: emergencyAlerts.length },
     { id: 'settings', label: 'Settings', icon: Settings, color: 'text-gray-600', badge: 0 }
   ];
@@ -309,6 +298,7 @@ const MunicipalDashboard = () => {
   useEffect(() => {
     loadDashboardData();
     loadUrgentAlerts();
+    loadDepartmentAdmins();
   }, [selectedWard]);
 
   const loadDashboardData = async () => {
@@ -407,8 +397,10 @@ const MunicipalDashboard = () => {
 
       // Set projects data
       if (projectsResponse.data.success) {
-        const projectData = projectsResponse.data.data || [];
-        setProjects(projectData);
+        const projectData = projectsResponse.data.data || {};
+        // Backend returns an object with projects array inside
+        const projectsArray = projectData.projects || [];
+        setProjects(projectsArray);
       }
 
       // Set emergency alerts
@@ -430,32 +422,6 @@ const MunicipalDashboard = () => {
         const tasks = tasksResponse.data.data || [];
         console.log('📋 Assigned tasks:', tasks);
         setAssignedTasks(tasks);
-        
-        // Use assigned tasks as citizen complaints since municipal reports are empty
-        // Transform assigned tasks to match complaint structure if needed
-        const complaints = tasks.map(task => ({
-          ...task.relatedReport, // Use the related report data
-          assignedTask: task, // Keep reference to assignment data
-          priority: task.priority,
-          status: task.status,
-          department: task.department,
-          assignedBy: task.assignedBy,
-          createdAt: task.createdAt,
-          deadline: task.deadline,
-          notes: task.notes
-        }));
-        console.log('📊 Setting citizen complaints from assigned tasks:', complaints);
-        setCitizenComplaints(complaints);
-      }
-
-      // Set reports from municipal endpoint (keeping as backup)
-      if (reportsResponse.data.success) {
-        const reports = reportsResponse.data.data || [];
-        console.log('📊 Municipal reports (backup):', reports);
-        // Only use municipal reports if we don't have assigned tasks
-        if (!tasksResponse.data.success || !tasksResponse.data.data?.length) {
-          setCitizenComplaints(reports);
-        }
       }
 
       // Set task statistics
@@ -528,6 +494,93 @@ const MunicipalDashboard = () => {
     }
   };
 
+  const loadDepartmentAdmins = async () => {
+    try {
+      console.log('👥 Loading department admins...');
+      const response = await getDepartmentAdmins();
+      if (response.data.success) {
+        const admins = response.data.data || [];
+        console.log('✅ Department admins loaded:', admins);
+        setDepartmentAdmins(admins);
+      }
+    } catch (error) {
+      console.error('❌ Error loading department admins:', error);
+      toast.error('Failed to load department admins');
+    }
+  };
+
+  const handleAssignReport = (report) => {
+    console.log('👥 Assign Report Handler Called:', report);
+    alert('Assign Report clicked: ' + report.title);
+    setAssignmentDialog({
+      open: true,
+      report: report,
+      selectedAdmin: '',
+      priority: report.priority || 'medium',
+      notes: '',
+      deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 7 days from now
+    });
+  };
+
+  const handleAssignmentSubmit = async () => {
+    try {
+      const { report, selectedAdmin, priority, notes, deadline } = assignmentDialog;
+      
+      if (!selectedAdmin) {
+        toast.error('Please select a department admin');
+        return;
+      }
+
+      setLoading(true);
+      console.log('📋 Submitting assignment:', {
+        reportId: report._id,
+        departmentAdminId: selectedAdmin,
+        priority,
+        notes,
+        deadline
+      });
+
+      const response = await assignReportToDepartmentAdmin(
+        report._id,
+        selectedAdmin,
+        priority,
+        notes,
+        deadline ? new Date(deadline).toISOString() : undefined
+      );
+
+      if (response.data.success) {
+        toast.success('Report assigned to department admin successfully');
+        
+        // Update the report status in the complaints list
+        setCitizenComplaints(prevComplaints =>
+          prevComplaints.map(complaint =>
+            complaint._id === report._id
+              ? { ...complaint, status: 'assigned', assignedTo: selectedAdmin }
+              : complaint
+          )
+        );
+
+        // Close the dialog
+        setAssignmentDialog({
+          open: false,
+          report: null,
+          selectedAdmin: '',
+          priority: 'medium',
+          notes: '',
+          deadline: ''
+        });
+
+        // Reload dashboard data to get updated stats
+        loadDashboardData();
+      }
+    } catch (error) {
+      console.error('❌ Error assigning report:', error);
+      toast.error(error.message || 'Failed to assign report');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle task progress update
   const handleUpdateTaskProgress = async (taskId, status, notes) => {
     try {
@@ -561,6 +614,85 @@ const MunicipalDashboard = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  // Report View Handler
+  const handleViewReport = (report) => {
+    console.log('🔍 View Report Handler Called:', report);
+    alert('View Report clicked: ' + report.title);
+    setViewReportDialog({
+      open: true,
+      report: report
+    });
+  };
+
+  // Report Edit Handler
+  const handleEditReport = (report) => {
+    setEditReportDialog({
+      open: true,
+      report: report,
+      formData: {
+        title: report.title || '',
+        description: report.description || '',
+        priority: report.priority || 'medium',
+        status: report.status || 'pending',
+        category: report.category || '',
+        location: report.address || (report.location?.coordinates ? 
+          `${report.location.coordinates[1]}, ${report.location.coordinates[0]}` : '')
+      }
+    });
+  };
+
+  // Handle Edit Report Form Changes
+  const handleEditReportFormChange = (field) => (e) => {
+    setEditReportDialog(prev => ({
+      ...prev,
+      formData: {
+        ...prev.formData,
+        [field]: e.target.value
+      }
+    }));
+  };
+
+  // Submit Edit Report
+  const handleEditReportSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const { report, formData } = editReportDialog;
+      
+      // Update report via API
+      const response = await updateReportStatus(report._id, {
+        ...formData,
+        updatedBy: user.id
+      });
+      
+      if (response.data.success) {
+        // Update the report in the complaints list
+        setCitizenComplaints(prevComplaints =>
+          prevComplaints.map(complaint =>
+            complaint._id === report._id
+              ? { ...complaint, ...formData }
+              : complaint
+          )
+        );
+        
+        // Close the dialog
+        setEditReportDialog({
+          open: false,
+          report: null,
+          formData: {}
+        });
+        
+        toast.success('Report updated successfully');
+        loadDashboardData(); // Reload to get fresh data
+      }
+    } catch (error) {
+      console.error('❌ Error updating report:', error);
+      toast.error(error.message || 'Failed to update report');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Staff management handlers
@@ -899,12 +1031,29 @@ const MunicipalDashboard = () => {
                   </td>
                   <td className="px-6 py-4 text-sm font-medium">
                     <div className="flex space-x-2">
-                      <button className="text-blue-600 hover:text-blue-900">
+                      <button 
+                        onClick={() => handleViewReport(complaint)}
+                        className="text-blue-600 hover:text-blue-900" 
+                        title="View Details"
+                      >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button className="text-green-600 hover:text-green-900">
+                      <button 
+                        onClick={() => handleEditReport(complaint)}
+                        className="text-green-600 hover:text-green-900" 
+                        title="Edit"
+                      >
                         <Edit3 className="w-4 h-4" />
                       </button>
+                      {complaint.status !== 'assigned' && complaint.status !== 'resolved' && (
+                        <button 
+                          onClick={() => handleAssignReport(complaint)}
+                          className="text-purple-600 hover:text-purple-900" 
+                          title="Assign to Department Admin"
+                        >
+                          <Users className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -2731,6 +2880,358 @@ const MunicipalDashboard = () => {
           {activeTab === 'settings' && <SettingsSection />}
         </main>
       </div>
+
+      {/* Assignment Dialog */}
+      {assignmentDialog.open && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Assign to Department Admin</h3>
+              <button
+                onClick={() => setAssignmentDialog({ ...assignmentDialog, open: false })}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {assignmentDialog.report && (
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <p className="font-medium text-sm">{assignmentDialog.report.title}</p>
+                <p className="text-xs text-gray-600 mt-1">{assignmentDialog.report.description}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {assignmentDialog.report.address || 
+                   (assignmentDialog.report.location?.coordinates ? 
+                     `Coordinates: ${assignmentDialog.report.location.coordinates[1]}, ${assignmentDialog.report.location.coordinates[0]}` : 
+                     'Location not specified')}
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Department Admin
+                </label>
+                <select
+                  value={assignmentDialog.selectedAdmin}
+                  onChange={(e) => setAssignmentDialog({ ...assignmentDialog, selectedAdmin: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Choose department admin...</option>
+                  {departmentAdmins.map((admin) => (
+                    <option key={admin._id} value={admin._id}>
+                      {admin.name} - {admin.department}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Priority Level
+                </label>
+                <select
+                  value={assignmentDialog.priority}
+                  onChange={(e) => setAssignmentDialog({ ...assignmentDialog, priority: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="low">Low Priority</option>
+                  <option value="medium">Medium Priority</option>
+                  <option value="high">High Priority</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Deadline
+                </label>
+                <input
+                  type="date"
+                  value={assignmentDialog.deadline}
+                  onChange={(e) => setAssignmentDialog({ ...assignmentDialog, deadline: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Assignment Notes
+                </label>
+                <textarea
+                  value={assignmentDialog.notes}
+                  onChange={(e) => setAssignmentDialog({ ...assignmentDialog, notes: e.target.value })}
+                  placeholder="Add any special instructions or notes for the department admin..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setAssignmentDialog({ ...assignmentDialog, open: false })}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAssignmentSubmit}
+                disabled={!assignmentDialog.selectedAdmin || loading}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Assigning...
+                  </>
+                ) : (
+                  <>
+                    <Users className="w-4 h-4" />
+                    Assign Report
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Report Dialog */}
+      {viewReportDialog.open && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Report Details</h3>
+              <button
+                onClick={() => setViewReportDialog({ open: false, report: null })}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {viewReportDialog.report && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">{viewReportDialog.report.title}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">{viewReportDialog.report.category}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      viewReportDialog.report.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                      viewReportDialog.report.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                      viewReportDialog.report.status === 'assigned' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {viewReportDialog.report.status}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      viewReportDialog.report.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                      viewReportDialog.report.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                      viewReportDialog.report.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {viewReportDialog.report.priority || 'medium'}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded">{viewReportDialog.report.description}</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                  <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                    {viewReportDialog.report.address || 
+                     (viewReportDialog.report.location?.coordinates ? 
+                       `Coordinates: ${viewReportDialog.report.location.coordinates[1]}, ${viewReportDialog.report.location.coordinates[0]}` : 
+                       'Location not specified')}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Reported By</label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                      {viewReportDialog.report.user?.name || 'Anonymous'}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date Reported</label>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">
+                      {new Date(viewReportDialog.report.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                {viewReportDialog.report.images && viewReportDialog.report.images.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Images</label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {viewReportDialog.report.images.map((image, index) => (
+                        <img
+                          key={index}
+                          src={image.url || image}
+                          alt={`Report image ${index + 1}`}
+                          className="w-full h-24 object-cover rounded border"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => setViewReportDialog({ open: false, report: null })}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Report Dialog */}
+      {editReportDialog.open && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Edit Report</h3>
+              <button
+                onClick={() => setEditReportDialog({ open: false, report: null, formData: {} })}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {editReportDialog.report && (
+              <form onSubmit={handleEditReportSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                    <input
+                      type="text"
+                      value={editReportDialog.formData.title}
+                      onChange={handleEditReportFormChange('title')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Report title"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                    <select
+                      value={editReportDialog.formData.category}
+                      onChange={handleEditReportFormChange('category')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select Category</option>
+                      <option value="Health">Health</option>
+                      <option value="Sanitation">Sanitation</option>
+                      <option value="Roads">Roads</option>
+                      <option value="Water Supply">Water Supply</option>
+                      <option value="Electricity">Electricity</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select
+                      value={editReportDialog.formData.status}
+                      onChange={handleEditReportFormChange('status')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="assigned">Assigned</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="resolved">Resolved</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                    <select
+                      value={editReportDialog.formData.priority}
+                      onChange={handleEditReportFormChange('priority')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                  <textarea
+                    value={editReportDialog.formData.description}
+                    onChange={handleEditReportFormChange('description')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={4}
+                    placeholder="Report description"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                  <input
+                    type="text"
+                    value={editReportDialog.formData.location}
+                    onChange={handleEditReportFormChange('location')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Report location"
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setEditReportDialog({ open: false, report: null, formData: {} })}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {loading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <Edit3 className="w-4 h-4" />
+                        Update Report
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

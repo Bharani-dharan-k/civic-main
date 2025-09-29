@@ -37,6 +37,7 @@ const {
     getEmergencyAlerts,
     getServiceRequests,
     getMunicipalities,
+    getAvailableMunicipalities,
     getEscalations,
     handleEscalationAction
 } = require('../controllers/adminController');
@@ -94,6 +95,10 @@ router.post('/users', createDepartmentAdmin);
 router.put('/users/:id', updateDepartmentAdmin);
 router.delete('/users/:id', deleteDepartmentAdmin);
 router.put('/users/:id/reset-password', resetUserPassword);
+
+// Municipality routes
+router.get('/municipalities', getMunicipalities);
+router.get('/available-municipalities', getAvailableMunicipalities);
 
 // Escalation handling routes
 router.get('/escalations', getEscalations);
