@@ -18,11 +18,11 @@ const getDashboardOverview = async (req, res) => {
         // Get department from user profile or use default
         const department = user.department || 'general';
 
-        // Modified query to include tasks assigned directly to this department head
+        // Build query for tasks - include both assigned to user and in department
         const taskQuery = {
             $or: [
-                { department: department }, // Tasks belonging to their department
-                { assignedTo: user.id }     // Tasks assigned directly to this department head
+                { assignedTo: user.id },
+                { department }
             ]
         };
 
@@ -53,10 +53,10 @@ const getDashboardOverview = async (req, res) => {
             Resource.countDocuments({ department, status: 'active' })
         ]);
 
-        // Recent tasks
+        // Recent tasks - include tasks assigned to this department head
         const recentTasks = await Task.find(taskQuery)
             .populate('assignedTo', 'name email')
-            .populate('relatedReport', 'title category')
+            .populate('relatedReport', 'title category status')
             .sort({ createdAt: -1 })
             .limit(5);
 
@@ -112,30 +112,35 @@ const getTasks = async (req, res) => {
         const { status, type, page = 1, limit = 10 } = req.query;
 
         const department = user.department || 'general';
-
-        // Modified query to include tasks assigned directly to this department head
-        // OR tasks belonging to their department
+        
+        // Build query to fetch tasks assigned to the department head OR tasks in their department
         const query = {
             $or: [
-                { department: department }, // Tasks belonging to their department
-                { assignedTo: user.id }     // Tasks assigned directly to this department head
+                { assignedTo: user.id },  // Tasks assigned to this department head
+                { department }             // Tasks in the department head's department
             ]
         };
-
+        
         if (status && status !== 'all') query.status = status;
         if (type && type !== 'all') query.type = type;
 
         const tasks = await Task.find(query)
             .populate('assignedTo', 'name email phone')
             .populate('assignedBy', 'name email')
-            .populate('relatedReport', 'title category status location address')
+            .populate('relatedReport', 'title category status location address imageUrl')
             .sort({ createdAt: -1 })
             .limit(limit * 1)
             .skip((page - 1) * limit);
 
         const total = await Task.countDocuments(query);
 
-        console.log(`📋 Department Head ${user.name} - Found ${tasks.length} tasks for department: ${department}`);
+        console.log(`📋 Department Head ${user.name} (${user.email}) fetched ${tasks.length} tasks`);
+        if (tasks.length > 0) {
+            console.log('   Sample tasks:');
+            tasks.slice(0, 3).forEach((task, idx) => {
+                console.log(`   ${idx + 1}. ${task.title} - Status: ${task.status}, Assigned To: ${task.assignedTo?.name || 'Unassigned'}`);
+            });
+        }
 
         res.json(tasks);
     } catch (error) {
@@ -601,6 +606,141 @@ const getReportProgress = async (req, res) => {
     }
 };
 
+// Get field workers in same department and municipality
+const getFieldWorkers = async (req, res) => {
+    try {
+        const { user } = req;
+        
+        // Find all field workers in same department and municipality
+        const fieldWorkers = await User.find({
+            role: 'field_staff',
+            department: user.department,
+            municipality: user.municipality
+        }).select('name email ward department municipality');
+
+        res.status(200).json({
+            success: true,
+            data: fieldWorkers
+        });
+
+    } catch (error) {
+        console.error('❌ Error fetching field workers:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch field workers',
+            error: error.message
+        });
+    }
+};
+
+// Assign task to field worker
+const assignTaskToFieldWorker = async (req, res) => {
+    try {
+        const { user } = req;
+        const { taskId } = req.params;
+        const { fieldWorkerId, notes, priority } = req.body;
+
+        console.log('📋 Department Head assigning task:', {
+            taskId,
+            fieldWorkerId,
+            departmentHead: user.name
+        });
+
+        // Validate task exists and belongs to this department head
+        const task = await Task.findById(taskId);
+        if (!task) {
+            return res.status(404).json({
+                success: false,
+                message: 'Task not found'
+            });
+        }
+
+        // Check if task is assigned to this department head or in their department
+        if (task.assignedTo?.toString() !== user.id && task.department !== user.department) {
+            return res.status(403).json({
+                success: false,
+                message: 'You do not have permission to assign this task'
+            });
+        }
+
+        // Validate field worker exists
+        const fieldWorker = await User.findById(fieldWorkerId);
+        if (!fieldWorker) {
+            return res.status(404).json({
+                success: false,
+                message: 'Field worker not found'
+            });
+        }
+
+        // Verify field worker is in same department/municipality
+        if (fieldWorker.department !== user.department || fieldWorker.municipality !== user.municipality) {
+            return res.status(400).json({
+                success: false,
+                message: 'Field worker must be in the same department and municipality'
+            });
+        }
+
+        // Create new task for field worker (sub-task)
+        const fieldWorkerTask = new Task({
+            title: task.title,
+            description: notes || task.description,
+            assignedTo: fieldWorkerId,
+            assignedBy: user.id,
+            relatedReport: task.relatedReport,
+            municipality: task.municipality || user.municipality,
+            ward: task.ward || user.ward,
+            department: user.department,
+            priority: priority || task.priority || 'medium',
+            status: 'assigned',
+            deadline: task.deadline,
+            parentTask: taskId, // Link to parent task
+            createdAt: new Date()
+        });
+
+        await fieldWorkerTask.save();
+
+        // Update original task status to indicate it's been delegated
+        task.status = 'in_progress';
+        await task.save();
+
+        // Update related report if exists
+        if (task.relatedReport) {
+            const Report = require('../models/Report');
+            await Report.findByIdAndUpdate(task.relatedReport, {
+                assignedTo: fieldWorkerId,
+                status: 'in_progress'
+            });
+        }
+
+        // Populate response
+        await fieldWorkerTask.populate([
+            { path: 'assignedTo', select: 'name email phone department' },
+            { path: 'assignedBy', select: 'name email department' },
+            { path: 'relatedReport', select: 'title description location category' }
+        ]);
+
+        console.log('✅ Task assigned to field worker:', {
+            taskId: fieldWorkerTask._id,
+            fieldWorker: fieldWorker.name,
+            department: user.department
+        });
+
+        res.json({
+            success: true,
+            message: 'Task assigned to field worker successfully',
+            data: fieldWorkerTask
+        });
+
+    } catch (error) {
+        console.error('❌ Error assigning task to field worker:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to assign task to field worker',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     getDashboardOverview,
     getTasks,
@@ -613,5 +753,7 @@ module.exports = {
     getBudgetInfo,
     getComplaints,
     getPendingReports,
-    getReportProgress
+    getReportProgress,
+    getFieldWorkers,
+    assignTaskToFieldWorker
 };

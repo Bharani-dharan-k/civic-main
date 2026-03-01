@@ -52,7 +52,8 @@ import {
     Warning,
     CheckCircle,
     Schedule,
-    Cancel
+    Cancel,
+    PersonAdd as PersonAddIcon
 } from '@mui/icons-material';
 import {
     BarChart,
@@ -100,6 +101,7 @@ const DepartmentOfficerDashboard = () => {
     const [dashboardData, setDashboardData] = useState(null);
     const [tasks, setTasks] = useState([]);
     const [staff, setStaff] = useState([]);
+    const [fieldWorkers, setFieldWorkers] = useState([]);
     const [resources, setResources] = useState([]);
     const [projects, setProjects] = useState([]);
     const [budget, setBudget] = useState(null);
@@ -130,11 +132,13 @@ const DepartmentOfficerDashboard = () => {
             const response = await fetch(url, options);
             
             if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
             }
             
-            return await response.json();
+            const data = await response.json();
+            // Return data.data if it exists (new API format), otherwise return whole response
+            return data.data || data;
         } catch (error) {
             console.error('API call failed:', error.message);
             setError(`API call failed: ${error.message}`);
@@ -190,6 +194,17 @@ const DepartmentOfficerDashboard = () => {
             setStaff(data);
         } catch (error) {
             console.error('Failed to load staff:', error);
+        }
+    };
+
+    // Load field workers for task assignment
+    const loadFieldWorkers = async () => {
+        try {
+            const data = await apiCall('/field-workers');
+            setFieldWorkers(data);
+        } catch (error) {
+            console.error('Failed to load field workers:', error);
+            setFieldWorkers([]);
         }
     };
 
@@ -314,15 +329,27 @@ const DepartmentOfficerDashboard = () => {
                 await apiCall('/tasks', 'POST', taskData);
                 loadTasks();
                 loadStaff(); // Refresh staff to update task counts
+            } else if (dialogType === 'assign-to-field-worker') {
+                // Handle assigning task to field worker
+                await apiCall(`/tasks/${selectedItem._id}/assign`, 'POST', {
+                    fieldWorkerId: formData.fieldWorkerId,
+                    notes: formData.assignmentNotes,
+                    priority: formData.priority
+                });
+                loadTasks();
+                setError({ type: 'success', message: 'Task assigned to field worker successfully!' });
             } else if (dialogType === 'update-task-status') {
                 await apiCall(`/tasks/${selectedItem._id}/status`, 'PUT', { status: formData.status });
                 loadTasks();
             }
             
             handleCloseDialog();
-            setError(null);
+            if (dialogType !== 'assign-to-field-worker') {
+                setError(null);
+            }
         } catch (error) {
             console.error('Form submission failed:', error);
+            setError({ type: 'error', message: error.message || 'Failed to process request' });
         }
     };
 
@@ -1438,8 +1465,12 @@ const DepartmentOfficerDashboard = () => {
 
                 {/* Error Alert */}
                 {error && (
-                    <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 3 }}>
-                        {error}
+                    <Alert 
+                        severity={error.type || "error"} 
+                        onClose={() => setError(null)} 
+                        sx={{ mb: 3 }}
+                    >
+                        {error.message || error}
                     </Alert>
                 )}
 
@@ -1509,6 +1540,10 @@ const DepartmentOfficerDashboard = () => {
                         <EditIcon fontSize="small" style={{ marginRight: 8 }} />
                         Edit Task
                     </MenuItem>
+                    <MenuItem onClick={() => { handleOpenDialog('assign-to-field-worker', selectedItem); handleMenuClose(); loadFieldWorkers(); }}>
+                        <PersonAddIcon fontSize="small" style={{ marginRight: 8 }} />
+                        Assign to Field Worker
+                    </MenuItem>
                     <MenuItem onClick={() => { handleOpenDialog('update-task-status', selectedItem); handleMenuClose(); }}>
                         <Schedule fontSize="small" style={{ marginRight: 8 }} />
                         Update Status
@@ -1521,6 +1556,7 @@ const DepartmentOfficerDashboard = () => {
                         {dialogType === 'create-task' && 'Create New Task'}
                         {dialogType === 'create-staff' && 'Add Staff Member'}
                         {dialogType === 'assign-task' && `Assign Task to ${selectedItem?.user?.name || selectedItem?.name}`}
+                        {dialogType === 'assign-to-field-worker' && `Assign Task to Field Worker`}
                         {dialogType === 'update-task-status' && 'Update Task Status'}
                         {dialogType === 'view-task' && 'Task Details'}
                         {dialogType === 'view-staff' && 'Staff Details'}
@@ -1834,6 +1870,61 @@ const DepartmentOfficerDashboard = () => {
                                     <MenuItem value="cancelled">Cancelled</MenuItem>
                                 </Select>
                             </FormControl>
+                        )}
+
+                        {dialogType === 'assign-to-field-worker' && selectedItem && (
+                            <Grid container spacing={2}>
+                                <Grid item xs={12}>
+                                    <Alert severity="info" sx={{ mb: 2 }}>
+                                        Assigning task: <strong>{selectedItem.title}</strong>
+                                    </Alert>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <FormControl fullWidth margin="normal" required>
+                                        <InputLabel>Select Field Worker</InputLabel>
+                                        <Select
+                                            value={formData.fieldWorkerId || ''}
+                                            onChange={(e) => setFormData({ ...formData, fieldWorkerId: e.target.value })}
+                                        >
+                                            {fieldWorkers.length === 0 ? (
+                                                <MenuItem disabled>No field workers available</MenuItem>
+                                            ) : (
+                                                fieldWorkers.map((worker) => (
+                                                    <MenuItem key={worker._id} value={worker._id}>
+                                                        {worker.name} - {worker.ward || 'All wards'}
+                                                    </MenuItem>
+                                                ))
+                                            )}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <TextField
+                                        fullWidth
+                                        label="Assignment Notes"
+                                        multiline
+                                        rows={3}
+                                        value={formData.assignmentNotes || ''}
+                                        onChange={(e) => setFormData({ ...formData, assignmentNotes: e.target.value })}
+                                        placeholder="Add any specific instructions for the field worker..."
+                                        margin="normal"
+                                    />
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <FormControl fullWidth margin="normal">
+                                        <InputLabel>Priority (Optional)</InputLabel>
+                                        <Select
+                                            value={formData.priority || selectedItem.priority || ''}
+                                            onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                                        >
+                                            <MenuItem value="low">Low</MenuItem>
+                                            <MenuItem value="medium">Medium</MenuItem>
+                                            <MenuItem value="high">High</MenuItem>
+                                            <MenuItem value="urgent">Urgent</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                            </Grid>
                         )}
 
                         {dialogType === 'view-task' && selectedItem && (

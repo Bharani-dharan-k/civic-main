@@ -413,6 +413,7 @@ exports.getMunicipalReports = async (req, res) => {
         // Get the current municipality admin's details
         const currentUser = await User.findById(req.user.id);
         if (!currentUser) {
+            console.error('❌ User not found with ID:', req.user.id);
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
@@ -423,7 +424,15 @@ exports.getMunicipalReports = async (req, res) => {
         const assignedWard = currentUser.ward;
         
         console.log(`🏛️ Municipality from user: "${municipality}"`);
-        console.log(`🏠 Assigned ward: "${assignedWard}"`);
+        console.log(`🏠 Assigned ward: "${assignedWard || 'Not assigned'}"`);
+        
+        if (!municipality) {
+            console.error('❌ User has no municipality assigned!');
+            return res.status(400).json({
+                success: false,
+                message: 'User has no municipality assigned. Please contact administrator.'
+            });
+        }
         
         // Reports use 'urbanLocalBody' field to store municipality info
         let reportQuery = { urbanLocalBody: municipality };
@@ -431,7 +440,7 @@ exports.getMunicipalReports = async (req, res) => {
             reportQuery.ward = assignedWard;
         }
         
-        console.log('🔍 Query for reports:', reportQuery);
+        console.log('🔍 Query for reports:', JSON.stringify(reportQuery));
 
         // Get all reports for this municipality admin's assigned area
         const reports = await Report.find(reportQuery)
@@ -1159,7 +1168,9 @@ exports.assignReportToDepartmentAdmin = async (req, res) => {
             });
         }
 
-        if (report.municipality !== currentUser.municipality) {
+        // Reports use 'urbanLocalBody' field for municipality
+        if (report.urbanLocalBody !== currentUser.municipality) {
+            console.log(`❌ Municipality mismatch: Report has "${report.urbanLocalBody}", User has "${currentUser.municipality}"`);
             return res.status(403).json({
                 success: false,
                 message: 'Report does not belong to your municipality'
@@ -1189,8 +1200,7 @@ exports.assignReportToDepartmentAdmin = async (req, res) => {
             priority: priority || report.priority || 'medium',
             status: 'assigned',
             deadline: req.body.deadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days default
-            createdAt: new Date(),
-            notes: notes
+            createdAt: new Date()
         });
 
         await newTask.save();

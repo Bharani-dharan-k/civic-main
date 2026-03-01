@@ -12,7 +12,9 @@ const {
     getBudgetInfo,
     getComplaints,
     getPendingReports,
-    getReportProgress
+    getReportProgress,
+    getFieldWorkers,
+    assignTaskToFieldWorker
 } = require('../controllers/departmentHeadController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -23,10 +25,14 @@ router.get('/dashboard', protect, getDashboardOverview);
 router.get('/tasks', protect, getTasks);
 router.post('/tasks', protect, createTask);
 router.put('/tasks/:taskId/status', protect, updateTaskStatus);
+router.post('/tasks/:taskId/assign', protect, assignTaskToFieldWorker);
 
 // Staff routes
 router.get('/staff', protect, getStaff);
 router.post('/staff', protect, createStaff);
+
+// Field workers routes
+router.get('/field-workers', protect, getFieldWorkers);
 
 // Resources routes
 router.get('/resources', protect, getResources);

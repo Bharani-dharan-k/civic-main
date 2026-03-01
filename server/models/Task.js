@@ -33,6 +33,12 @@ const TaskSchema = new mongoose.Schema({
         type: String,
         default: 'general'
     },
+    municipality: {
+        type: String
+    },
+    ward: {
+        type: String
+    },
     deadline: {
         type: Date
     },
@@ -53,6 +59,10 @@ const TaskSchema = new mongoose.Schema({
     relatedReport: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Report'
+    },
+    parentTask: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Task'
     }
 }, {
     timestamps: true

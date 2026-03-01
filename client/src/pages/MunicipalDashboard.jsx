@@ -376,6 +376,10 @@ const MunicipalDashboard = () => {
         const reports = reportsResponse.data.data || [];
         console.log('📊 Municipal reports:', reports);
         setCitizenComplaints(reports);
+      } else {
+        console.error('❌ Municipal reports API returned error:', reportsResponse.data.error);
+        setCitizenComplaints([]); // Set empty array on error
+        toast.error('Failed to load complaints: ' + (reportsResponse.data.error || 'Unknown error'));
       }
 
       // Set staff data
@@ -993,7 +997,15 @@ const MunicipalDashboard = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {citizenComplaints.slice(0, 10).map((complaint, index) => (
+              {citizenComplaints.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="px-6 py-12 text-center">
+                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-600 font-medium">No complaints found</p>
+                    <p className="text-gray-500 text-sm mt-1">Check your municipality and ward settings, or try refreshing the data.</p>
+                  </td>
+                </tr>
+              ) : citizenComplaints.slice(0, 10).map((complaint, index) => (
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div>
